@@ -202,6 +202,8 @@
     <Compile Include="Manager\Event\AbstractAgentVariables.cs" />
     <Compile Include="Manager\Event\AbstractConfbridgeEvent.cs" />
     <Compile Include="Manager\Event\BlindTransferEvent.cs" />
+    <Compile Include="Manager\Event\DialEndEvent.cs" />
+    <Compile Include="Manager\Event\DialBeginEvent.cs" />
     <Compile Include="Manager\Event\BridgeActivityEvent.cs" />
     <Compile Include="Manager\Event\BridgeCreateEvent.cs" />
     <Compile Include="Manager\Event\BridgeDestroyEvent.cs" />

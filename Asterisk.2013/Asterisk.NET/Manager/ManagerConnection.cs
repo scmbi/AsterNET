@@ -95,6 +95,8 @@ namespace AsterNET.Manager
     public delegate void BridgeDestroyEventHandler(object sender, Event.BridgeDestroyEvent e);
     public delegate void BridgeEnterEventHandler(object sender, Event.BridgeEnterEvent e);
     public delegate void BridgeLeaveEventHandler(object sender, Event.BridgeLeaveEvent e);
+    public delegate void DialBeginEventHandler(object sender, Event.DialBeginEvent e);
+    public delegate void DialEndEventHandler(object sender, Event.DialEndEvent e);
 
 
 
@@ -476,13 +478,45 @@ namespace AsterNET.Manager
         /// </summary>
         public event FailedACLEventHandler FailedACL;
 
+        /// <summary>
+        /// Triggered when an attended transfer is performed.
+        /// </summary>
 	    public event AttendedTransferEventHandler AttendedTransfer;
+
+        /// <summary>
+        /// Triggered when a blind transfer is performed.
+        /// </summary>
         public event BlindTransferEventHandler BlindTransfer;
 
+        /// <summary>
+        /// Triggered when a bridge is created
+        /// </summary>
         public event BridgeCreateEventHandler BridgeCreate;
+
+        /// <summary>
+        /// Triggered when a bridge is destroyed
+        /// </summary>
         public event BridgeDestroyEventHandler BridgeDestroy;
+
+        /// <summary>
+        /// Triggered when a channel is connected to a bridge
+        /// </summary>
         public event BridgeEnterEventHandler BridgeEnter;
+
+        /// <summary>
+        /// Triggered when a channel is disconected from a bridge.
+        /// </summary>
         public event BridgeLeaveEventHandler BridgeLeave;
+
+        /// <summary>
+        /// Triggered when the Dial-application is invoked in a dial plan.
+        /// </summary>
+	    public event DialBeginEventHandler DialBegin;
+
+        /// <summary>
+        /// Triggered when the Dial-application ends. The event data contains information about the applications success or failure to dial the recipient.
+        /// </summary>
+	    public event DialEndEventHandler DialEnd;
 
 		#endregion
 
@@ -593,7 +627,9 @@ namespace AsterNET.Manager
             Helper.RegisterEventHandler(registeredEventHandlers, 90, typeof(BridgeEnterEvent));
             Helper.RegisterEventHandler(registeredEventHandlers, 91, typeof(BridgeLeaveEvent));
             Helper.RegisterEventHandler(registeredEventHandlers, 92, typeof(BlindTransferEvent));
-            
+
+            Helper.RegisterEventHandler(registeredEventHandlers, 93, typeof(DialBeginEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 94, typeof(DialEndEvent));
 
 			#endregion
 
@@ -1210,6 +1246,18 @@ namespace AsterNET.Manager
                         if (BlindTransfer != null)
                         {
                             BlindTransfer(this, (BlindTransferEvent)e);
+                        }
+                        break;
+                    case 93:
+                        if (DialBegin != null)
+                        {
+                            DialBegin(this, (DialBeginEvent)e);
+                        }
+                        break;
+                    case 94:
+                        if (DialEnd != null)
+                        {
+                            DialEnd(this, (DialEndEvent)e);
                         }
                         break;
 					default:
