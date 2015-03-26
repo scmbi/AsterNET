@@ -27,7 +27,6 @@ namespace AsterNET.Manager.Event
         public string Context { get; set; }
         public string Exten { get; set; }
         public string Priority { get; set; }
-        public string Uniqueid { get; set; }
         public string DestChannel { get; set; }
         public string DestChannelState { get; set; }
         public string DestChannelStateDesc { get; set; }
