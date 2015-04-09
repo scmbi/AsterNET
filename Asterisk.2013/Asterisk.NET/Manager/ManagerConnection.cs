@@ -97,9 +97,9 @@ namespace AsterNET.Manager
     public delegate void BridgeLeaveEventHandler(object sender, Event.BridgeLeaveEvent e);
     public delegate void DialBeginEventHandler(object sender, Event.DialBeginEvent e);
     public delegate void DialEndEventHandler(object sender, Event.DialEndEvent e);
+    public delegate void NewAccountCodeEventHandler(object sender, Event.NewAccountCodeEvent e);
 
-
-
+    
 	#endregion
 
 	/// <summary>
@@ -518,6 +518,11 @@ namespace AsterNET.Manager
         /// </summary>
 	    public event DialEndEventHandler DialEnd;
 
+        /// <summary>
+        /// Dispatched when a new accountcode is assigned to a channel
+        /// </summary>
+	    public event NewAccountCodeEventHandler NewAccountCode;
+
 		#endregion
 
 		#region Constructor - ManagerConnection()
@@ -630,6 +635,8 @@ namespace AsterNET.Manager
 
             Helper.RegisterEventHandler(registeredEventHandlers, 93, typeof(DialBeginEvent));
             Helper.RegisterEventHandler(registeredEventHandlers, 94, typeof(DialEndEvent));
+
+            Helper.RegisterEventHandler(registeredEventHandlers, 95, typeof(NewAccountCodeEvent));
 
 			#endregion
 
@@ -1260,6 +1267,12 @@ namespace AsterNET.Manager
                             DialEnd(this, (DialEndEvent)e);
                         }
                         break;
+                    case 95:
+				        if (NewAccountCode != null)
+				        {
+				            NewAccountCode(this, (NewAccountCodeEvent) e);
+				        }
+				        break;
 					default:
 						if (UnhandledEvent != null)
 							UnhandledEvent(this, e);
