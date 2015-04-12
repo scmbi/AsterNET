@@ -248,6 +248,7 @@
     <Compile Include="Manager\Event\ShowDialPlanCompleteEvent.cs" />
     <Compile Include="Manager\Event\AttendedTransferEvent.cs" />
     <Compile Include="Manager\Event\TransferEvent.cs" />
+    <Compile Include="Manager\Event\UnhandledExceptionEventArgs.cs" />
     <Compile Include="Manager\Event\UnknownEvent.cs" />
     <Compile Include="Manager\Event\VarSet.cs" />
     <Compile Include="Manager\Event\QueueCallerAbandonEvent.cs" />

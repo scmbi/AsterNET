@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using AsterNET.IO;
 using AsterNET.Util;
+using UnhandledExceptionEventArgs = AsterNET.Manager.Event.UnhandledExceptionEventArgs;
 
 namespace AsterNET.Manager
 {
@@ -99,7 +100,8 @@ namespace AsterNET.Manager
     public delegate void DialEndEventHandler(object sender, Event.DialEndEvent e);
     public delegate void NewAccountCodeEventHandler(object sender, Event.NewAccountCodeEvent e);
 
-    
+    public delegate void UnhandledExceptionEventHandler(object sender, Event.UnhandledExceptionEventArgs e);
+
 	#endregion
 
 	/// <summary>
@@ -522,6 +524,11 @@ namespace AsterNET.Manager
         /// Dispatched when a new accountcode is assigned to a channel
         /// </summary>
 	    public event NewAccountCodeEventHandler NewAccountCode;
+
+        /// <summary>
+        /// Dispatched when an unhandled exception is thrown inside an eventhandler.
+        /// </summary>
+	    public event UnhandledExceptionEventHandler UnhandledException;
 
 		#endregion
 
@@ -2487,18 +2494,53 @@ namespace AsterNET.Manager
 				fireEvent(e);
 		}
 
-		private void eventComplete(IAsyncResult result)
-		{
-		}
-
-		private void fireEvent(ManagerEvent e)
-		{
-			if (enableEvents && internalEvent != null)
-                if(UseASyncEvents)
-				    internalEvent.BeginInvoke(this, e, new AsyncCallback(eventComplete), null);
-                else
-                    internalEvent.Invoke(this, e);
-		}
+	    private void fireEvent(ManagerEvent e)
+	    {
+	        if (enableEvents && internalEvent != null)
+	        {
+	            if (UseASyncEvents)
+	            {
+	                internalEvent.BeginInvoke(this, e, state =>
+	                {
+	                    try
+	                    {
+	                        internalEvent.EndInvoke(state);
+	                    }
+	                    catch (Exception exception)
+	                    {
+	                        if (UnhandledException == null)
+	                        {
+	                            throw;
+	                        }
+	                        UnhandledException(this, new UnhandledExceptionEventArgs
+	                        {
+	                            ManagerEvent = e,
+	                            ThrownException = exception
+	                        });
+	                    }
+	                }, null);
+	            }
+	            else
+	            {
+	                try
+	                {
+	                    internalEvent.Invoke(this, e);
+	                }
+	                catch (Exception exception)
+	                {
+	                    if (UnhandledException == null)
+	                    {
+	                        throw;
+	                    }
+	                    UnhandledException(this, new UnhandledExceptionEventArgs
+	                    {
+	                        ManagerEvent = e,
+	                        ThrownException = exception
+	                    });
+	                }
+	            }
+	        }
+	    }
 		#endregion
 	}
 }
