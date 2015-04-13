@@ -10,47 +10,49 @@ using AsterNET.Manager.Event;
 
 namespace AsterNET.Manager
 {
-    public static class EventQueueDispatcher
+    public class EventQueueDispatcher
     {
         #if LOGGER
-        private static Logger logger = Logger.Instance();
+        private Logger logger = Logger.Instance();
         #endif
 
-        private static Thread InternalThread = new Thread(Run);
-        private static ManualResetEvent QueueReset = new ManualResetEvent(false);
-        private static ConcurrentQueue<ManagerEvent> EventQueue = new ConcurrentQueue<ManagerEvent>();
-        public static Action<ManagerEvent> EventReady;
+        private readonly Thread _internalThread;
+        private readonly ManualResetEvent _queueReset = new ManualResetEvent(false);
+        private readonly ConcurrentQueue<ManagerEvent> _eventQueue = new ConcurrentQueue<ManagerEvent>();
+        private readonly Action<ManagerEvent> _eventReady;
 
-        static EventQueueDispatcher()
+        public EventQueueDispatcher(Action<ManagerEvent> eventReady)
         {
-            InternalThread.Start();
+            _eventReady = eventReady;
+            _internalThread = new Thread(() => Run(this));
+            _internalThread.Start();
         }
 
-        public static void QueueEvent(ManagerEvent e)
+        public void QueueEvent(ManagerEvent e)
         {
-            EventQueue.Enqueue(e);
-            QueueReset.Set();
+            _eventQueue.Enqueue(e);
+            _queueReset.Set();
         }
 
-        private static void Run()
+        private static void Run(EventQueueDispatcher dispatcher)
         {
             while (true)
             {
                 ManagerEvent readyEvent;
-                if (!EventQueue.TryDequeue(out readyEvent))
+                if (!dispatcher._eventQueue.TryDequeue(out readyEvent))
                 {
-                    QueueReset.Reset();
+                    dispatcher._queueReset.Reset();
 #if LOGGER
-                    logger.Debug("Dispatcher queue: Waiting for events");
+                    dispatcher.logger.Debug("Dispatcher queue: Waiting for events");
 #endif
-                    QueueReset.WaitOne();
+                    dispatcher._queueReset.WaitOne();
                 }
                 else
                 {
 #if LOGGER
-                    logger.Debug("Dispatcher queue: Dispatching event " + readyEvent.GetType().Name);
+                    dispatcher.logger.Debug("Dispatcher queue: Dispatching event " + readyEvent.GetType().Name);
 #endif
-                    EventReady(readyEvent);
+                    dispatcher._eventReady(readyEvent);
                 }
             }
         }

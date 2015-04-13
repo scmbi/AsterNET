@@ -162,6 +162,8 @@ namespace AsterNET.Manager
 		/// <summary> Default Slow Reconnect interval in milliseconds.</summary>
 		private int reconnectIntervalMax = 10000;
 
+	    private EventQueueDispatcher _eventQueueDispatcher;
+
 		#endregion
 
         /// <summary>
@@ -649,53 +651,28 @@ namespace AsterNET.Manager
 			#endregion
 
 			this.internalEvent += new ManagerEventHandler(internalEventHandler);
-		    EventQueueDispatcher.EventReady = e =>
+		    _eventQueueDispatcher = new EventQueueDispatcher(e =>
 		    {
 		        if (enableEvents && internalEvent != null)
 		        {
-		            if (UseASyncEvents)
+		            try
 		            {
-		                internalEvent.BeginInvoke(this, e, state =>
-		                {
-		                    try
-		                    {
-		                        internalEvent.EndInvoke(state);
-		                    }
-		                    catch (Exception exception)
-		                    {
-		                        if (UnhandledException == null)
-		                        {
-		                            throw;
-		                        }
-		                        UnhandledException(this, new UnhandledExceptionEventArgs
-		                        {
-		                            ManagerEvent = e,
-		                            ThrownException = exception
-		                        });
-		                    }
-		                }, null);
+		                internalEvent.Invoke(this, e);
 		            }
-		            else
+		            catch (Exception exception)
 		            {
-		                try
+		                if (UnhandledException == null)
 		                {
-		                    internalEvent.Invoke(this, e);
+		                    throw;
 		                }
-		                catch (Exception exception)
+		                UnhandledException(this, new UnhandledExceptionEventArgs
 		                {
-		                    if (UnhandledException == null)
-		                    {
-		                        throw;
-		                    }
-		                    UnhandledException(this, new UnhandledExceptionEventArgs
-		                    {
-		                        ManagerEvent = e,
-		                        ThrownException = exception
-		                    });
-		                }
+		                    ManagerEvent = e,
+		                    ThrownException = exception
+		                });
 		            }
 		        }
-		    };
+		    });
 		}
 		#endregion
 
@@ -2545,7 +2522,32 @@ namespace AsterNET.Manager
 
 	    private void fireEvent(ManagerEvent e)
 	    {
-            EventQueueDispatcher.QueueEvent(e);
+	        if (UseASyncEvents)
+	        {
+	            internalEvent.BeginInvoke(this, e, state =>
+	            {
+	                try
+	                {
+	                    internalEvent.EndInvoke(state);
+	                }
+	                catch (Exception exception)
+	                {
+	                    if (UnhandledException == null)
+	                    {
+	                        throw;
+	                    }
+	                    UnhandledException(this, new UnhandledExceptionEventArgs
+	                    {
+	                        ManagerEvent = e,
+	                        ThrownException = exception
+	                    });
+	                }
+	            }, null);
+	        }
+	        else
+	        {
+                _eventQueueDispatcher.QueueEvent(e);
+	        }
 	    }
 		#endregion
 	}
