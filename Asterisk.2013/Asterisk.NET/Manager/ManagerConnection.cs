@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.Text;
 using System.Net.Sockets;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using AsterNET.IO;
 using AsterNET.Util;
@@ -648,6 +649,53 @@ namespace AsterNET.Manager
 			#endregion
 
 			this.internalEvent += new ManagerEventHandler(internalEventHandler);
+		    EventQueueDispatcher.EventReady = e =>
+		    {
+		        if (enableEvents && internalEvent != null)
+		        {
+		            if (UseASyncEvents)
+		            {
+		                internalEvent.BeginInvoke(this, e, state =>
+		                {
+		                    try
+		                    {
+		                        internalEvent.EndInvoke(state);
+		                    }
+		                    catch (Exception exception)
+		                    {
+		                        if (UnhandledException == null)
+		                        {
+		                            throw;
+		                        }
+		                        UnhandledException(this, new UnhandledExceptionEventArgs
+		                        {
+		                            ManagerEvent = e,
+		                            ThrownException = exception
+		                        });
+		                    }
+		                }, null);
+		            }
+		            else
+		            {
+		                try
+		                {
+		                    internalEvent.Invoke(this, e);
+		                }
+		                catch (Exception exception)
+		                {
+		                    if (UnhandledException == null)
+		                    {
+		                        throw;
+		                    }
+		                    UnhandledException(this, new UnhandledExceptionEventArgs
+		                    {
+		                        ManagerEvent = e,
+		                        ThrownException = exception
+		                    });
+		                }
+		            }
+		        }
+		    };
 		}
 		#endregion
 
@@ -2494,52 +2542,10 @@ namespace AsterNET.Manager
 				fireEvent(e);
 		}
 
+
 	    private void fireEvent(ManagerEvent e)
 	    {
-	        if (enableEvents && internalEvent != null)
-	        {
-	            if (UseASyncEvents)
-	            {
-	                internalEvent.BeginInvoke(this, e, state =>
-	                {
-	                    try
-	                    {
-	                        internalEvent.EndInvoke(state);
-	                    }
-	                    catch (Exception exception)
-	                    {
-	                        if (UnhandledException == null)
-	                        {
-	                            throw;
-	                        }
-	                        UnhandledException(this, new UnhandledExceptionEventArgs
-	                        {
-	                            ManagerEvent = e,
-	                            ThrownException = exception
-	                        });
-	                    }
-	                }, null);
-	            }
-	            else
-	            {
-	                try
-	                {
-	                    internalEvent.Invoke(this, e);
-	                }
-	                catch (Exception exception)
-	                {
-	                    if (UnhandledException == null)
-	                    {
-	                        throw;
-	                    }
-	                    UnhandledException(this, new UnhandledExceptionEventArgs
-	                    {
-	                        ManagerEvent = e,
-	                        ThrownException = exception
-	                    });
-	                }
-	            }
-	        }
+            EventQueueDispatcher.QueueEvent(e);
 	    }
 		#endregion
 	}

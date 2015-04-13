@@ -199,6 +199,7 @@
     <Compile Include="Manager\Action\ZapShowChannelsAction.cs" />
     <Compile Include="Manager\Action\ZapTransferAction.cs" />
     <Compile Include="Manager\AsteriskVersion.cs" />
+    <Compile Include="Manager\EventQueueDispatcher.cs" />
     <Compile Include="Manager\Event\AbstractAgentVariables.cs" />
     <Compile Include="Manager\Event\AbstractConfbridgeEvent.cs" />
     <Compile Include="Manager\Event\BlindTransferEvent.cs" />
