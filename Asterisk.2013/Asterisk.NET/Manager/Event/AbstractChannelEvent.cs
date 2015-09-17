@@ -14,6 +14,7 @@ namespace AsterNET.Manager.Event
 		private string state;
 	    private string connectedLineNum;
 	    private string connectedLineName;
+	    private string context;
 
 		/// <summary>
 		/// Get/Set Channel State
@@ -23,6 +24,12 @@ namespace AsterNET.Manager.Event
 			get { return this.channelState; }
 			set { this.channelState = value; }
 		}
+
+	    public string Context
+	    {
+            get { return this.context; }
+            set { this.context = value; }
+	    }
 
 		/// <summary>
 		/// Get/Set Channel State Description

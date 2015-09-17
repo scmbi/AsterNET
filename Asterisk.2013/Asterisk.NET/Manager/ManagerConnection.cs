@@ -100,6 +100,7 @@ namespace AsterNET.Manager
     public delegate void DialBeginEventHandler(object sender, Event.DialBeginEvent e);
     public delegate void DialEndEventHandler(object sender, Event.DialEndEvent e);
     public delegate void NewAccountCodeEventHandler(object sender, Event.NewAccountCodeEvent e);
+    public delegate void MonitorStop(object sender, Event.MonitorStopEvent e);
 
     public delegate void UnhandledExceptionEventHandler(object sender, Event.UnhandledExceptionEventArgs e);
 
@@ -529,6 +530,11 @@ namespace AsterNET.Manager
 	    public event NewAccountCodeEventHandler NewAccountCode;
 
         /// <summary>
+        /// Dispatched when a monitor stops on a channel
+        /// </summary>
+        public event MonitorStop MonitorStop;
+
+        /// <summary>
         /// Dispatched when an unhandled exception is thrown inside an eventhandler.
         /// </summary>
 	    public event UnhandledExceptionEventHandler UnhandledException;
@@ -647,6 +653,7 @@ namespace AsterNET.Manager
             Helper.RegisterEventHandler(registeredEventHandlers, 94, typeof(DialEndEvent));
 
             Helper.RegisterEventHandler(registeredEventHandlers, 95, typeof(NewAccountCodeEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 96, typeof(MonitorStopEvent));
 
 			#endregion
 
@@ -1305,6 +1312,12 @@ namespace AsterNET.Manager
 				            NewAccountCode(this, (NewAccountCodeEvent) e);
 				        }
 				        break;
+                    case 96:
+                        if (MonitorStop != null)
+                        {
+                            MonitorStop(this, (MonitorStopEvent)e);
+                        }
+                        break;
 					default:
 						if (UnhandledEvent != null)
 							UnhandledEvent(this, e);
