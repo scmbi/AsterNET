@@ -53,6 +53,12 @@ namespace AsterNET.FastAGI
 
         #endregion
 
+        /// <summary>
+        /// Proxy Header set by Amazon Web Services Elastic Load Balancer (ELB). See http://docs.aws.amazon.com/ElasticLoadBalancing/latest/DeveloperGuide/enable-proxy-protocol.html#enable-proxy-protocol-cli
+        /// Will be null if not present.
+        /// </summary>
+        public AwsElbProxyHeader AwsElbProxyHeader;
+
         #region RequestURL 
 
         /// <summary>

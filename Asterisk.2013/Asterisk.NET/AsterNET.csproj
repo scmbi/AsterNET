@@ -68,6 +68,7 @@
     <Compile Include="Common.cs" />
     <Compile Include="FastAGI\AGIChannel.cs" />
     <Compile Include="FastAGI\AGIConnectionHandler.cs" />
+    <Compile Include="FastAGI\AwsElbProxyHeader.cs" />
     <Compile Include="FastAGI\Exceptions\AGIException.cs" />
     <Compile Include="FastAGI\Exceptions\AGIHangupException.cs" />
     <Compile Include="FastAGI\Exceptions\AGINetworkException.cs" />
