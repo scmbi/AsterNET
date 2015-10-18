@@ -207,6 +207,9 @@
     <Compile Include="Manager\EventQueueDispatcher.cs" />
     <Compile Include="Manager\Event\AbstractAgentVariables.cs" />
     <Compile Include="Manager\Event\AbstractConfbridgeEvent.cs" />
+    <Compile Include="Manager\Event\AsyncAGIEndEvent.cs" />
+    <Compile Include="Manager\Event\AsyncAGIExecEvent.cs" />
+    <Compile Include="Manager\Event\AsyncAGIStartEvent.cs" />
     <Compile Include="Manager\Event\BlindTransferEvent.cs" />
     <Compile Include="Manager\Event\DialEndEvent.cs" />
     <Compile Include="Manager\Event\DialBeginEvent.cs" />

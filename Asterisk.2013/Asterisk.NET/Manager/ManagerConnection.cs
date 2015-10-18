@@ -100,7 +100,11 @@ namespace AsterNET.Manager
     public delegate void DialBeginEventHandler(object sender, Event.DialBeginEvent e);
     public delegate void DialEndEventHandler(object sender, Event.DialEndEvent e);
     public delegate void NewAccountCodeEventHandler(object sender, Event.NewAccountCodeEvent e);
-    public delegate void MonitorStop(object sender, Event.MonitorStopEvent e);
+    public delegate void MonitorStopEventHandler(object sender, Event.MonitorStopEvent e);
+
+    public delegate void AsyncAGIEndEventHandler(object sender, AsyncAGIEndEvent e);
+    public delegate void AsyncAGIExecEventHandler(object sender, AsyncAGIExecEvent e);
+    public delegate void AsyncAGIStartEventHandler(object sender, AsyncAGIStartEvent e);
 
     public delegate void UnhandledExceptionEventHandler(object sender, Event.UnhandledExceptionEventArgs e);
 
@@ -532,7 +536,11 @@ namespace AsterNET.Manager
         /// <summary>
         /// Dispatched when a monitor stops on a channel
         /// </summary>
-        public event MonitorStop MonitorStop;
+        public event MonitorStopEventHandler MonitorStop;
+
+        public event AsyncAGIEndEventHandler AsyncAGIEnd;
+        public event AsyncAGIExecEventHandler AsyncAGIExec;
+        public event AsyncAGIStartEventHandler AsyncAGIStart;
 
         /// <summary>
         /// Dispatched when an unhandled exception is thrown inside an eventhandler.
@@ -654,6 +662,9 @@ namespace AsterNET.Manager
 
             Helper.RegisterEventHandler(registeredEventHandlers, 95, typeof(NewAccountCodeEvent));
             Helper.RegisterEventHandler(registeredEventHandlers, 96, typeof(MonitorStopEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 97, typeof(AsyncAGIEndEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 98, typeof(AsyncAGIExecEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 99, typeof(AsyncAGIStartEvent));
 
 			#endregion
 
@@ -1316,6 +1327,24 @@ namespace AsterNET.Manager
                         if (MonitorStop != null)
                         {
                             MonitorStop(this, (MonitorStopEvent)e);
+                        }
+                        break;
+                    case 97:
+                        if (AsyncAGIEnd != null)
+                        {
+                            AsyncAGIEnd(this, (AsyncAGIEndEvent)e);
+                        }
+                        break;
+                    case 98:
+                        if (AsyncAGIExec != null)
+                        {
+                            AsyncAGIExec(this, (AsyncAGIExecEvent)e);
+                        }
+                        break;
+                    case 99:
+                        if (AsyncAGIStart != null)
+                        {
+                            AsyncAGIStart(this, (AsyncAGIStartEvent)e);
                         }
                         break;
 					default:
