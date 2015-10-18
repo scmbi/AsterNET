@@ -7,6 +7,10 @@ namespace AsterNET.Manager.Event
 {
     public class AsyncAGIStartEvent : ManagerEvent
     {
+        public AsyncAGIStartEvent(ManagerConnection source) : base(source)
+        {
+        }
+
         public string Event { get; set; }
         public string ChannelState { get; set; }
         public string ChannelStateDesc { get; set; }
