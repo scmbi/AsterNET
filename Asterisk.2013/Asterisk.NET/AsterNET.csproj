@@ -211,6 +211,8 @@
     <Compile Include="Manager\Event\AsyncAGIExecEvent.cs" />
     <Compile Include="Manager\Event\AsyncAGIStartEvent.cs" />
     <Compile Include="Manager\Event\BlindTransferEvent.cs" />
+    <Compile Include="Manager\Event\CoreShowChannelsCompleteEvent.cs" />
+    <Compile Include="Manager\Event\CoreShowChannelEvent.cs" />
     <Compile Include="Manager\Event\DialEndEvent.cs" />
     <Compile Include="Manager\Event\DialBeginEvent.cs" />
     <Compile Include="Manager\Event\BridgeActivityEvent.cs" />

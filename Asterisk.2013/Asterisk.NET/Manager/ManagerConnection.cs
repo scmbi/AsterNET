@@ -106,6 +106,9 @@ namespace AsterNET.Manager
     public delegate void AsyncAGIExecEventHandler(object sender, AsyncAGIExecEvent e);
     public delegate void AsyncAGIStartEventHandler(object sender, AsyncAGIStartEvent e);
 
+    public delegate void CoreShoweChannelEventHandler(object sender, CoreShowChannelEvent e);
+    public delegate void CoreShowChannelsCompleteEventHandler(object sender, CoreShowChannelsCompleteEvent e);
+
     public delegate void UnhandledExceptionEventHandler(object sender, Event.UnhandledExceptionEventArgs e);
 
 	#endregion
@@ -547,6 +550,9 @@ namespace AsterNET.Manager
         /// </summary>
 	    public event UnhandledExceptionEventHandler UnhandledException;
 
+	    public event CoreShoweChannelEventHandler CoreShowChannel;
+	    public event CoreShowChannelsCompleteEventHandler CoreShowChannelsComplete;
+
 		#endregion
 
 		#region Constructor - ManagerConnection()
@@ -665,6 +671,10 @@ namespace AsterNET.Manager
             Helper.RegisterEventHandler(registeredEventHandlers, 97, typeof(AsyncAGIEndEvent));
             Helper.RegisterEventHandler(registeredEventHandlers, 98, typeof(AsyncAGIExecEvent));
             Helper.RegisterEventHandler(registeredEventHandlers, 99, typeof(AsyncAGIStartEvent));
+
+            Helper.RegisterEventHandler(registeredEventHandlers, 100, typeof(CoreShowChannelEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 101, typeof(CoreShowChannelsCompleteEvent));
+
 
 			#endregion
 
@@ -1345,6 +1355,18 @@ namespace AsterNET.Manager
                         if (AsyncAGIStart != null)
                         {
                             AsyncAGIStart(this, (AsyncAGIStartEvent)e);
+                        }
+                        break;
+                    case 100:
+                        if (CoreShowChannel != null)
+                        {
+                            CoreShowChannel(this, (CoreShowChannelEvent)e);
+                        }
+                        break;
+                    case 101:
+                        if (CoreShowChannelsComplete != null)
+                        {
+                            CoreShowChannelsComplete(this, (CoreShowChannelsCompleteEvent)e);
                         }
                         break;
 					default:
