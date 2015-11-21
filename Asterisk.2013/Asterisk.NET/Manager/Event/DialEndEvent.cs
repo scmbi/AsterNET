@@ -15,7 +15,6 @@ namespace AsterNET.Manager.Event
 
         public string Event { get; set; }
         public string Privilege { get; set; }
-        public string Channel { get; set; }
         public string ChannelState { get; set; }
         public string ChannelStateDesc { get; set; }
         public string CallerIDNum { get; set; }
