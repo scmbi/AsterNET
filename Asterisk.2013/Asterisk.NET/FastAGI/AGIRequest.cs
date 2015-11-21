@@ -66,7 +66,15 @@ namespace AsterNET.FastAGI
         /// </summary>
         public string RequestURL
         {
-            get { return request["request"]; }
+            get
+            {
+                string req;
+                if (request.TryGetValue("request", out req))
+                {
+                    return req;
+                }
+                return null;
+            }
         }
 
         #endregion
@@ -361,8 +369,7 @@ namespace AsterNET.FastAGI
                 if (script != null)
                     return script;
 
-                script = request["network_script"];
-                if (script != null)
+                if (request.TryGetValue("network_script", out script))
                 {
                     Match scriptMatcher = Common.AGI_SCRIPT_PATTERN.Match(script);
                     if (scriptMatcher.Success)
