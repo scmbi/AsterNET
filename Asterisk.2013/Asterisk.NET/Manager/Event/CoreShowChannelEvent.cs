@@ -14,7 +14,6 @@ namespace AsterNET.Manager.Event
         }
 
         public string ActionID { get; set; }
-        public string Channel { get; set; }
         public string ChannelState { get; set; }
         public string ChannelStateDesc { get; set; }
         public string CallerIDNum { get; set; }
@@ -25,7 +24,6 @@ namespace AsterNET.Manager.Event
         public string Context { get; set; }
         public string Exten { get; set; }
         public string Priority { get; set; }
-        public string Uniqueid { get; set; }
         public string Linkedid { get; set; }
         public string BridgeId { get; set; }
         public string Application { get; set; }
