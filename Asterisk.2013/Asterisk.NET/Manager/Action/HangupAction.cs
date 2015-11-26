@@ -21,6 +21,12 @@ namespace AsterNET.Manager.Action
             Channel = channel;
         }
 
+        public HangupAction(string channel, int cause)
+        {
+            Channel = channel;
+            Cause = cause;
+        }
+
         /// <summary>
         ///     Get the name of this action, i.e. "Hangup".
         /// </summary>
@@ -33,5 +39,7 @@ namespace AsterNET.Manager.Action
         ///     Get/Set the name of the channel to hangup.
         /// </summary>
         public string Channel { get; set; }
+
+        public int Cause { get; set; }
     }
 }
