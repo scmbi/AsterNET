@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using AsterNET.IO;
 using AsterNET.Manager.Action;
@@ -346,6 +347,7 @@ namespace AsterNET.Manager
 				catch
 				{
 #endif
+				    mrConnector.UnhandledExceptionThrown(this, ex);
 				}
 
 				if (die)

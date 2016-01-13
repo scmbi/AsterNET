@@ -704,6 +704,14 @@ namespace AsterNET.Manager
 		}
 		#endregion
 
+	    public void UnhandledExceptionThrown(object source, Exception exception)
+	    {
+	        if (UnhandledException != null)
+	        {
+	            UnhandledException(source, new UnhandledExceptionEventArgs() { ManagerEvent = null, ThrownException = exception });
+	        }
+	    }
+
 		#region Constructor - ManagerConnection(hostname, port, username, password)
 		/// <summary>
 		/// Creates a new instance with the given connection parameters.
