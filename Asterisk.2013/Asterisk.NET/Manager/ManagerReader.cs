@@ -344,7 +344,7 @@ namespace AsterNET.Manager
 				{
 					logger.Info("Exception : {0}", ex.Message);
 #else
-				catch
+				catch (Exception ex)
 				{
 #endif
 				    mrConnector.UnhandledExceptionThrown(this, ex);
