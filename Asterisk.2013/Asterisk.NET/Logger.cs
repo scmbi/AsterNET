@@ -56,12 +56,18 @@ namespace AsterNET
 
         private void writeLine(string type, string msg)
         {
-            System.Diagnostics.Debug.Print("{0}[{1}] {2}", type, Thread.CurrentThread.Name, msg);
+            if (msg.ToLower().Contains("addqueue"))
+            {
+                System.Diagnostics.Debug.Print("{0}[{1}] {2}", type, Thread.CurrentThread.Name, msg);
+            }
         }
 
         private void writeLine(string msg)
         {
-            System.Diagnostics.Debug.Print(msg);
+            if (msg.ToLower().Contains("addqueue"))
+            {
+                System.Diagnostics.Debug.Print(msg);
+            }
         }
 
         // Max 2 calls from  original caller !

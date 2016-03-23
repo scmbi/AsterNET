@@ -185,6 +185,7 @@
     <Compile Include="Manager\Action\PingAction.cs" />
     <Compile Include="Manager\Action\ProxyAction.cs" />
     <Compile Include="Manager\Action\QueueAddAction.cs" />
+    <Compile Include="Manager\Event\QueueCallerJoinEvent.cs" />
     <Compile Include="Manager\Action\QueueLogAction.cs" />
     <Compile Include="Manager\Action\QueuePauseAction.cs" />
     <Compile Include="Manager\Action\QueuePenaltyAction.cs" />
@@ -247,6 +248,7 @@
     <Compile Include="Manager\Event\NewAccountCodeEvent.cs" />
     <Compile Include="Manager\Event\OriginateResponseEvent.cs" />
     <Compile Include="Manager\Event\PRIEvent.cs" />
+    <Compile Include="Manager\Event\QueueCallerLeaveEvent.cs" />
     <Compile Include="Manager\Event\QueueMemberPenaltyEvent.cs" />
     <Compile Include="Manager\Event\RTPReceiverStatEvent.cs" />
     <Compile Include="Manager\Event\RTCPSentEvent.cs" />

@@ -78,7 +78,9 @@ namespace AsterNET.Manager
 	public delegate void UnparkedCallEventHandler(object sender, Event.UnparkedCallEvent e);
 	public delegate void UserEventHandler(object sender, Event.UserEvent e);
 	public delegate void QueueCallerAbandonEventHandler(object sender, Event.QueueCallerAbandonEvent e);
-	public delegate void ZapShowChannelsCompleteEventHandler(object sender, Event.ZapShowChannelsCompleteEvent e);
+    public delegate void QueueCallerJoinEventHandler(object sender, Event.QueueCallerJoinEvent e);
+    public delegate void QueueCallerLeaveEventHandler(object sender, Event.QueueCallerLeaveEvent e);
+    public delegate void ZapShowChannelsCompleteEventHandler(object sender, Event.ZapShowChannelsCompleteEvent e);
 	public delegate void ZapShowChannelsEventHandler(object sender, Event.ZapShowChannelsEvent e);
 	public delegate void ConnectionStateEventHandler(object sender, Event.ConnectionStateEvent e);
 	public delegate void VarSetEventHandler(object sender, Event.VarSetEvent e);
@@ -356,10 +358,18 @@ namespace AsterNET.Manager
 		/// A QueueEntryEvent is triggered in response to a QueueStatusAction and contains information about an entry in a queue.
 		/// </summary>
 		public event QueueCallerAbandonEventHandler QueueCallerAbandon;
-		/// <summary>
-		/// A QueueEntryEvent is triggered in response to a QueueStatusAction and contains information about an entry in a queue.
-		/// </summary>
-		public event QueueEntryEventHandler QueueEntry;
+        /// <summary>
+        /// A QueueEntryEvent is triggered in response to a QueueStatusAction and contains information about an entry in a queue.
+        /// </summary>
+        public event QueueCallerJoinEventHandler QueueCallerJoin;
+        /// <summary>
+        /// A QueueEntryEvent is triggered in response to a QueueStatusAction and contains information about an entry in a queue.
+        /// </summary>
+        public event QueueCallerLeaveEventHandler QueueCallerLeave;
+        /// <summary>
+        /// A QueueEntryEvent is triggered in response to a QueueStatusAction and contains information about an entry in a queue.
+        /// </summary>
+        public event QueueEntryEventHandler QueueEntry;
 		/// <summary>
 		/// A QueueMemberAddedEvent is triggered when a queue member is added to a queue.
 		/// </summary>
@@ -558,7 +568,12 @@ namespace AsterNET.Manager
 			Helper.RegisterEventHandler(registeredEventHandlers, 49, typeof(QueueStatusCompleteEvent));
 			Helper.RegisterEventHandler(registeredEventHandlers, 50, typeof(RegistryEvent));
 			Helper.RegisterEventHandler(registeredEventHandlers, 51, typeof(QueueCallerAbandonEvent));
-			Helper.RegisterEventHandler(registeredEventHandlers, 52, typeof(RenameEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 555, typeof(QueueCallerJoinEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 556, typeof(QueueCallerLeaveEvent));
+
+
+
+            Helper.RegisterEventHandler(registeredEventHandlers, 52, typeof(RenameEvent));
 
 			Helper.RegisterEventHandler(registeredEventHandlers, 54, typeof(StatusCompleteEvent));
 			Helper.RegisterEventHandler(registeredEventHandlers, 55, typeof(StatusEvent));
@@ -1040,7 +1055,21 @@ namespace AsterNET.Manager
 							return;
 						}
 						break;
-					case 52:
+                    case 556:
+                        if (QueueCallerLeave != null)
+                        {
+                            QueueCallerLeave(this, (QueueCallerLeaveEvent)e);
+                            return;
+                        }
+                        break;
+                    case 555:
+                        if (QueueCallerJoin != null)
+                        {
+                            QueueCallerJoin(this, (QueueCallerJoinEvent)e);
+                            return;
+                        }
+                        break;
+                    case 52:
 						if (Rename != null)
 						{
 							Rename(this, (RenameEvent)e);
@@ -2365,6 +2394,8 @@ namespace AsterNET.Manager
 		internal void DispatchEvent(Dictionary<string, string> buffer)
 		{
 			ManagerEvent e = Helper.BuildEvent(registeredEventClasses, this, buffer);
+            //if (e.GetType().Name == "UnknownEvent")
+            //    Console.WriteLine(buffer["event"]);
 			DispatchEvent(e);
 		}
 

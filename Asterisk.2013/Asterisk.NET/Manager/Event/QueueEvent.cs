@@ -28,6 +28,7 @@ namespace AsterNET.Manager.Event
 		public QueueEvent(ManagerConnection source)
 			: base(source)
 		{
+            
 		}
 	}
 }
