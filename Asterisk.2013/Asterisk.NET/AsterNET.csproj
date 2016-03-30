@@ -189,6 +189,7 @@
     <Compile Include="Manager\Action\QueueResetAction.cs" />
     <Compile Include="Manager\Action\QueueRuleAction.cs" />
     <Compile Include="Manager\Action\QueueStatusAction.cs" />
+    <Compile Include="Manager\Action\BlindTransferAction.cs" />
     <Compile Include="Manager\Action\RedirectAction.cs" />
     <Compile Include="Manager\Action\SetCDRUserFieldAction.cs" />
     <Compile Include="Manager\Action\SetVarAction.cs" />
