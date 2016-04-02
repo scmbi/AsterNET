@@ -12,7 +12,6 @@ namespace AsterNET.Manager.Event
 
         #endregion
 
-        public string Channel { get; set; }
         public string ChannelState { get; set; }
         public string ChannelStateDesc { get; set; }
         public string CallerIDNum { get; set; }
