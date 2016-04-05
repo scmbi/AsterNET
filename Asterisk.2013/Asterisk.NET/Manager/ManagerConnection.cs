@@ -77,7 +77,8 @@ namespace AsterNET.Manager
 	public delegate void UnlinkEventHandler(object sender, Event.UnlinkEvent e);
 	public delegate void UnparkedCallEventHandler(object sender, Event.UnparkedCallEvent e);
 	public delegate void UserEventHandler(object sender, Event.UserEvent e);
-	public delegate void QueueCallerAbandonEventHandler(object sender, Event.QueueCallerAbandonEvent e);
+    public delegate void DeviceStateChangeEventHandler(object sender, Event.DeviceStateChangeEvent e);
+    public delegate void QueueCallerAbandonEventHandler(object sender, Event.QueueCallerAbandonEvent e);
     public delegate void QueueCallerJoinEventHandler(object sender, Event.QueueCallerJoinEvent e);
     public delegate void QueueCallerLeaveEventHandler(object sender, Event.QueueCallerLeaveEvent e);
     public delegate void ZapShowChannelsCompleteEventHandler(object sender, Event.ZapShowChannelsCompleteEvent e);
@@ -87,7 +88,9 @@ namespace AsterNET.Manager
 	public delegate void AGIExecHandler(object sender, Event.AGIExecEvent e);
 	public delegate void ConfbridgeStartEventHandler(object sender, Event.ConfbridgeStartEvent e);
 	public delegate void ConfbridgeJoinEventHandler(object sender, Event.ConfbridgeJoinEvent e);
-	public delegate void ConfbridgeLeaveEventHandler(object sender, Event.ConfbridgeLeaveEvent e);
+    public delegate void ConfbridgeMuteEventHandler(object sender, Event.ConfbridgeMuteEvent e);
+    public delegate void ConfbridgeUnmuteEventHandler(object sender, Event.ConfbridgeUnmuteEvent e);
+    public delegate void ConfbridgeLeaveEventHandler(object sender, Event.ConfbridgeLeaveEvent e);
 	public delegate void ConfbridgeEndEventHandler(object sender, Event.ConfbridgeEndEvent e);
 	public delegate void ConfbridgeTalkingEventHandler(object sender, Event.ConfbridgeTalkingEvent e);
     public delegate void FailedACLEventHandler(object sender, Event.FailedACLEvent e);
@@ -354,10 +357,14 @@ namespace AsterNET.Manager
 		/// A PeerStatus is triggered when a SIP or IAX client attempts to registrer at this asterisk server.<br/>
 		/// </summary>
 		public event PeerStatusEventHandler PeerStatus;
-		/// <summary>
-		/// A QueueEntryEvent is triggered in response to a QueueStatusAction and contains information about an entry in a queue.
-		/// </summary>
-		public event QueueCallerAbandonEventHandler QueueCallerAbandon;
+        /// <summary>
+        /// A QueueEntryEvent is triggered in response to a QueueStatusAction and contains information about an entry in a queue.
+        /// </summary>
+        public event DeviceStateChangeEventHandler DeviceStateChange;
+        /// <summary>
+        /// A QueueEntryEvent is triggered in response to a QueueStatusAction and contains information about an entry in a queue.
+        /// </summary>
+        public event QueueCallerAbandonEventHandler QueueCallerAbandon;
         /// <summary>
         /// A QueueEntryEvent is triggered in response to a QueueStatusAction and contains information about an entry in a queue.
         /// </summary>
@@ -467,11 +474,19 @@ namespace AsterNET.Manager
 		/// This event is sent when a user joins a conference - either one already in progress or as the first user to join a newly instantiated bridge.
 		/// </summary>
 		public event ConfbridgeJoinEventHandler ConfbridgeJoin;
-
-		/// <summary>
-		/// This event is sent when a user leaves a conference.
-		/// </summary>
-		public event ConfbridgeLeaveEventHandler ConfbridgeLeave;
+        
+        /// <summary>
+        /// This event is sent when a user gets muted - either one already in progress or as the first user to join a newly instantiated bridge.
+        /// </summary>
+        public event ConfbridgeMuteEventHandler ConfbridgeMute;
+        /// <summary>
+        /// This event is sent when a user gets unmuted - either one already in progress or as the first user to join a newly instantiated bridge.
+        /// </summary>
+        public event ConfbridgeUnmuteEventHandler ConfbridgeUnmute;
+        /// <summary>
+        /// This event is sent when a user leaves a conference.
+        /// </summary>
+        public event ConfbridgeLeaveEventHandler ConfbridgeLeave;
 
 		/// <summary>
 		/// This event is sent when the last user leaves a conference and it is torn down.
@@ -570,6 +585,8 @@ namespace AsterNET.Manager
 			Helper.RegisterEventHandler(registeredEventHandlers, 51, typeof(QueueCallerAbandonEvent));
             Helper.RegisterEventHandler(registeredEventHandlers, 555, typeof(QueueCallerJoinEvent));
             Helper.RegisterEventHandler(registeredEventHandlers, 556, typeof(QueueCallerLeaveEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 557, typeof(DeviceStateChangeEvent));
+            
 
 
 
@@ -598,7 +615,9 @@ namespace AsterNET.Manager
 
 			Helper.RegisterEventHandler(registeredEventHandlers, 81, typeof(ConfbridgeStartEvent));
 			Helper.RegisterEventHandler(registeredEventHandlers, 82, typeof(ConfbridgeJoinEvent));
-			Helper.RegisterEventHandler(registeredEventHandlers, 83, typeof(ConfbridgeLeaveEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 558, typeof(ConfbridgeMuteEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 559, typeof(ConfbridgeUnmuteEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 83, typeof(ConfbridgeLeaveEvent));
 			Helper.RegisterEventHandler(registeredEventHandlers, 84, typeof(ConfbridgeEndEvent));
 			Helper.RegisterEventHandler(registeredEventHandlers, 85, typeof(ConfbridgeTalkingEvent));
 
@@ -1069,6 +1088,13 @@ namespace AsterNET.Manager
                             return;
                         }
                         break;
+                    case 557:
+                        if (DeviceStateChange != null)
+                        {
+                            DeviceStateChange(this, (DeviceStateChangeEvent)e);
+                            return;
+                        }
+                        break;
                     case 52:
 						if (Rename != null)
 						{
@@ -1183,7 +1209,19 @@ namespace AsterNET.Manager
 							ConfbridgeJoin(this, (ConfbridgeJoinEvent)e);
 						}
 						break;
-					case 83:
+                    case 558:
+                        if (ConfbridgeMute != null)
+                        {
+                            ConfbridgeMute(this, (ConfbridgeMuteEvent)e);
+                        }
+                        break;
+                    case 559:
+                        if (ConfbridgeUnmute != null)
+                        {
+                            ConfbridgeUnmute(this, (ConfbridgeUnmuteEvent)e);
+                        }
+                        break;
+                    case 83:
 						if (ConfbridgeLeave != null)
 						{
 							ConfbridgeLeave(this, (ConfbridgeLeaveEvent)e);
@@ -2394,9 +2432,9 @@ namespace AsterNET.Manager
 		internal void DispatchEvent(Dictionary<string, string> buffer)
 		{
 			ManagerEvent e = Helper.BuildEvent(registeredEventClasses, this, buffer);
-            //if (e.GetType().Name == "UnknownEvent")
-            //    Console.WriteLine(buffer["event"]);
-			DispatchEvent(e);
+            if (e.GetType().Name == "UnknownEvent")
+                Console.WriteLine(buffer["event"]);
+            DispatchEvent(e);
 		}
 
 		internal void DispatchEvent(ManagerEvent e)

@@ -41,7 +41,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>..\..\..\..\..\Source\Repos\Intulse\References\</OutputPath>
     <DefineConstants>TRACE;DEBUG;LOGGER</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -185,6 +185,9 @@
     <Compile Include="Manager\Action\PingAction.cs" />
     <Compile Include="Manager\Action\ProxyAction.cs" />
     <Compile Include="Manager\Action\QueueAddAction.cs" />
+    <Compile Include="Manager\Event\ConfbridgeMuteEvent.cs" />
+    <Compile Include="Manager\Event\ConfbridgeUnmuteEvent.cs" />
+    <Compile Include="Manager\Event\DeviceStateChangeEvent.cs" />
     <Compile Include="Manager\Event\QueueCallerJoinEvent.cs" />
     <Compile Include="Manager\Action\QueueLogAction.cs" />
     <Compile Include="Manager\Action\QueuePauseAction.cs" />
