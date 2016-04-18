@@ -179,6 +179,7 @@
     <Compile Include="Manager\Action\ParkAction.cs" />
     <Compile Include="Manager\Action\ParkedCallsAction.cs" />
     <Compile Include="Manager\Action\PingAction.cs" />
+    <Compile Include="Manager\Action\PlayDTMFAction.cs" />
     <Compile Include="Manager\Action\ProxyAction.cs" />
     <Compile Include="Manager\Action\QueueAddAction.cs" />
     <Compile Include="Manager\Action\QueueLogAction.cs" />
