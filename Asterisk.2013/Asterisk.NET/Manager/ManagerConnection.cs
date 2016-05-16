@@ -37,7 +37,10 @@ namespace AsterNET.Manager
 	public delegate void DBGetResponseEventHandler(object sender, Event.DBGetResponseEvent e);
 	public delegate void DialEventHandler(object sender, Event.DialEvent e);
 	public delegate void DTMFEventHandler(object sender, Event.DTMFEvent e);
-	public delegate void DNDStateEventHandler(object sender, Event.DNDStateEvent e);
+    public delegate void DTMFBeginEventHandler(object sender, Event.DTMFBeginEvent e);
+    public delegate void DTMFEndEventHandler(object sender, Event.DTMFEndEvent e);
+
+    public delegate void DNDStateEventHandler(object sender, Event.DNDStateEvent e);
 	public delegate void ExtensionStatusEventHandler(object sender, Event.ExtensionStatusEvent e);
 	public delegate void HangupEventHandler(object sender, Event.HangupEvent e);
 	public delegate void HoldedCallEventHandler(object sender, Event.HoldedCallEvent e);
@@ -250,10 +253,12 @@ namespace AsterNET.Manager
 		/// </summary>
 		public event DialEventHandler Dial;
 		public event DTMFEventHandler DTMF;
-		/// <summary>
-		/// A DNDStateEvent is triggered by the Zap channel driver when a channel enters or leaves DND (do not disturb) state.
-		/// </summary>
-		public event DNDStateEventHandler DNDState;
+        public event DTMFBeginEventHandler DTMFBegin;
+        public event DTMFEndEventHandler DTMFEnd;
+        /// <summary>
+        /// A DNDStateEvent is triggered by the Zap channel driver when a channel enters or leaves DND (do not disturb) state.
+        /// </summary>
+        public event DNDStateEventHandler DNDState;
 		/// <summary>
 		/// An ExtensionStatus is triggered when the state of an extension changes.<br/>
 		/// </summary>
@@ -644,8 +649,10 @@ namespace AsterNET.Manager
 			Helper.RegisterEventHandler(registeredEventHandlers, 63, typeof(BridgeEvent));
 			Helper.RegisterEventHandler(registeredEventHandlers, 64, typeof(TransferEvent));
 			Helper.RegisterEventHandler(registeredEventHandlers, 65, typeof(DTMFEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 66, typeof(DTMFBeginEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 67, typeof(DTMFEndEvent));
 
-			Helper.RegisterEventHandler(registeredEventHandlers, 70, typeof(VarSetEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 70, typeof(VarSetEvent));
 			Helper.RegisterEventHandler(registeredEventHandlers, 80, typeof(AGIExecEvent));
 
 			Helper.RegisterEventHandler(registeredEventHandlers, 81, typeof(ConfbridgeStartEvent));
@@ -1239,7 +1246,19 @@ namespace AsterNET.Manager
 							DTMF(this, (DTMFEvent)e);
 						}
 						break;
-					case 70:
+                    case 66:
+                        if (DTMFBegin != null)
+                        {
+                            DTMFBegin(this, (DTMFBeginEvent)e);
+                        }
+                        break;
+                    case 67:
+                        if (DTMFEnd != null)
+                        {
+                            DTMFEnd(this, (DTMFEndEvent)e);
+                        }
+                        break;
+                    case 70:
 						if (VarSet != null)
 						{
 							VarSet(this, (VarSetEvent)e);
