@@ -110,6 +110,8 @@ namespace AsterNET.Manager
     public delegate void CoreShowChannelsCompleteEventHandler(object sender, CoreShowChannelsCompleteEvent e);
 
     public delegate void UnhandledExceptionEventHandler(object sender, Event.UnhandledExceptionEventArgs e);
+    public delegate void DTMFBeginEventHandler(object sender, Event.DTMFBeginEvent e);
+    public delegate void DTMFEndEventHandler(object sender, Event.DTMFEndEvent e);
 
 	#endregion
 
@@ -553,6 +555,8 @@ namespace AsterNET.Manager
 	    public event CoreShoweChannelEventHandler CoreShowChannel;
 	    public event CoreShowChannelsCompleteEventHandler CoreShowChannelsComplete;
 
+	    public event DTMFBeginEventHandler DTMFBegin;
+        public event DTMFEndEventHandler DTMFEnd;
 		#endregion
 
 		#region Constructor - ManagerConnection()
@@ -674,6 +678,8 @@ namespace AsterNET.Manager
 
             Helper.RegisterEventHandler(registeredEventHandlers, 100, typeof(CoreShowChannelEvent));
             Helper.RegisterEventHandler(registeredEventHandlers, 101, typeof(CoreShowChannelsCompleteEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 120, typeof(DTMFBeginEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 121, typeof(DTMFEndEvent));
 
 
 			#endregion
@@ -1377,7 +1383,19 @@ namespace AsterNET.Manager
                             CoreShowChannelsComplete(this, (CoreShowChannelsCompleteEvent)e);
                         }
                         break;
-					default:
+                    case 120:
+                        if (DTMFBegin != null)
+                        {
+                            DTMFBegin(this, (DTMFBeginEvent)e);
+                        }
+                        break;
+                    case 121:
+                        if (DTMFEnd != null)
+                        {
+                            DTMFEnd(this, (DTMFEndEvent)e);
+                        }
+                        break;
+                    default:
 						if (UnhandledEvent != null)
 							UnhandledEvent(this, e);
 						return;
