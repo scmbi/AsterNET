@@ -137,6 +137,7 @@
     <Compile Include="Manager\Action\AGIAction.cs" />
     <Compile Include="Manager\Action\AOCMessageAction.cs" />
     <Compile Include="Manager\Action\AtxferAction.cs" />
+    <Compile Include="Manager\Action\BridgeKickAction.cs" />
     <Compile Include="Manager\Action\BridgeAction.cs" />
     <Compile Include="Manager\Action\ChallengeAction.cs" />
     <Compile Include="Manager\Action\ChangeMonitorAction.cs" />
