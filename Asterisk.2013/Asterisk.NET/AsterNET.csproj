@@ -32,10 +32,14 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
+    <SccProjectName>
+    </SccProjectName>
+    <SccLocalPath>
+    </SccLocalPath>
+    <SccAuxPath>
+    </SccAuxPath>
+    <SccProvider>
+    </SccProvider>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -68,6 +72,7 @@
     <Compile Include="Common.cs" />
     <Compile Include="FastAGI\AGIChannel.cs" />
     <Compile Include="FastAGI\AGIConnectionHandler.cs" />
+    <Compile Include="FastAGI\AwsElbProxyHeader.cs" />
     <Compile Include="FastAGI\Exceptions\AGIException.cs" />
     <Compile Include="FastAGI\Exceptions\AGIHangupException.cs" />
     <Compile Include="FastAGI\Exceptions\AGINetworkException.cs" />
@@ -132,6 +137,7 @@
     <Compile Include="Manager\Action\AGIAction.cs" />
     <Compile Include="Manager\Action\AOCMessageAction.cs" />
     <Compile Include="Manager\Action\AtxferAction.cs" />
+    <Compile Include="Manager\Action\BridgeKickAction.cs" />
     <Compile Include="Manager\Action\BridgeAction.cs" />
     <Compile Include="Manager\Action\ChallengeAction.cs" />
     <Compile Include="Manager\Action\ChangeMonitorAction.cs" />
@@ -184,6 +190,7 @@
     <Compile Include="Manager\Action\QueueResetAction.cs" />
     <Compile Include="Manager\Action\QueueRuleAction.cs" />
     <Compile Include="Manager\Action\QueueStatusAction.cs" />
+    <Compile Include="Manager\Action\BlindTransferAction.cs" />
     <Compile Include="Manager\Action\RedirectAction.cs" />
     <Compile Include="Manager\Action\SetCDRUserFieldAction.cs" />
     <Compile Include="Manager\Action\SetVarAction.cs" />
@@ -199,9 +206,17 @@
     <Compile Include="Manager\Action\ZapShowChannelsAction.cs" />
     <Compile Include="Manager\Action\ZapTransferAction.cs" />
     <Compile Include="Manager\AsteriskVersion.cs" />
+    <Compile Include="Manager\EventQueueDispatcher.cs" />
     <Compile Include="Manager\Event\AbstractAgentVariables.cs" />
     <Compile Include="Manager\Event\AbstractConfbridgeEvent.cs" />
+    <Compile Include="Manager\Event\AsyncAGIEndEvent.cs" />
+    <Compile Include="Manager\Event\AsyncAGIExecEvent.cs" />
+    <Compile Include="Manager\Event\AsyncAGIStartEvent.cs" />
     <Compile Include="Manager\Event\BlindTransferEvent.cs" />
+    <Compile Include="Manager\Event\CoreShowChannelsCompleteEvent.cs" />
+    <Compile Include="Manager\Event\CoreShowChannelEvent.cs" />
+    <Compile Include="Manager\Event\DialEndEvent.cs" />
+    <Compile Include="Manager\Event\DialBeginEvent.cs" />
     <Compile Include="Manager\Event\BridgeActivityEvent.cs" />
     <Compile Include="Manager\Event\BridgeCreateEvent.cs" />
     <Compile Include="Manager\Event\BridgeDestroyEvent.cs" />
@@ -223,6 +238,8 @@
     <Compile Include="Manager\Event\BridgeEvent.cs" />
     <Compile Include="Manager\Event\ChannelReloadEvent.cs" />
     <Compile Include="Manager\Event\ChannelUpdateEvent.cs" />
+    <Compile Include="Manager\Event\DTMFEndEvent.cs" />
+    <Compile Include="Manager\Event\DTMFBeginEvent.cs" />
     <Compile Include="Manager\Event\FailedACLEvent.cs" />
     <Compile Include="Manager\Event\MeetmeMuteEvent.cs" />
     <Compile Include="Manager\Event\DTMFEvent.cs" />
@@ -246,6 +263,7 @@
     <Compile Include="Manager\Event\ShowDialPlanCompleteEvent.cs" />
     <Compile Include="Manager\Event\AttendedTransferEvent.cs" />
     <Compile Include="Manager\Event\TransferEvent.cs" />
+    <Compile Include="Manager\Event\UnhandledExceptionEventArgs.cs" />
     <Compile Include="Manager\Event\UnknownEvent.cs" />
     <Compile Include="Manager\Event\VarSet.cs" />
     <Compile Include="Manager\Event\QueueCallerAbandonEvent.cs" />

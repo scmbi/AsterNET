@@ -9,9 +9,11 @@ using System.Text.RegularExpressions;
 using System.Text;
 using System.Net.Sockets;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using AsterNET.IO;
 using AsterNET.Util;
+using UnhandledExceptionEventArgs = AsterNET.Manager.Event.UnhandledExceptionEventArgs;
 
 namespace AsterNET.Manager
 {
@@ -95,8 +97,21 @@ namespace AsterNET.Manager
     public delegate void BridgeDestroyEventHandler(object sender, Event.BridgeDestroyEvent e);
     public delegate void BridgeEnterEventHandler(object sender, Event.BridgeEnterEvent e);
     public delegate void BridgeLeaveEventHandler(object sender, Event.BridgeLeaveEvent e);
+    public delegate void DialBeginEventHandler(object sender, Event.DialBeginEvent e);
+    public delegate void DialEndEventHandler(object sender, Event.DialEndEvent e);
+    public delegate void NewAccountCodeEventHandler(object sender, Event.NewAccountCodeEvent e);
+    public delegate void MonitorStopEventHandler(object sender, Event.MonitorStopEvent e);
 
+    public delegate void AsyncAGIEndEventHandler(object sender, AsyncAGIEndEvent e);
+    public delegate void AsyncAGIExecEventHandler(object sender, AsyncAGIExecEvent e);
+    public delegate void AsyncAGIStartEventHandler(object sender, AsyncAGIStartEvent e);
 
+    public delegate void CoreShoweChannelEventHandler(object sender, CoreShowChannelEvent e);
+    public delegate void CoreShowChannelsCompleteEventHandler(object sender, CoreShowChannelsCompleteEvent e);
+
+    public delegate void UnhandledExceptionEventHandler(object sender, Event.UnhandledExceptionEventArgs e);
+    public delegate void DTMFBeginEventHandler(object sender, Event.DTMFBeginEvent e);
+    public delegate void DTMFEndEventHandler(object sender, Event.DTMFEndEvent e);
 
 	#endregion
 
@@ -156,6 +171,8 @@ namespace AsterNET.Manager
 		private int reconnectIntervalFast = 5000;
 		/// <summary> Default Slow Reconnect interval in milliseconds.</summary>
 		private int reconnectIntervalMax = 10000;
+
+	    private EventQueueDispatcher _eventQueueDispatcher;
 
 		#endregion
 
@@ -476,14 +493,70 @@ namespace AsterNET.Manager
         /// </summary>
         public event FailedACLEventHandler FailedACL;
 
+        /// <summary>
+        /// Triggered when an attended transfer is performed.
+        /// </summary>
 	    public event AttendedTransferEventHandler AttendedTransfer;
+
+        /// <summary>
+        /// Triggered when a blind transfer is performed.
+        /// </summary>
         public event BlindTransferEventHandler BlindTransfer;
 
+        /// <summary>
+        /// Triggered when a bridge is created
+        /// </summary>
         public event BridgeCreateEventHandler BridgeCreate;
+
+        /// <summary>
+        /// Triggered when a bridge is destroyed
+        /// </summary>
         public event BridgeDestroyEventHandler BridgeDestroy;
+
+        /// <summary>
+        /// Triggered when a channel is connected to a bridge
+        /// </summary>
         public event BridgeEnterEventHandler BridgeEnter;
+
+        /// <summary>
+        /// Triggered when a channel is disconected from a bridge.
+        /// </summary>
         public event BridgeLeaveEventHandler BridgeLeave;
 
+        /// <summary>
+        /// Triggered when the Dial-application is invoked in a dial plan.
+        /// </summary>
+	    public event DialBeginEventHandler DialBegin;
+
+        /// <summary>
+        /// Triggered when the Dial-application ends. The event data contains information about the applications success or failure to dial the recipient.
+        /// </summary>
+	    public event DialEndEventHandler DialEnd;
+
+        /// <summary>
+        /// Dispatched when a new accountcode is assigned to a channel
+        /// </summary>
+	    public event NewAccountCodeEventHandler NewAccountCode;
+
+        /// <summary>
+        /// Dispatched when a monitor stops on a channel
+        /// </summary>
+        public event MonitorStopEventHandler MonitorStop;
+
+        public event AsyncAGIEndEventHandler AsyncAGIEnd;
+        public event AsyncAGIExecEventHandler AsyncAGIExec;
+        public event AsyncAGIStartEventHandler AsyncAGIStart;
+
+        /// <summary>
+        /// Dispatched when an unhandled exception is thrown inside an eventhandler.
+        /// </summary>
+	    public event UnhandledExceptionEventHandler UnhandledException;
+
+	    public event CoreShoweChannelEventHandler CoreShowChannel;
+	    public event CoreShowChannelsCompleteEventHandler CoreShowChannelsComplete;
+
+	    public event DTMFBeginEventHandler DTMFBegin;
+        public event DTMFEndEventHandler DTMFEnd;
 		#endregion
 
 		#region Constructor - ManagerConnection()
@@ -593,13 +666,57 @@ namespace AsterNET.Manager
             Helper.RegisterEventHandler(registeredEventHandlers, 90, typeof(BridgeEnterEvent));
             Helper.RegisterEventHandler(registeredEventHandlers, 91, typeof(BridgeLeaveEvent));
             Helper.RegisterEventHandler(registeredEventHandlers, 92, typeof(BlindTransferEvent));
-            
+
+            Helper.RegisterEventHandler(registeredEventHandlers, 93, typeof(DialBeginEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 94, typeof(DialEndEvent));
+
+            Helper.RegisterEventHandler(registeredEventHandlers, 95, typeof(NewAccountCodeEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 96, typeof(MonitorStopEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 97, typeof(AsyncAGIEndEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 98, typeof(AsyncAGIExecEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 99, typeof(AsyncAGIStartEvent));
+
+            Helper.RegisterEventHandler(registeredEventHandlers, 100, typeof(CoreShowChannelEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 101, typeof(CoreShowChannelsCompleteEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 120, typeof(DTMFBeginEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 121, typeof(DTMFEndEvent));
+
 
 			#endregion
 
 			this.internalEvent += new ManagerEventHandler(internalEventHandler);
+		    _eventQueueDispatcher = new EventQueueDispatcher(e =>
+		    {
+		        if (enableEvents && internalEvent != null)
+		        {
+		            try
+		            {
+		                internalEvent.Invoke(this, e);
+		            }
+		            catch (Exception exception)
+		            {
+		                if (UnhandledException == null)
+		                {
+		                    throw;
+		                }
+		                UnhandledException(this, new UnhandledExceptionEventArgs
+		                {
+		                    ManagerEvent = e,
+		                    ThrownException = exception
+		                });
+		            }
+		        }
+		    });
 		}
 		#endregion
+
+	    public void UnhandledExceptionThrown(object source, Exception exception)
+	    {
+	        if (UnhandledException != null)
+	        {
+	            UnhandledException(source, new UnhandledExceptionEventArgs() { ManagerEvent = null, ThrownException = exception });
+	        }
+	    }
 
 		#region Constructor - ManagerConnection(hostname, port, username, password)
 		/// <summary>
@@ -1212,7 +1329,73 @@ namespace AsterNET.Manager
                             BlindTransfer(this, (BlindTransferEvent)e);
                         }
                         break;
-					default:
+                    case 93:
+                        if (DialBegin != null)
+                        {
+                            DialBegin(this, (DialBeginEvent)e);
+                        }
+                        break;
+                    case 94:
+                        if (DialEnd != null)
+                        {
+                            DialEnd(this, (DialEndEvent)e);
+                        }
+                        break;
+                    case 95:
+				        if (NewAccountCode != null)
+				        {
+				            NewAccountCode(this, (NewAccountCodeEvent) e);
+				        }
+				        break;
+                    case 96:
+                        if (MonitorStop != null)
+                        {
+                            MonitorStop(this, (MonitorStopEvent)e);
+                        }
+                        break;
+                    case 97:
+                        if (AsyncAGIEnd != null)
+                        {
+                            AsyncAGIEnd(this, (AsyncAGIEndEvent)e);
+                        }
+                        break;
+                    case 98:
+                        if (AsyncAGIExec != null)
+                        {
+                            AsyncAGIExec(this, (AsyncAGIExecEvent)e);
+                        }
+                        break;
+                    case 99:
+                        if (AsyncAGIStart != null)
+                        {
+                            AsyncAGIStart(this, (AsyncAGIStartEvent)e);
+                        }
+                        break;
+                    case 100:
+                        if (CoreShowChannel != null)
+                        {
+                            CoreShowChannel(this, (CoreShowChannelEvent)e);
+                        }
+                        break;
+                    case 101:
+                        if (CoreShowChannelsComplete != null)
+                        {
+                            CoreShowChannelsComplete(this, (CoreShowChannelsCompleteEvent)e);
+                        }
+                        break;
+                    case 120:
+                        if (DTMFBegin != null)
+                        {
+                            DTMFBegin(this, (DTMFBeginEvent)e);
+                        }
+                        break;
+                    case 121:
+                        if (DTMFEnd != null)
+                        {
+                            DTMFEnd(this, (DTMFEndEvent)e);
+                        }
+                        break;
+                    default:
 						if (UnhandledEvent != null)
 							UnhandledEvent(this, e);
 						return;
@@ -2426,18 +2609,36 @@ namespace AsterNET.Manager
 				fireEvent(e);
 		}
 
-		private void eventComplete(IAsyncResult result)
-		{
-		}
 
-		private void fireEvent(ManagerEvent e)
-		{
-			if (enableEvents && internalEvent != null)
-                if(UseASyncEvents)
-				    internalEvent.BeginInvoke(this, e, new AsyncCallback(eventComplete), null);
-                else
-                    internalEvent.Invoke(this, e);
-		}
+	    private void fireEvent(ManagerEvent e)
+	    {
+	        if (UseASyncEvents)
+	        {
+	            internalEvent.BeginInvoke(this, e, state =>
+	            {
+	                try
+	                {
+	                    internalEvent.EndInvoke(state);
+	                }
+	                catch (Exception exception)
+	                {
+	                    if (UnhandledException == null)
+	                    {
+	                        throw;
+	                    }
+	                    UnhandledException(this, new UnhandledExceptionEventArgs
+	                    {
+	                        ManagerEvent = e,
+	                        ThrownException = exception
+	                    });
+	                }
+	            }, null);
+	        }
+	        else
+	        {
+                _eventQueueDispatcher.QueueEvent(e);
+	        }
+	    }
 		#endregion
 	}
 }

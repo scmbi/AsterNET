@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace AsterNET
@@ -9,6 +10,8 @@ namespace AsterNET
 #if LOGGER
 
     #region class LogFactory 
+
+    public delegate void ExceptionThrownEventHandler(object sender, Exception exception);
 
     /// <summary>
     ///     Facade to hide details of the underlying logging system.
@@ -53,6 +56,8 @@ namespace AsterNET
                 logger = new Logger();
             return logger;
         }
+
+        public event ExceptionThrownEventHandler OnException;
 
         private void writeLine(string type, string msg)
         {
@@ -270,6 +275,11 @@ namespace AsterNET
 
         public void Error(string msg, Exception ex)
         {
+            if (OnException != null)
+            {
+                OnException(this, ex);
+            }
+
             string caller = debugInfo();
             if (isVisible(MessageLevel.Error, caller.GetHashCode()))
                 writeLine("  Error:", string.Concat(caller, " - ", string.Format("{0}\n{1}", msg, ex)));

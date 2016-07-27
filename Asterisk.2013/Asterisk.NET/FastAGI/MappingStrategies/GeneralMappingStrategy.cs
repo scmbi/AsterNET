@@ -126,7 +126,7 @@ namespace AsterNET.FastAGI.MappingStrategies
         public AGIScript DetermineScript(AGIRequest request)
         {
             AGIScript script = null;
-            if (mapAssemblies != null)
+            if (mapAssemblies != null && request.Script != null)
                 lock (mapAssemblies)
                 {
                     if (mapAssemblies.ContainsKey(request.Script))
