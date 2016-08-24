@@ -112,6 +112,16 @@ namespace AsterNET.Manager
     public delegate void CoreShoweChannelEventHandler(object sender, CoreShowChannelEvent e);
     public delegate void CoreShowChannelsCompleteEventHandler(object sender, CoreShowChannelsCompleteEvent e);
 
+    public delegate void AuthDetailEventHandler (object sender, Event.AuthDetailEvent e);
+    public delegate void AorDetailEventHandler(object sender, Event.AorDetailEvent e);
+    public delegate void IdentifyDetailEventHandler(object sender, Event.IdentifyDetailEvent e);
+    public delegate void TransportDetailEventEventHandler(object sender, Event.TransportDetailEvent e);
+    public delegate void EndpointDetailEventHandler(object sender, Event.EndpointDetailEvent e);
+    public delegate void EndpointDetailCompleteEventHandler(object sender, Event.EndpointDetailCompleteEvent e);
+    public delegate void EndpointListEventHandler(object sender, Event.EndpointListEvent e);
+    public delegate void EndpointListCompleteEventHandler(object sender, Event.EndpointListCompleteEvent e);
+
+
     public delegate void UnhandledExceptionEventHandler(object sender, Event.UnhandledExceptionEventArgs e);
 
 	#endregion
@@ -550,6 +560,16 @@ namespace AsterNET.Manager
         public event AsyncAGIExecEventHandler AsyncAGIExec;
         public event AsyncAGIStartEventHandler AsyncAGIStart;
 
+        public event AuthDetailEventHandler AuthDetail;
+        public event AorDetailEventHandler AorDetail;
+        public event IdentifyDetailEventHandler IdentifyDetail;
+        public event TransportDetailEventEventHandler TransportDetail;
+        public event EndpointDetailEventHandler EndpointDetail;
+        public event EndpointDetailCompleteEventHandler EndpointDetailComplete;
+        public event EndpointListEventHandler EndpointList;
+        public event EndpointListCompleteEventHandler EndpointListComplete;
+
+
         /// <summary>
         /// Dispatched when an unhandled exception is thrown inside an eventhandler.
         /// </summary>
@@ -682,10 +702,18 @@ namespace AsterNET.Manager
             Helper.RegisterEventHandler(registeredEventHandlers, 100, typeof(CoreShowChannelEvent));
             Helper.RegisterEventHandler(registeredEventHandlers, 101, typeof(CoreShowChannelsCompleteEvent));
 
+            Helper.RegisterEventHandler(registeredEventHandlers, 201, typeof(AorDetailEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 202, typeof(AuthDetailEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 203, typeof(IdentifyDetailEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 204, typeof(TransportDetailEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 205, typeof(EndpointDetailEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 206, typeof(EndpointDetailCompleteEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 207, typeof(EndpointListCompleteEvent));
+            Helper.RegisterEventHandler(registeredEventHandlers, 208, typeof(EndpointListEvent));
 
-			#endregion
+            #endregion
 
-			this.internalEvent += new ManagerEventHandler(internalEventHandler);
+            this.internalEvent += new ManagerEventHandler(internalEventHandler);
 		    _eventQueueDispatcher = new EventQueueDispatcher(e =>
 		    {
 		        if (enableEvents && internalEvent != null)
@@ -1396,7 +1424,55 @@ namespace AsterNET.Manager
                             CoreShowChannelsComplete(this, (CoreShowChannelsCompleteEvent)e);
                         }
                         break;
-					default:
+                    case 201:
+                        if (AorDetail != null)
+                        {
+                            AorDetail(this, (AorDetailEvent)e);
+                        }
+                        break;
+                    case 202:
+                        if (AuthDetail != null)
+                        {
+                            AuthDetail(this, (AuthDetailEvent)e);
+                        }
+                        break;
+                    case 203:
+                        if (IdentifyDetail != null)
+                        {
+                            IdentifyDetail(this, (IdentifyDetailEvent)e);
+                        }
+                        break;
+                    case 204:
+                        if (TransportDetail != null)
+                        {
+                            TransportDetail(this, (TransportDetailEvent)e);
+                        }
+                        break;
+                    case 205:
+                        if (EndpointDetail != null)
+                        {
+                            EndpointDetail(this, (EndpointDetailEvent)e);
+                        }
+                        break;
+                    case 206:
+                        if (EndpointDetailComplete != null)
+                        {
+                            EndpointDetailComplete(this, (EndpointDetailCompleteEvent)e);
+                        }
+                        break;
+                    case 207:
+                        if (EndpointListComplete != null)
+                        {
+                            EndpointListComplete(this, (EndpointListCompleteEvent)e);
+                        }
+                        break;
+                    case 208:
+                        if (EndpointList != null)
+                        {
+                            EndpointList(this, (EndpointListEvent)e);
+                        }
+                        break;
+                    default:
 						if (UnhandledEvent != null)
 							UnhandledEvent(this, e);
 						return;

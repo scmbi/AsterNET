@@ -193,7 +193,9 @@
     <Compile Include="Manager\Action\RedirectAction.cs" />
     <Compile Include="Manager\Action\SetCDRUserFieldAction.cs" />
     <Compile Include="Manager\Action\SetVarAction.cs" />
+    <Compile Include="Manager\Action\PJSIPShowEndpointsAction.cs" />
     <Compile Include="Manager\Action\SIPPeersAction.cs" />
+    <Compile Include="Manager\Action\PJSIPShowEndpointAction.cs" />
     <Compile Include="Manager\Action\SIPShowPeerAction.cs" />
     <Compile Include="Manager\Action\StatusAction.cs" />
     <Compile Include="Manager\Action\StopMonitorAction.cs" />
@@ -239,6 +241,12 @@
     <Compile Include="Manager\Event\ChannelUpdateEvent.cs" />
     <Compile Include="Manager\Event\DTMFEndEvent.cs" />
     <Compile Include="Manager\Event\DTMFBeginEvent.cs" />
+    <Compile Include="Manager\Event\AorDetailEvent.cs" />
+    <Compile Include="Manager\Event\AuthDetailEvent.cs" />
+    <Compile Include="Manager\Event\EndpointDetailCompleteEvent.cs" />
+    <Compile Include="Manager\Event\IdentifyDetailEvent.cs" />
+    <Compile Include="Manager\Event\TransportDetailEvent.cs" />
+    <Compile Include="Manager\Event\EndpointDetailEvent.cs" />
     <Compile Include="Manager\Event\FailedACLEvent.cs" />
     <Compile Include="Manager\Event\MeetmeMuteEvent.cs" />
     <Compile Include="Manager\Event\DTMFEvent.cs" />
@@ -253,6 +261,8 @@
     <Compile Include="Manager\Event\MonitorStopEvent.cs" />
     <Compile Include="Manager\Event\NewAccountCodeEvent.cs" />
     <Compile Include="Manager\Event\OriginateResponseEvent.cs" />
+    <Compile Include="Manager\Event\EndpointListEvent.cs" />
+    <Compile Include="Manager\Event\EndpointListCompleteEvent.cs" />
     <Compile Include="Manager\Event\PRIEvent.cs" />
     <Compile Include="Manager\Event\QueueMemberPenaltyEvent.cs" />
     <Compile Include="Manager\Event\RTPReceiverStatEvent.cs" />
