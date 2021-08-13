@@ -269,8 +269,7 @@ namespace AsterNET.FastAGI
 #if LOGGER
                     logger.Info("Received connection.");
 #endif
-                    var connectionHandler = new AGIConnectionHandler(socket, mappingStrategy, SC511_CAUSES_EXCEPTION,
-                        SCHANGUP_CAUSES_EXCEPTION);
+                    var connectionHandler = new AGIConnectionHandler(socket, mappingStrategy, SC511_CAUSES_EXCEPTION, SCHANGUP_CAUSES_EXCEPTION);
                     pool.AddJob(connectionHandler);
                 }
             }

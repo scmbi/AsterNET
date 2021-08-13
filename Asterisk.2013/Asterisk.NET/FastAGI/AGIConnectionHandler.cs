@@ -54,7 +54,7 @@ namespace AsterNET.FastAGI
 
         #endregion
 
-        public void Run()
+        public void Run(CancellationToken cancellationToken)
         {
             try
             {
@@ -72,53 +72,49 @@ namespace AsterNET.FastAGI
 
                     if (script != null)
                     {
-                        #if LOGGER
-                            logger.Info("Begin AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
-                        #endif
+#if LOGGER
+                        logger.Info("Begin AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
+#endif
                         script.Service(request, channel);
-                        #if LOGGER
-                            logger.Info("End AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
-                        #endif
+#if LOGGER
+                        logger.Info("End AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
+#endif
                     }
                     else
                     {
                         var error = "No script configured for URL '" + request.RequestURL + "' (script '" + request.Script +
                                     "')";
                         channel.SendCommand(new VerboseCommand(error, 1));
-                        #if LOGGER
-                            logger.Error(error);
-                        #endif
+#if LOGGER
+                        logger.Error(error);
+#endif
                     }
                 }
                 else
                 {
                     var error = "A connection was made with no requests";
-                    #if LOGGER
-                        logger.Error(error);
-                    #endif
+#if LOGGER
+                    logger.Error(error);
+#endif
                 }
             }
-            catch (AGIHangupException)
-            {
-            }
-            catch (IOException)
-            {
-            }
+            catch (AGIHangupException) { }
+            catch (IOException) { }
             catch (AGIException ex)
             {
-                #if LOGGER
-                    logger.Error("AGIException while handling request", ex);
-                #else
+#if LOGGER
+                logger.Error("AGIException while handling request", ex);
+#else
 				    throw ex;
-                #endif
+#endif
             }
             catch (Exception ex)
             {
-                #if LOGGER
-                    logger.Error("Unexpected Exception while handling request", ex);
-                #else
+#if LOGGER
+                logger.Error("Unexpected Exception while handling request", ex);
+#else
 				    throw ex;
-                #endif
+#endif
             }
 
             Thread.SetData(_channel, null);

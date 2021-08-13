@@ -6,7 +6,6 @@ namespace AsterNET.FastAGI.Command
 	/// </summary>
 	public class HangupCommand : AGICommand
 	{
-
 		/// <summary>
 		/// The name of the channel to hangup or null for the current channel.
 		/// </summary>

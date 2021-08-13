@@ -17,7 +17,7 @@ namespace AsterNET.Util
 		/// </summary>
 		public ThreadClass()
 		{
-			thread = new Thread(new ThreadStart(Run));
+			thread = new Thread(new ParameterizedThreadStart(Run));
 		}
 		#endregion
 
@@ -28,7 +28,7 @@ namespace AsterNET.Util
 		/// <param name="Name">The name of the thread</param>
 		public ThreadClass(string Name)
 		{
-			thread = new Thread(new ThreadStart(Run));
+			thread = new Thread(new ParameterizedThreadStart(Run));
 			this.Name = Name;
 		}
 		#endregion
@@ -61,7 +61,7 @@ namespace AsterNET.Util
 		/// <summary>
 		/// This method has no functionality unless the method is overridden
 		/// </summary>
-		public virtual void Run()
+		public virtual void Run(object cancellationToken)
 		{
 		}
 		#endregion
@@ -70,9 +70,9 @@ namespace AsterNET.Util
 		/// <summary>
 		/// Causes the operating system to change the state of the current thread instance to ThreadState.Running
 		/// </summary>
-		public void Start()
+		public void Start(CancellationToken cancellationToken = default)
 		{
-			thread.Start();
+			thread.Start(cancellationToken);
 		}
 		#endregion
 
