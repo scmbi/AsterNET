@@ -16,7 +16,7 @@ namespace AsterNET.Manager
     /// <summary>
     /// Default implementation of the ManagerConnection interface.
     /// </summary>
-    public class ManagerConnection
+    public class ManagerConnection : IManagerConnection
     {
         #region Variables
 
