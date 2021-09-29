@@ -1,3 +1,6 @@
+29.09.2021 (hugodeco)
+	Update dependencies
+
 19.10.2016	(herman1vdb)
 	Update documentation and fix XML comments and enable xml documentation output
 
