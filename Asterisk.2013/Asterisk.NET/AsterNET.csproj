@@ -84,7 +84,7 @@
     <Content Include="Manager\Documentation\Asterisk-1.6.2.24\AMI Events.txt" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Sufficit.AsterNET.Core" Version="1.21.615.1638" />
+    <PackageReference Include="Sufficit.AsterNET.Core" Version="1.21.*" />
   </ItemGroup>
       
 </Project>
