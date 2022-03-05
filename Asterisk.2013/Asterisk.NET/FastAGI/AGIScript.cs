@@ -162,7 +162,6 @@ namespace AsterNET.FastAGI
 			return lastReply.GetResult();
 		}
 		#endregion
-
 		
 		#region GetOption(string file, string escapeDigits)
 		/// <summary>

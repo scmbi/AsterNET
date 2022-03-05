@@ -1,3 +1,5 @@
+using System;
+
 namespace AsterNET.FastAGI
 {
     public interface IMappingStrategy

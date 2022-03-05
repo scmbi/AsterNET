@@ -5,6 +5,7 @@ using System.Text;
 using AsterNET.FastAGI.MappingStrategies;
 using AsterNET.IO;
 using AsterNET.Util;
+using Microsoft.Extensions.Logging;
 
 namespace AsterNET.FastAGI
 {
@@ -28,9 +29,8 @@ namespace AsterNET.FastAGI
 
         #region Variables
 
-#if LOGGER
-        private readonly Logger logger = Logger.Instance();
-#endif
+        private readonly ILogger logger;
+
         private ServerSocket serverSocket;
 
         /// <summary> The port to listen on.</summary>
@@ -154,9 +154,13 @@ namespace AsterNET.FastAGI
             this.mappingStrategy = mappingStrategy;
         }
 
-        public AsteriskFastAGI(IMappingStrategy mappingStrategy, string ipaddress, int port, int poolSize)
+        #endregion
+        #region Constructor - AsteriskFastAGI(ILogger<AsteriskFastAGI>, IMappingStrategy, string ipaddress, int port, int poolSize) 
+
+        public AsteriskFastAGI(ILogger<AsteriskFastAGI> logger, IMappingStrategy mappingStrategy, string ipaddress, int port, int poolSize)
         {
-            address = ipaddress;
+            this.logger = logger;
+            this.address = ipaddress;
             this.port = port;
             this.poolSize = poolSize;
             this.mappingStrategy = mappingStrategy;
@@ -205,7 +209,8 @@ namespace AsterNET.FastAGI
 
         #endregion
 
-        public AsteriskFastAGI(string ipaddress = Common.AGI_BIND_ADDRESS,
+        public AsteriskFastAGI( 
+            string ipaddress = Common.AGI_BIND_ADDRESS,
             int port = Common.AGI_BIND_PORT,
             int poolSize = Common.AGI_POOL_SIZE,
             bool sc511_CausesException = false,
@@ -226,9 +231,9 @@ namespace AsterNET.FastAGI
             stopped = false;
             mappingStrategy.Load();
             pool = new ThreadPool("AGIServer", poolSize);
-#if LOGGER
-            logger.Info("Thread pool started.");
-#endif
+
+            logger?.LogInformation("Thread pool started.");
+
             try
             {
                 var ipAddress = IPAddress.Parse(address);
@@ -236,12 +241,11 @@ namespace AsterNET.FastAGI
             }
             catch (Exception ex)
             {
-#if LOGGER
+
                 if (ex is IOException)
                 {
-                    logger.Error("Unable start AGI Server: cannot to bind to " + address + ":" + port + ".", ex);
+                    logger.LogError(ex, "Unable start AGI Server: cannot to bind to " + address + ":" + port + ".");
                 }
-#endif
 
                 if (serverSocket != null)
                 {
@@ -250,25 +254,23 @@ namespace AsterNET.FastAGI
                 }
 
                 pool.Shutdown();
-#if LOGGER
-                logger.Info("AGI Server shut down.");
-#endif
+
+                logger.LogInformation("AGI Server shut down.");
 
                 throw ex;
             }
 
-#if LOGGER
-            logger.Info("Listening on " + address + ":" + port + ".");
-#endif
+
+            logger.LogInformation("Listening on " + address + ":" + port + ".");
+
 
             try
             {
                 SocketConnection socket;
                 while ((socket = serverSocket.Accept()) != null)
-                {
-#if LOGGER
-                    logger.Info("Received connection.");
-#endif
+                {                    
+                    logger.LogInformation("Received connection.");
+
                     var connectionHandler = new AGIConnectionHandler(socket, mappingStrategy, SC511_CAUSES_EXCEPTION, SCHANGUP_CAUSES_EXCEPTION);
                     pool.AddJob(connectionHandler);
                 }
@@ -277,9 +279,7 @@ namespace AsterNET.FastAGI
             {
                 if (!stopped)
                 {
-#if LOGGER
-                    logger.Error("IOException while waiting for connections (1).", ex);
-#endif
+                    logger.LogError(ex, "IOException while waiting for connections (1).");
                     throw ex;
                 }
             }
@@ -291,20 +291,16 @@ namespace AsterNET.FastAGI
                     {
                         serverSocket.Close();
                     }
-#if LOGGER
                     catch (IOException ex)
                     {
-                        logger.Error("IOException while waiting for connections (2).", ex);
+                        logger.LogError("IOException while waiting for connections (2).", ex);
                     }
-#else
 					catch { }
-#endif
                 }
                 serverSocket = null;
                 pool.Shutdown();
-#if LOGGER
-                logger.Info("AGI Server shut down.");
-#endif
+
+                logger.LogInformation("AGI Server shut down.");
             }
         }
 
