@@ -1,5 +1,7 @@
+using Sufficit.Asterisk;
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace AsterNET.Manager.Event
 {
@@ -20,12 +22,14 @@ namespace AsterNET.Manager.Event
         /// Store all unknown (without setter) keys from manager event.<br/>
         /// Use in default Parse method <see cref="ManagerEvent.Parse(string, string)"/>
         /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Dictionary<string, string> Attributes { get; set; }
 
         /// <summary>
         /// Get/Set the name of the channel.
         /// </summary>
-        public string Channel { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public AsteriskChannel Channel { get; set; }
 
         /// <summary>
         /// Get/Set the point in time this event was received from the Asterisk server.<br/>
@@ -40,6 +44,7 @@ namespace AsterNET.Manager.Event
         /// Multiple privileges are separated by comma.<br/>
         /// Note: This property is not available from Asterisk 1.0 servers.
         /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Privilege { get; set; }
 
         /// <summary>
@@ -47,11 +52,13 @@ namespace AsterNET.Manager.Event
         /// This should match the server name specified in your config file's "host" entry.
         /// If you do not specify a server, the proxy will pick the first one it finds -- fine in single-server configurations.
         /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Server { get; set; }
 
         /// <summary>
         /// The ManagerConnection the Event was sourced from.
         /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public ManagerConnection Source { get; set; }
 
         /// <summary>
@@ -60,11 +67,13 @@ namespace AsterNET.Manager.Event
         /// if enabled in manager.conf by setting timestampevents = yes.
         /// In contains the time the event was generated in seconds since the epoch.
         /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public double Timestamp { get; set; }
 
         /// <summary>
         /// Get/Set the unique id of the channel.
         /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string UniqueId { get; set; }
 
         #endregion

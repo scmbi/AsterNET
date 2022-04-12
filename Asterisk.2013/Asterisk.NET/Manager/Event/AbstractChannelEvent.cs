@@ -1,3 +1,6 @@
+using Sufficit.Asterisk;
+using Sufficit.Asterisk.Manager;
+
 namespace AsterNET.Manager.Event
 {
 	/// <summary>
@@ -5,7 +8,6 @@ namespace AsterNET.Manager.Event
 	/// </summary>
 	public abstract class AbstractChannelEvent : ManagerEvent
 	{
-		private string channelState;
 		private string channelStateDesc;
 		private string callerId;
 		private string callerIdNum;
@@ -18,11 +20,7 @@ namespace AsterNET.Manager.Event
 		/// <summary>
 		/// Get/Set Channel State
 		/// </summary>
-		public string ChannelState
-		{
-			get { return this.channelState; }
-			set { this.channelState = value; }
-		}
+		public AsteriskChannelState ChannelState { get; set; }
 
 		/// <summary>
 		/// Get/Set Channel State Description

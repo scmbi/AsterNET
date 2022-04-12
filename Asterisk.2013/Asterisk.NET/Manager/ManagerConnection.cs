@@ -10,6 +10,8 @@ using System.Collections.Generic;
 using System.Reflection;
 using AsterNET.IO;
 using System.Threading.Tasks;
+using Sufficit.Asterisk.Manager;
+using Sufficit.Asterisk;
 
 namespace AsterNET.Manager
 {
@@ -1057,57 +1059,57 @@ namespace AsterNET.Manager
 							else if (version.StartsWith("1.6."))
 							{
 								VAR_DELIMITER = new char[] { '|' };
-								return Manager.AsteriskVersion.ASTERISK_1_6;
+								return AsteriskVersion.ASTERISK_1_6;
 							}
 							else if (version.StartsWith("1.8."))
 							{
 								VAR_DELIMITER = new char[] { '|' };
-								return Manager.AsteriskVersion.ASTERISK_1_8;
+								return AsteriskVersion.ASTERISK_1_8;
 							}
 							else if (version.StartsWith("10."))
 							{
 								VAR_DELIMITER = new char[] { '|' };
-								return Manager.AsteriskVersion.ASTERISK_10;
+								return AsteriskVersion.ASTERISK_10;
 							}
 							else if (version.StartsWith("11."))
 							{
 								VAR_DELIMITER = new char[] { ',' };
-								return Manager.AsteriskVersion.ASTERISK_11;
+								return AsteriskVersion.ASTERISK_11;
 							}
 							else if (version.StartsWith("12."))
 							{
 								VAR_DELIMITER = new char[] { ',' };
-								return Manager.AsteriskVersion.ASTERISK_12;
+								return AsteriskVersion.ASTERISK_12;
 							}
 							else if (version.StartsWith("13."))
 							{
 								VAR_DELIMITER = new char[] { ',' };
-								return Manager.AsteriskVersion.ASTERISK_13;
+								return AsteriskVersion.ASTERISK_13;
 							}
 							else if (version.StartsWith("14."))
 							{
 								VAR_DELIMITER = new char[] { ',' };
-								return Manager.AsteriskVersion.ASTERISK_14;
+                                return AsteriskVersion.ASTERISK_14;
 							}
 							else if (version.StartsWith("15."))
 							{
 								VAR_DELIMITER = new char[] { ',' };
-								return Manager.AsteriskVersion.ASTERISK_15;
+								return AsteriskVersion.ASTERISK_15;
 							}
 							else if (version.StartsWith("16."))
 							{
 								VAR_DELIMITER = new char[] { ',' };
-								return Manager.AsteriskVersion.ASTERISK_16;
+								return AsteriskVersion.ASTERISK_16;
 							}
 							else if (version.StartsWith("17."))
 							{
 								VAR_DELIMITER = new char[] { ',' };
-								return Manager.AsteriskVersion.ASTERISK_17;
+								return AsteriskVersion.ASTERISK_17;
 							}
 							else if (version.IndexOf('.') >= 2)
 							{
 								VAR_DELIMITER = new char[] { ',' };
-								return Manager.AsteriskVersion.ASTERISK_Newer;
+								return AsteriskVersion.ASTERISK_Newer;
 							}
 							else
 								throw new ManagerException("Unknown Asterisk version " + version);

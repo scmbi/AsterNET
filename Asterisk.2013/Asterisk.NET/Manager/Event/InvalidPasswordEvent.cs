@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Sufficit.Asterisk;
+using System;
 
 namespace AsterNET.Manager.Event
 {
@@ -15,7 +16,7 @@ namespace AsterNET.Manager.Event
         {
         }
 
-        public SeverityEnum Severity { get; set; }
+        public Severity Severity { get; set; }
         public string AccountId { get; set; }
         public string RemoteAddress { get; set; }
         public string Challenge { get; set; }

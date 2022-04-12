@@ -1,4 +1,7 @@
-﻿namespace AsterNET.Manager.Event
+﻿using Sufficit.Asterisk;
+using Sufficit.Asterisk.Events;
+
+namespace AsterNET.Manager.Event
 {
 
     /// <summary>
@@ -13,7 +16,7 @@
         {
         }
 
-        public SeverityEnum Severity { get; set; }
+        public Severity Severity { get; set; }
         public string AccountId { get; set; }
         public string RemoteAddress { get; set; }
         public bool UsingPassword { get; set; }

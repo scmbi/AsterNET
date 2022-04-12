@@ -1,3 +1,6 @@
+using Sufficit.Asterisk;
+using Sufficit.Asterisk.Events;
+
 namespace AsterNET.Manager.Event
 {
 	
@@ -24,7 +27,7 @@ namespace AsterNET.Manager.Event
 		/// "SIP",
 		/// "IAX2
 		/// </summary>
-		public ChannelTypeEnum ChannelType { get; set; }
+		public AsteriskChannelProtocol Protocol { get; set; }
 
 		/// <summary>
 		/// Returns the name of the peer that registered. The peer's name starts with "IAX2/" if it is an
