@@ -7,6 +7,9 @@ using System.Text;
 using AsterNET.Manager;
 using AsterNET.Manager.Event;
 using AsterNET.Manager.Response;
+using Sufficit.Asterisk;
+using Sufficit.Asterisk.Manager;
+using Sufficit.Asterisk.Manager.Events;
 
 namespace AsterNET
 {
@@ -749,24 +752,24 @@ namespace AsterNET
         /// <param name="source">source attribute for the event</param>
         /// <param name="list"></param>
         /// <param name="attributes">map containing event attributes</param>
-        /// <returns>a concrete instance of ManagerEvent or null if no event class was registered for the event type.</returns>
-        internal static ManagerEvent BuildEvent(IDictionary<int, ConstructorInfo> list, ManagerConnection source,
+        /// <returns>a concrete instance of IManagerEvent or null if no event class was registered for the event type.</returns>
+        internal static IManagerEvent BuildEvent(IDictionary<int, ConstructorInfo> list, ManagerConnection source,
             Dictionary<string, string> attributes)
         {
-            ManagerEvent e;
+            IManagerEvent e;
             string eventType;
             ConstructorInfo constructor = null;
             int hash, hashEvent;
 
-            eventType = attributes["event"].ToLower(CultureInfo);
+            eventType = attributes["event"].Trim().ToLowerInvariant();            
             // Remove Event tail from event name (ex. JabberEvent)
             if (eventType.EndsWith("event"))
-                eventType = eventType.Substring(0, eventType.Length - 5);
+                eventType = eventType.Trim().ToLowerInvariant().Substring(0, eventType.Length - 5);
             hashEvent = eventType.GetHashCode();
 
             if (eventType == "user")
             {
-                string userevent = attributes["userevent"].ToLower(CultureInfo);
+                string userevent = attributes["userevent"].Trim().ToLowerInvariant();
                 hash = string.Concat(eventType, userevent).GetHashCode();
                 if (list.ContainsKey(hash))
                     constructor = list[hash];
@@ -777,12 +780,14 @@ namespace AsterNET
                 constructor = list[hashEvent];
 
             if (constructor == null)
+            {
                 e = new UnknownEvent(source);
+            }
             else
             {
                 try
                 {
-                    e = (ManagerEvent) constructor.Invoke(new object[] {source});
+                    e = (IManagerEvent)constructor.Invoke(new object[] { source });
                 }
                 catch (Exception ex)
                 {
@@ -819,16 +824,18 @@ namespace AsterNET
         #region RegisterBuiltinEventClasses(Hashtable list) 
 
         /// <summary>
-        ///     Register buildin Event classes
+        ///     Register buildin Event classes or any executing assembly
         /// </summary>
         /// <param name="list"></param>
         internal static void RegisterBuiltinEventClasses(Dictionary<int, ConstructorInfo> list)
         {
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            Type manager = typeof (ManagerEvent);
-            foreach (var type in assembly.GetTypes())
-                if (type.IsPublic && !type.IsAbstract && manager.IsAssignableFrom(type))
-                    RegisterEventClass(list, type);
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                Type manager = typeof(IManagerEvent);
+                foreach (var type in assembly.GetTypes())
+                    if (type.IsPublic && !type.IsAbstract && manager.IsAssignableFrom(type))
+                        RegisterEventClass(list, type);
+            }
         }
 
         #endregion
@@ -838,8 +845,8 @@ namespace AsterNET
         internal static void RegisterEventClass(Dictionary<int, ConstructorInfo> list, Type clazz)
         {
             // Ignore all abstract classes
-            // Class not derived from ManagerEvent
-            if (clazz.IsAbstract || !typeof (ManagerEvent).IsAssignableFrom(clazz))
+            // Class not derived from IManagerEvent
+            if (clazz.IsAbstract || !typeof (IManagerEvent).IsAssignableFrom(clazz))
                 return;
 
             string eventType = clazz.Name.ToLower(CultureInfo);
@@ -858,8 +865,12 @@ namespace AsterNET
 
             ConstructorInfo constructor = null;
             try
-            {
-                constructor = clazz.GetConstructor(new[] {typeof (ManagerConnection)});
+            {                    
+                constructor = clazz.GetConstructor(new[] { typeof(IManagerConnection) });
+                if (constructor == null)
+                {
+                    constructor = clazz.GetConstructor(new[] { typeof(ManagerConnection) });
+                }             
             }
             catch (MethodAccessException ex)
             {
@@ -876,7 +887,7 @@ namespace AsterNET
 
         #region RegisterEventHandler(Dictionary<int, int> list, int index, Type eventType) 
 
-        internal static void RegisterEventHandler(Dictionary<int, Func<ManagerEvent, bool>> list, Type eventType, Func<ManagerEvent, bool> action)
+        internal static void RegisterEventHandler(Dictionary<int, Func<IManagerEvent, bool>> list, Type eventType, Func<IManagerEvent, bool> action)
         {
             var eventTypeName = eventType.Name;
             int eventHash = eventTypeName.GetHashCode();

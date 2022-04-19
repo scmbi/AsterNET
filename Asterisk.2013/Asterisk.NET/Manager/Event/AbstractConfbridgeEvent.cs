@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Sufficit.Asterisk.Manager;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,7 +18,7 @@ namespace AsterNET.Manager.Event
         : base()
         { }
 
-        public AbstractConfbridgeEvent(ManagerConnection source)
+        public AbstractConfbridgeEvent(IManagerConnection source)
 			: base(source)
 		{
 		}

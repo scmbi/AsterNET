@@ -1,3 +1,5 @@
+using Sufficit.Asterisk.Manager;
+
 namespace AsterNET.Manager.Event
 {
     /// <summary>
@@ -6,7 +8,7 @@ namespace AsterNET.Manager.Event
     /// </summary>
     public class ConnectEvent : ConnectionStateEvent
     {
-        public ConnectEvent(ManagerConnection source)
+        public ConnectEvent(IManagerConnection source)
             : base(source)
         {
         }

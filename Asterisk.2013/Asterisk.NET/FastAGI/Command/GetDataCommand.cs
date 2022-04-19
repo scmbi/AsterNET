@@ -1,3 +1,4 @@
+using Sufficit.Asterisk;
 using System;
 namespace AsterNET.FastAGI.Command
 {

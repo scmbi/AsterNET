@@ -1,3 +1,5 @@
+using Sufficit.Asterisk.Manager;
+
 namespace AsterNET.Manager.Event
 {
 	/// <summary>
@@ -15,7 +17,7 @@ namespace AsterNET.Manager.Event
 			set { this.reconnect = value; }
 		}
 
-		public ConnectionStateEvent(ManagerConnection source)
+		public ConnectionStateEvent(IManagerConnection source)
 			: base(source)
 		{ }
 	}

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Resources;
 using System.Reflection;
+using Sufficit.Asterisk;
 
 namespace AsterNET.FastAGI.MappingStrategies
 {

@@ -1,12 +1,13 @@
 using Sufficit.Asterisk;
 using Sufficit.Asterisk.Manager;
+using Sufficit.Asterisk.Manager.Events;
 
 namespace AsterNET.Manager.Event
 {
 	/// <summary>
 	/// Abstract base class providing common properties for HangupEvent, NewChannelEvent and NewStateEvent.
 	/// </summary>
-	public abstract class AbstractChannelEvent : ManagerEvent
+	public abstract class AbstractChannelEvent : ManagerEvent, IChannelEvent
 	{
 		private string channelStateDesc;
 		private string callerId;

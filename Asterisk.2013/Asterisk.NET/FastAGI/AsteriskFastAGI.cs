@@ -6,6 +6,7 @@ using AsterNET.FastAGI.MappingStrategies;
 using AsterNET.IO;
 using AsterNET.Util;
 using Microsoft.Extensions.Logging;
+using Sufficit.Asterisk;
 
 namespace AsterNET.FastAGI
 {

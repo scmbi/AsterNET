@@ -1,3 +1,4 @@
+using Sufficit.Asterisk;
 using System.Collections.Generic;
 
 namespace AsterNET.Manager.Response

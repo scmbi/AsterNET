@@ -1,4 +1,5 @@
 using System;
+using Sufficit.Asterisk.Manager.Events;
 
 namespace AsterNET.Manager.Event
 {

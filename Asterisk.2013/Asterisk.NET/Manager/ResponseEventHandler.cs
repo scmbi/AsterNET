@@ -2,6 +2,7 @@ using System.Threading;
 using AsterNET.Manager.Action;
 using AsterNET.Manager.Event;
 using AsterNET.Manager.Response;
+using Sufficit.Asterisk.Manager.Events;
 
 namespace AsterNET.Manager
 {
@@ -85,8 +86,8 @@ namespace AsterNET.Manager
         /// <summary>
         ///     Handles the event.
         /// </summary>
-        /// <param name="e"><see cref="ManagerEvent"/></param>
-        public void HandleEvent(ManagerEvent e)
+        /// <param name="e"><see cref="IManagerEvent"/></param>
+        public void HandleEvent(IManagerEvent e)
         {
             // should always be a ResponseEvent, anyway...
             if (e is ResponseEvent)

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Linq;
+using Sufficit.Asterisk;
 
 namespace AsterNET.FastAGI
 {

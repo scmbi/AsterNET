@@ -1,3 +1,5 @@
+using Sufficit.Asterisk.Manager.Events;
+
 namespace AsterNET.Manager.Event
 {
     /// <summary>
@@ -6,7 +8,7 @@ namespace AsterNET.Manager.Event
     /// </summary>
     /// <seealso cref="Manager.Action.StatusAction"/>
     /// <seealso cref="Manager.Event.StatusEvent"/>
-    public class StatusCompleteEvent : ResponseEvent
+    public class StatusCompleteEvent : ResponseEvent, IManagerEvent
 	{
 		private int items;
 

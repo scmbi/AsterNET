@@ -1,4 +1,6 @@
 using Sufficit.Asterisk;
+using Sufficit.Asterisk.Manager;
+using Sufficit.Asterisk.Manager.Events;
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
@@ -14,7 +16,7 @@ namespace AsterNET.Manager.Event
     /// Channel / Privilege / UniqueId are not common to all events and should be moved to
     /// derived event classes.
     /// </summary>
-    public abstract class ManagerEvent : EventArgs, IParseSupport
+    public abstract class ManagerEvent : IManagerEvent, IParseSupport
     {
         #region Common Event Properties
 
@@ -28,8 +30,8 @@ namespace AsterNET.Manager.Event
         /// <summary>
         /// Get/Set the name of the channel.
         /// </summary>
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public AsteriskChannel Channel { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public string Channel { get; set; }
 
         /// <summary>
         /// Get/Set the point in time this event was received from the Asterisk server.<br/>
@@ -59,7 +61,7 @@ namespace AsterNET.Manager.Event
         /// The ManagerConnection the Event was sourced from.
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-        public ManagerConnection Source { get; set; }
+        public IManagerConnection Source { get; set; }
 
         /// <summary>
         /// Returns the timestamp for this event.<br/>
@@ -79,6 +81,7 @@ namespace AsterNET.Manager.Event
         #endregion
 
         #region Constructors 
+
         /// <summary>
         /// Creates a new ManagerEvent. Source already set.
         /// </summary>
@@ -91,7 +94,7 @@ namespace AsterNET.Manager.Event
         /// Creates a new ManagerEvent
         /// </summary>
         /// <param name="source">ManagerConnection passed through in the event.</param>
-		public ManagerEvent(ManagerConnection source)
+		public ManagerEvent(IManagerConnection source)
             : this()
         {
             this.Source = source;

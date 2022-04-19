@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using AsterNET.Manager.Event;
 using AsterNET.Manager.Response;
+using Sufficit.Asterisk.Manager.Events;
 
 namespace AsterNET.Manager
 {

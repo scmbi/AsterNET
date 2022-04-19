@@ -1,3 +1,4 @@
+using Sufficit.Asterisk.Manager;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -12,7 +13,7 @@ namespace AsterNET.Manager.Event
 		/// <summary>
 		/// Creates a new UnknownEvent.
 		/// </summary>
-		public UnknownEvent(ManagerConnection source)
+		public UnknownEvent(IManagerConnection source)
 			: base(source)
 		{
 		}

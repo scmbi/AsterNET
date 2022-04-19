@@ -1,3 +1,4 @@
+using Sufficit.Asterisk;
 using System;
 using System.Collections.Generic;
 
@@ -21,7 +22,7 @@ namespace AsterNET.Manager.Response
         private string server;
         private string uniqueId;
 
-        #region Constructor - ManagerEvent() 
+        #region Constructor - ManagerResponse() 
 
         public ManagerResponse()
         {

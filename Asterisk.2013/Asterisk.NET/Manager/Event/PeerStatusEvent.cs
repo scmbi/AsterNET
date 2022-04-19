@@ -1,5 +1,10 @@
 using Sufficit.Asterisk;
 using Sufficit.Asterisk.Events;
+using Sufficit.Asterisk.Manager;
+using Sufficit.Asterisk.Manager.Events;
+using System;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace AsterNET.Manager.Event
 {
@@ -8,26 +13,82 @@ namespace AsterNET.Manager.Event
 	/// A PeerStatusEvent is triggered when a SIP or IAX client attempts to registrer at this asterisk server.<br/>
 	/// This event is implemented in channels/chan_iax2.c and channels/chan_sip.c
 	/// </summary>
-	public class PeerStatusEvent : ManagerEvent, PeerStatusEventInterface
+	public class PeerStatusEvent : IManagerEvent, PeerStatusEventInterface
 	{
+        #region IMPLEMENT INTERFACE PARSE SUPPORT
+
+        public Dictionary<string, string> Attributes { get; set; }
+
+		/// <summary>
+		/// Unknown properties parser
+		/// </summary>
+		/// <param name="key">key name</param>
+		/// <param name="value">key value</param>
+		/// <returns>true - value parsed, false - can't parse value</returns>
+		public virtual bool Parse(string key, string value)
+		{
+			if (Attributes == null)
+			{
+				Attributes = new Dictionary<string, string>();
+			}
+
+			if (Attributes.ContainsKey(key))
+			{
+				Attributes[key] += string.Concat(Common.LINE_SEPARATOR, value); // Key already presents, add with delimiter
+			}
+			else
+			{
+				Attributes.Add(key, value);
+			}
+
+			return true;
+		}
+
+		/// <summary>
+		/// Unknown properties parser.
+		/// </summary>
+		/// <param name="attributes">dictionary</param>
+		/// <returns>updated dictionary</returns>
+		public virtual Dictionary<string, string> ParseSpecial(Dictionary<string, string> attributes)
+		{
+			return attributes;
+		}
+
+		#endregion
+
+		#region IMPLEMENT INTERFACE MANAGER EVENT
+
+		string IManagerEvent.Privilege => "system";
+
+		public string Server { get; set; }
+
+		public double Timestamp { get; set; }
+
+		public string UniqueId { get; set; }
+
+		[JsonIgnore]
+		public IManagerConnection Source { get; set; }
+
+
+		#endregion
+
+		public PeerStatusEvent(IManagerConnection connection)
+		{
+			this.DateReceived = DateTime.Now;
+			Source = connection;
+		}
+
+		public string Channel { get; set; }
+
+		public DateTime DateReceived { get; set; }
+
+
 		public const PrivilegeEnum Privilege = PrivilegeEnum.system;
 
 		private string address;
 		private string peer;
 		private string cause;
 		private int time;
-
-		public PeerStatusEvent(ManagerConnection source)
-			: base(source)
-		{
-		}
-
-		/// <summary>
-		/// Channel type
-		/// "SIP",
-		/// "IAX2
-		/// </summary>
-		public AsteriskChannelProtocol Protocol { get; set; }
 
 		/// <summary>
 		/// Returns the name of the peer that registered. The peer's name starts with "IAX2/" if it is an
@@ -77,5 +138,5 @@ namespace AsterNET.Manager.Event
 			get { return this.address ?? string.Empty; }
 			set { this.address = value; }
 		}
-	}
+    }
 }
