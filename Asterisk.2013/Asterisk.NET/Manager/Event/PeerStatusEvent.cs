@@ -114,7 +114,7 @@ namespace AsterNET.Manager.Event
 		/// </ul>
 		/// </summary>
 		/// <summary> Sets the registration state.</summary>
-		public PeerStatusEnum PeerStatus { get; set; }
+		public PeerStatus PeerStatus { get; set; }
 
 
 		/// <summary>
