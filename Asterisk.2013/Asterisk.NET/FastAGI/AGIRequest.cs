@@ -5,6 +5,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Linq;
 using Sufficit.Asterisk;
+using AsterNET.Helpers;
 
 namespace AsterNET.FastAGI
 {

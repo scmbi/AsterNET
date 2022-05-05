@@ -1,4 +1,5 @@
 using System.Text;
+using AsterNET.Helpers;
 
 namespace AsterNET.FastAGI.Command
 {

@@ -3,10 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
+using AsterNET.Helpers;
 using AsterNET.IO;
 using AsterNET.Manager.Action;
 using AsterNET.Manager.Event;
 using AsterNET.Manager.Response;
+using Sufficit.Asterisk.Manager.Events;
 
 namespace AsterNET.Manager
 {
@@ -215,7 +217,7 @@ namespace AsterNET.Manager
 							else if (disconnect)
 							{
 								disconnect = false;
-								mrConnector.DispatchEvent(new DisconnectEvent(mrConnector));
+								mrConnector.DispatchEvent(new DisconnectEvent());
 							}
 						}
 						if (lineQueue.Count == 0)
@@ -233,7 +235,7 @@ namespace AsterNET.Manager
 									{
 										// If one PingInterval from Ping without Pong then send Disconnect event
 										mrConnector.RemoveResponseHandler(pingHandler);
-										mrConnector.DispatchEvent(new DisconnectEvent(mrConnector));
+										mrConnector.DispatchEvent(new DisconnectEvent());
 									}
 									pingHandler.Free();
 									pingHandler = null;
@@ -302,7 +304,7 @@ namespace AsterNET.Manager
 							if (wait4identiier && line.StartsWith("Asterisk Call Manager"))
 							{
 								wait4identiier = false;
-								var connectEvent = new ConnectEvent(mrConnector);
+								var connectEvent = new ConnectEvent();
 								connectEvent.ProtocolIdentifier = line;
 								mrConnector.DispatchEvent(connectEvent);
 								continue;
@@ -354,7 +356,7 @@ namespace AsterNET.Manager
 #if LOGGER
 				logger.Info("No die, any error - send disconnect.");
 #endif
-				mrConnector.DispatchEvent(new DisconnectEvent(mrConnector));
+				mrConnector.DispatchEvent(new DisconnectEvent());
 			}
 		}
 

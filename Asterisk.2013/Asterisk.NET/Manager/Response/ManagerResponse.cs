@@ -1,6 +1,9 @@
 using Sufficit.Asterisk;
+using Sufficit.Asterisk.Manager.Events;
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using AsterNET.Helpers;
 
 namespace AsterNET.Manager.Response
 {
@@ -11,26 +14,15 @@ namespace AsterNET.Manager.Response
     ///     action id attribute that will match the action id of the corresponding
     ///     action.
     /// </summary>
-    public class ManagerResponse : IParseSupport
+    public class ManagerResponse : ManagerEvent, IParseSupport
     {
-        private string actionId;
-        protected Dictionary<string, string> attributes;
-        private DateTime dateReceived;
-        private string message;
-        private string privilege;
-        private string response;
-        private string server;
-        private string uniqueId;
+        public object GetSetter() => this;
 
         #region Constructor - ManagerResponse() 
 
-        public ManagerResponse()
-        {
-            this.dateReceived = DateTime.Now;
-        }
+        public ManagerResponse() { }
 
-        public ManagerResponse(Dictionary<string, string> attributes)
-            : this()
+        public ManagerResponse(Dictionary<string, string> attributes) : this()
         {
             Helper.SetAttributes(this, attributes);
         }
@@ -43,10 +35,8 @@ namespace AsterNET.Manager.Response
         ///     Store all unknown (without setter) keys from manager event.<br />
         ///     Use in default Parse method <see cref="Parse" />.
         /// </summary>
-        public Dictionary<string, string> Attributes
-        {
-            get { return attributes; }
-        }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public Dictionary<string, string>? Attributes { get; internal set; }
 
         #endregion
 
@@ -57,40 +47,8 @@ namespace AsterNET.Manager.Response
         ///     This should match the server name specified in your config file's "host" entry.
         ///     If you do not specify a server, the proxy will pick the first one it finds -- fine in single-server configurations.
         /// </summary>
-        public string Server
-        {
-            get { return this.server; }
-            set { this.server = value; }
-        }
-
-        #endregion
-
-        #region DateReceived 
-
-        /// <summary>
-        ///     Get/Set the point in time this response was received from the asterisk server.
-        /// </summary>
-        public DateTime DateReceived
-        {
-            get { return dateReceived; }
-            set { this.dateReceived = value; }
-        }
-
-        #endregion
-
-        #region Privilege
-
-        /// <summary>
-        ///     Get/Set the AMI authorization class of this event.<br />
-        ///     This is one or more of system, call, log, verbose, command, agent or user.
-        ///     Multiple privileges are separated by comma.<br />
-        ///     Note: This property is not available from Asterisk 1.0 servers.
-        /// </summary>
-        public string Privilege
-        {
-            get { return privilege; }
-            set { this.privilege = value; }
-        }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Server { get; set; }
 
         #endregion
 
@@ -99,11 +57,7 @@ namespace AsterNET.Manager.Response
         /// <summary>
         ///     Get/Set the action id received with this response referencing the action that generated this response.
         /// </summary>
-        public string ActionId
-        {
-            get { return actionId; }
-            set { this.actionId = value; }
-        }
+        public string ActionId { get; set; }
 
         #endregion
 
@@ -113,11 +67,7 @@ namespace AsterNET.Manager.Response
         ///     Get/Set the message received with this response.<br />
         ///     The content depends on the action that generated this response.
         /// </summary>
-        public string Message
-        {
-            get { return message; }
-            set { this.message = value; }
-        }
+        public string Message { get; set; }
 
         #endregion
 
@@ -127,11 +77,7 @@ namespace AsterNET.Manager.Response
         ///     Get/Set the value of the "Response:" line.<br />
         ///     This typically a String like "Success" or "Error" but depends on the action that generated this response.
         /// </summary>
-        public string Response
-        {
-            get { return response; }
-            set { this.response = value; }
-        }
+        public string Response { get; set; }
 
         #endregion
 
@@ -141,11 +87,8 @@ namespace AsterNET.Manager.Response
         ///     Get/Set the unique id received with this response.<br />
         ///     The unique id is used to keep track of channels created by the action sent, for example an OriginateAction.
         /// </summary>
-        public string UniqueId
-        {
-            get { return uniqueId; }
-            set { this.uniqueId = value; }
-        }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? UniqueId { get; set; }
 
         #endregion
 
@@ -157,7 +100,7 @@ namespace AsterNET.Manager.Response
         /// <returns></returns>
         public bool IsSuccess()
         {
-            return response == "Success";
+            return Response == "Success";
         }
 
         #endregion
@@ -189,7 +132,7 @@ namespace AsterNET.Manager.Response
         /// </returns>
         public string GetAttribute(string key)
         {
-            return (string) attributes[key.ToLower(Helper.CultureInfo)];
+            return (string)Attributes[key.ToLower(Helper.CultureInfo)];
         }
 
         #endregion
@@ -204,14 +147,14 @@ namespace AsterNET.Manager.Response
         /// <returns>true - value parsed, false - can't parse value</returns>
         public virtual bool Parse(string key, string value)
         {
-            if (attributes == null)
-                attributes = new Dictionary<string, string>();
+            if (Attributes == null)
+                Attributes = new Dictionary<string, string>();
 
-            if (attributes.ContainsKey(key))
+            if (Attributes.ContainsKey(key))
                 // Key already presents, add with delimiter
-                attributes[key] += string.Concat(Common.LINE_SEPARATOR, value);
+                Attributes[key] += string.Concat(Common.LINE_SEPARATOR, value);
             else
-                attributes.Add(key, value);
+                Attributes.Add(key, value);
             return true;
         }
 

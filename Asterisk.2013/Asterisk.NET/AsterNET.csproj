@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk" ToolsVersion="Current">
   <PropertyGroup Label="Sufficit Targeting">
     <TargetFramework>netstandard2.0</TargetFramework>
-	  <LangVersion>8</LangVersion>
+	<LangVersion>9</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup Label="Sufficit Versioning">
