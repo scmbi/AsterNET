@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.Net;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using AsterNET.FastAGI.MappingStrategies;
 using AsterNET.IO;
 using AsterNET.Util;
@@ -30,6 +32,7 @@ namespace AsterNET.FastAGI
 
         #region Variables
 
+        private readonly IServiceProvider provider;
         private readonly ILogger logger;
 
         private ServerSocket serverSocket;
@@ -41,7 +44,7 @@ namespace AsterNET.FastAGI
         private readonly string address;
 
         /// <summary>The thread pool that contains the worker threads to process incoming requests.</summary>
-        private ThreadPool pool;
+        private AsterNET.Util.ThreadPool pool;
 
         /// <summary>
         ///     The number of worker threads in the thread pool. This equals the maximum number of concurrent requests this
@@ -112,6 +115,9 @@ namespace AsterNET.FastAGI
 
         #endregion
 
+        // Create an Options Argument for the next version
+        #region CONSTRUCTORS
+
         #region Constructor - AsteriskFastAGI()
 
         /// <summary>
@@ -126,7 +132,6 @@ namespace AsterNET.FastAGI
         }
 
         #endregion
-
         #region Constructor - AsteriskFastAGI()
 
         /// <summary>
@@ -141,7 +146,6 @@ namespace AsterNET.FastAGI
         }
 
         #endregion
-
         #region Constructor - AsteriskFastAGI()
 
         /// <summary>
@@ -168,7 +172,6 @@ namespace AsterNET.FastAGI
         }
 
         #endregion
-
         #region Constructor - AsteriskFastAGI(int port, int poolSize) 
 
         /// <summary>
@@ -188,7 +191,6 @@ namespace AsterNET.FastAGI
         }
 
         #endregion
-
         #region Constructor - AsteriskFastAGI(string address, int port, int poolSize) 
 
         /// <summary>
@@ -225,13 +227,18 @@ namespace AsterNET.FastAGI
             SCHANGUP_CAUSES_EXCEPTION = scHangUp_CausesException;
         }
 
+        #endregion
         #region Start() 
 
-        public void Start()
+        public Task StartAsync(CancellationToken cancellationToken = default) {
+            return Task.Run(() => Start(cancellationToken), cancellationToken);
+        }
+
+        public void Start(CancellationToken cancellationToken = default)
         {
             stopped = false;
             mappingStrategy.Load();
-            pool = new ThreadPool("AGIServer", poolSize);
+            pool = new AsterNET.Util.ThreadPool("AGIServer", poolSize);
 
             logger?.LogInformation("Thread pool started.");
 
@@ -268,7 +275,7 @@ namespace AsterNET.FastAGI
             try
             {
                 SocketConnection socket;
-                while ((socket = serverSocket.Accept()) != null)
+                while ((socket = serverSocket.Accept()) != null || !cancellationToken.IsCancellationRequested)
                 {                    
                     logger.LogInformation("Received connection.");
 
