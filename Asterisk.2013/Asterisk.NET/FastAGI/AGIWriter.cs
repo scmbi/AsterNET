@@ -17,9 +17,16 @@ namespace AsterNET.FastAGI
                 this.socket = socket;
         }
 
-        public void SendCommand(AGICommand command)
+        public void SendCommand(AGICommand command) 
+            => SendCommand(command.BuildCommand() + "\n");        
+
+        /// <summary>
+        /// I Hope you know what u are doing
+        /// </summary>
+        /// <param name="buffer"></param>
+        /// <exception cref="AGINetworkException"></exception>
+        public void SendCommand(string buffer)
         {
-            string buffer = command.BuildCommand() + "\n";
             try
             {
                 socket.Write(buffer);

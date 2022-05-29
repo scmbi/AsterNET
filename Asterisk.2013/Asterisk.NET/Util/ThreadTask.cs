@@ -19,29 +19,32 @@ namespace AsterNET.Util
 		#endregion
 
 		#region ThreadTask(ThreadPool enclosingInstance, string name)
-		public ThreadTask(ThreadPool enclosingInstance, string name)
-			: base(name)
+		public ThreadTask(ThreadPool enclosingInstance, string name) : base(name)
 		{
 			this.threadPool = enclosingInstance;
 		}
 		#endregion
 
 		#region Run()
+
 		/// <summary>
 		/// Get a job from the pool, run it, repeat. If the obtained job is null, we exit the loop and the thread.
 		/// </summary>
-		public override void Run(object obj)
+		public override async void Run(object obj)
 		{
-			CancellationToken cancellationToken = (CancellationToken)obj;
+			CancellationTokenSource cts = obj is CancellationToken cancellationToken 
+				? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken) : new CancellationTokenSource();
 
-			while (!cancellationToken.IsCancellationRequested)
+			while (!cts.IsCancellationRequested)
 			{
 				AGIConnectionHandler job = ThreadPool.obtainJob();
 				if (job == null)
 					break;
-				job.Run(cancellationToken);
+
+				await job.Run(cts.Token);
 			}
 		}
-		#endregion
-	}
+
+        #endregion
+    }
 }

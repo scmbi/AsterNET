@@ -1,8 +1,10 @@
 using System;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using AsterNET.FastAGI.Command;
 using AsterNET.IO;
+using Microsoft.Extensions.Logging;
 
 namespace AsterNET.FastAGI
 {
@@ -14,9 +16,8 @@ namespace AsterNET.FastAGI
     /// </summary>
     public class AGIConnectionHandler
     {
-#if LOGGER
-        private readonly Logger logger = Logger.Instance();
-#endif
+        private readonly ILoggerFactory loggerFactory;
+        private readonly ILogger logger;
         private static readonly LocalDataStoreSlot _channel = Thread.AllocateDataSlot();
         private readonly SocketConnection socket;
         private readonly IMappingStrategy mappingStrategy;
@@ -43,93 +44,96 @@ namespace AsterNET.FastAGI
         /// </summary>
         /// <param name="socket">the socket connection to handle.</param>
         /// <param name="mappingStrategy">the strategy to use to determine which script to run.</param>
-        public AGIConnectionHandler(SocketConnection socket, IMappingStrategy mappingStrategy,
-            bool SC511_CAUSES_EXCEPTION, bool SCHANGUP_CAUSES_EXCEPTION)
+        public AGIConnectionHandler(ILoggerFactory loggerFactory, SocketConnection socket, IMappingStrategy mappingStrategy, bool SC511_CAUSES_EXCEPTION, bool SCHANGUP_CAUSES_EXCEPTION)
         {
+            this.loggerFactory = loggerFactory;
             this.socket = socket;
             this.mappingStrategy = mappingStrategy;
             _SC511_CAUSES_EXCEPTION = SC511_CAUSES_EXCEPTION;
             _SCHANGUP_CAUSES_EXCEPTION = SCHANGUP_CAUSES_EXCEPTION;
+
+            this.logger = loggerFactory.CreateLogger<AGIConnectionHandler>();
+            this.logger.LogTrace("connection handler created");
         }
 
         #endregion
 
-        public void Run(CancellationToken cancellationToken)
+        public async Task Run(CancellationToken cancellationToken)
         {
+            var statusMessage = string.Empty;
             try
             {
                 var reader = new AGIReader(socket);
-                var writer = new AGIWriter(socket);
                 AGIRequest request = reader.ReadRequest();
 
                 //Added check for when the request is empty
                 //eg. telnet to the service 
                 if (request.Request.Count > 0)
                 {
-                    var channel = new AGIChannel(writer, reader, _SC511_CAUSES_EXCEPTION, _SCHANGUP_CAUSES_EXCEPTION);
-                    AGIScript script = mappingStrategy.DetermineScript(request);
-                    Thread.SetData(_channel, channel);
-
+                    var script = mappingStrategy.DetermineScript(request);   
                     if (script != null)
                     {
-#if LOGGER
-                        logger.Info("Begin AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
-#endif
-                        script.Service(request, channel);
-#if LOGGER
-                        logger.Info("End AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
-#endif
+                        var writer = new AGIWriter(socket);
+
+                        var loggerChannel = loggerFactory.CreateLogger<AGIChannel>();
+                        var channel = new AGIChannel(loggerChannel, writer, reader, _SC511_CAUSES_EXCEPTION, _SCHANGUP_CAUSES_EXCEPTION);
+                        Thread.SetData(_channel, channel);
+
+                        logger.LogDebug("Begin AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
+                        await script.ExecuteAsync(request, channel, cancellationToken);
+                        statusMessage = "SUCCESS";
+
+                        logger.LogDebug("End AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
                     }
                     else
                     {
-                        var error = "No script configured for URL '" + request.RequestURL + "' (script '" + request.Script +
-                                    "')";
-                        channel.SendCommand(new VerboseCommand(error, 1));
-#if LOGGER
-                        logger.Error(error);
-#endif
+                        statusMessage = "No script configured for URL '" + request.RequestURL + "' (script '" + request.Script + "')";                                                
+                        throw new FileNotFoundException(statusMessage);
                     }
                 }
                 else
                 {
-                    var error = "A connection was made with no requests";
-#if LOGGER
-                    logger.Error(error);
-#endif
+                    statusMessage = "A connection was made with no requests";
+                    logger.LogInformation(statusMessage);
                 }
             }
-            catch (AGIHangupException) { }
-            catch (IOException) { }
+            catch (AGIHangupException ex) {
+                statusMessage = ex.Message;
+                logger.LogError(ex, $"IDX00004(AGIHangup): { statusMessage }");
+            }
+            catch (IOException ex) {
+                statusMessage = ex.Message;
+                logger.LogError(ex, $"IDX00003(IO): { statusMessage }");
+            }
             catch (AGIException ex)
             {
-#if LOGGER
-                logger.Error("AGIException while handling request", ex);
-#else
-				    throw ex;
-#endif
+                statusMessage = ex.Message;
+                logger.LogError(ex, $"IDX00002(AGI): { statusMessage }");
             }
             catch (Exception ex)
             {
-#if LOGGER
-                logger.Error("Unexpected Exception while handling request", ex);
-#else
-				    throw ex;
-#endif
+                statusMessage = ex.Message;
+                logger.LogError(ex, $"IDX00001(Unexpected): { statusMessage }");
             }
 
             Thread.SetData(_channel, null);
             try
             {
+                if (!string.IsNullOrWhiteSpace(statusMessage))
+                {
+                    SetVariableCommand command = new SetVariableCommand("AGISTATUSMESSAGE", statusMessage);
+                    socket.Write(command.BuildCommand() + "\n");
+                }
+
                 socket.Close();
             }
-            #if LOGGER
-                catch (IOException ex)
-                {
-                    logger.Error("Error on close socket", ex);
-                }
-            #else
-			    catch { }
-            #endif
+            catch (IOException ex)
+            {
+                logger.LogError(ex, $"IDX00000(IOClosing): { ex.Message }");
+            }
+			catch { }
+
+            await Task.CompletedTask;
         }
     }
 }

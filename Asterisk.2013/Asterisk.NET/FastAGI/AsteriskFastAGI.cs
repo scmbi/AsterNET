@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using AsterNET.FastAGI.MappingStrategies;
 using AsterNET.IO;
 using AsterNET.Util;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Sufficit.Asterisk;
 
@@ -162,13 +163,15 @@ namespace AsterNET.FastAGI
         #endregion
         #region Constructor - AsteriskFastAGI(ILogger<AsteriskFastAGI>, IMappingStrategy, string ipaddress, int port, int poolSize) 
 
-        public AsteriskFastAGI(ILogger<AsteriskFastAGI> logger, IMappingStrategy mappingStrategy, string ipaddress, int port, int poolSize)
+        public AsteriskFastAGI(IServiceProvider provider, IMappingStrategy mappingStrategy, string ipaddress, int port, int poolSize)
         {
-            this.logger = logger;
+            this.provider = provider;
             this.address = ipaddress;
             this.port = port;
             this.poolSize = poolSize;
             this.mappingStrategy = mappingStrategy;
+
+            this.logger = provider.GetRequiredService<ILogger<AsteriskFastAGI>>();
         }
 
         #endregion
@@ -271,7 +274,6 @@ namespace AsterNET.FastAGI
 
             logger.LogInformation("Listening on " + address + ":" + port + ".");
 
-
             try
             {
                 SocketConnection socket;
@@ -279,7 +281,8 @@ namespace AsterNET.FastAGI
                 {                    
                     logger.LogInformation("Received connection.");
 
-                    var connectionHandler = new AGIConnectionHandler(socket, mappingStrategy, SC511_CAUSES_EXCEPTION, SCHANGUP_CAUSES_EXCEPTION);
+                    var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+                    var connectionHandler = new AGIConnectionHandler(loggerFactory, socket, mappingStrategy, SC511_CAUSES_EXCEPTION, SCHANGUP_CAUSES_EXCEPTION);
                     pool.AddJob(connectionHandler);
                 }
             }
