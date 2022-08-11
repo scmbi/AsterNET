@@ -80,6 +80,15 @@ namespace AsterNET.Helpers
                 Decimal v = 0;
                 Decimal.TryParse(value, NumberStyles.AllowDecimalPoint, Common.CultureInfoEn, out v);
                 return v;
+            } 
+            else if (IsTypeOrNullableOf<DateTime>(type))
+            {
+                if (type is Nullable && string.IsNullOrWhiteSpace(value))
+                    return null;
+
+                DateTime v = DateTime.MinValue;
+                DateTime.TryParse(value, out v);
+                return v;
             }
             else if (IsEnumOrNullableOf(type))
             {
