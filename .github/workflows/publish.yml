@@ -22,11 +22,11 @@ jobs:
       
     - name: Build
       working-directory: ./Asterisk.2013/Asterisk.NET
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build --configuration Packing --no-restore
       
     - name: Deploy Package 
       working-directory: ./Asterisk.2013/Asterisk.NET
-      run: dotnet pack --configuration Release --output ./nupkgs
+      run: dotnet pack --configuration Packing --output ./nupkgs
     
     - name: Publish to Nuget.Org
       working-directory: ./Asterisk.2013/Asterisk.NET
