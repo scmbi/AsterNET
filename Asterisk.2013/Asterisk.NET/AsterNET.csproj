@@ -28,7 +28,7 @@
   </PropertyGroup>
 
 	<PropertyGroup Label="Sufficit Pacote NUGET">
-		<Name>Sufficit.AsterNETForkr</Name>
+		<Name>Sufficit.AsterNETFork</Name>
 		<PackageId>Sufficit.AsterNETFork</PackageId>
 		<PackageDescription></PackageDescription>
 		<RepositoryUrl>https://github.com/sufficit/sufficit-asternet-fork</RepositoryUrl>
@@ -111,7 +111,7 @@
 		</None>
 	</ItemGroup>
 
-	<ItemGroup Label="Sufficit Dependencies on Packing" Condition=" '$(Configuration)' == 'Packing' ">
+	<ItemGroup Label="Sufficit Dependencies on Packing" Condition=" '$(Configuration)' == 'Packing|Travis' ">
 		<PackageReference Include="Sufficit.Asterisk.Core" Version="1.22.*" />
 	</ItemGroup>
 
