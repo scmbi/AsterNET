@@ -22,7 +22,7 @@ jobs:
       
     - name: Build
       working-directory: ./Asterisk.2013/Asterisk.NET
-      run: dotnet build --configuration Packing --no-restore
+      run: dotnet build --configuration Packing
       
     - name: Deploy Package 
       working-directory: ./Asterisk.2013/Asterisk.NET
