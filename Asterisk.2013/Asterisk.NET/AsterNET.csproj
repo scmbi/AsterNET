@@ -111,11 +111,11 @@
 		</None>
 	</ItemGroup>
 
-	<ItemGroup Label="Sufficit Dependencies on Packing" Condition=" '$(Configuration)' == 'Packing|Travis' ">
+	<ItemGroup Label="Sufficit Dependencies on Packing" Condition=" '$(Configuration)' == 'Packing' Or '$(Configuration)' == 'Travis' ">
 		<PackageReference Include="Sufficit.Asterisk.Core" Version="1.22.*" />
 	</ItemGroup>
 
-	<ItemGroup Label="Sufficit Local Dependencies" Condition=" '$(Configuration)' != 'Packing' ">
+	<ItemGroup Label="Sufficit Local Dependencies" Condition=" '$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Release' ">
 		<ProjectReference Include="..\..\..\sufficit-asterisk-core\src\Sufficit.Asterisk.Core.csproj" />
 	</ItemGroup>
 </Project>
