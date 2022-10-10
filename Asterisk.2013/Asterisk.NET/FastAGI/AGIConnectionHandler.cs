@@ -131,9 +131,9 @@ namespace AsterNET.FastAGI
             {
                 logger.LogError(ex, $"IDX00000(IOClosing): { ex.Message }");
             }
-			catch { }
+			catch (Exception ex) { logger.LogError(ex, $"IDX00005(Unknown): {ex.Message}"); }
 
-            await Task.CompletedTask;
+            // await Task.CompletedTask;
         }
     }
 }

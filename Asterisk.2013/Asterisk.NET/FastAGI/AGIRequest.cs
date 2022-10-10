@@ -534,7 +534,7 @@ namespace AsterNET.FastAGI
         public List<string> ParameterValues(string name)
         {
             List<string> result = new List<string>();
-            if (ParameterMap().Count > 0)
+            if (ParameterMap().Any())
                 if(!string.IsNullOrWhiteSpace(name) && parameterMap.ContainsKey(name.ToLowerInvariant()))
                     result = parameterMap[name.ToLowerInvariant()];
             return result;
