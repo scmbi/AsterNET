@@ -27,16 +27,16 @@ namespace AsterNET.FastAGI.Command
 			get { return varValue; }
 			set { this.varValue = value; }
 		}
-		
-		/// <summary>
-		/// Creates a new GetVariableCommand.
-		/// </summary>
-		/// <param name="variable">the name of the variable to set.</param>
-		/// <param name="value">the value to set.</param>
-		public SetVariableCommand(string name, string value)
+
+        /// <summary>
+        /// Creates a new GetVariableCommand.
+        /// </summary>
+        /// <param name="name">the name of the variable to set.</param>
+        /// <param name="value">the value to set. null to clear value</param>
+        public SetVariableCommand(string name, string? value = default)
 		{
 			this.varName = name;
-			this.varValue = value;
+			this.varValue = value ?? string.Empty;
 		}
 		
 		public override string BuildCommand()

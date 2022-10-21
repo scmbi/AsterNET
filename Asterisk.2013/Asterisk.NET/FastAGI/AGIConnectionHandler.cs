@@ -60,11 +60,11 @@ namespace AsterNET.FastAGI
 
         public async Task Run(CancellationToken cancellationToken)
         {
-            var statusMessage = string.Empty;
+            string? statusMessage;
             try
             {
                 var reader = new AGIReader(socket);
-                AGIRequest request = reader.ReadRequest();
+                var request = reader.ReadRequest();
 
                 //Added check for when the request is empty
                 //eg. telnet to the service 

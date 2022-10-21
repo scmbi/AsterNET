@@ -1,40 +1,55 @@
 ﻿using System;
-using System.Collections;
-using System.Resources;
 using System.Reflection;
 using System.Collections.Generic;
 using System.IO;
-using System.Xml.Serialization;
 using Microsoft.Extensions.DependencyInjection;
+using System.Linq;
 
 namespace AsterNET.FastAGI.MappingStrategies
 {
 
     internal class MappingAssembly
     {
-        public Type ScriptClass { get; set; }
-        public string ClassName => ScriptClass?.ToString();
-        public Assembly LoadedAssembly { get; set; }
+        public MappingAssembly(Type scriptClass, Assembly? loadedAssembly = null)
+        {
+            ScriptClass = scriptClass;
+            LoadedAssembly = loadedAssembly;
+        }
 
-        public AGIScript CreateInstance(IServiceProvider serviceProvider = default)
+        public Type ScriptClass { get; set; }
+        public string ClassName => ScriptClass.ToString();
+
+        public Assembly? LoadedAssembly { get; set; }
+
+        public AGIScript CreateInstance(IServiceProvider? serviceProvider = null)
         {
             if (serviceProvider != null)
             {
                 using var scope = serviceProvider.CreateScope();
-                var script = scope.ServiceProvider.GetService(ScriptClass);
-                if (script != null) return script as AGIScript;
+                var service = scope.ServiceProvider.GetService(ScriptClass);
+                if (service != null && service is AGIScript script) return script;
             }
 
-            AGIScript rtn = null;
-            try
+            object? rtn;
+            if (LoadedAssembly != null)
             {
-                if (LoadedAssembly != null)
-                    rtn = (AGIScript)LoadedAssembly.CreateInstance(ClassName);
-                else
-                    rtn = (AGIScript)Assembly.GetEntryAssembly().CreateInstance(ClassName);
+                rtn = LoadedAssembly.CreateInstance(ClassName);
             }
-            catch { }
-            return rtn;
+            else
+            {
+                var assembly = Assembly.GetEntryAssembly();
+                if (assembly == null) throw new Exception("null assembly on creating instance");
+
+                rtn = assembly.CreateInstance(ClassName);
+            }
+            
+            if(rtn == null)
+                throw new Exception("null object after create instance");
+
+            if (rtn is AGIScript assembled)
+                return assembled;
+            else 
+                throw new Exception("object is not an AGIScript");
         }
     }
 
@@ -46,21 +61,9 @@ namespace AsterNET.FastAGI.MappingStrategies
     /// </summary>
     public class GeneralMappingStrategy : IMappingStrategy
     {
-#if LOGGER
-        private Logger logger = Logger.Instance();
-#endif
-        private readonly IServiceProvider provider;
+        private readonly IServiceProvider? provider;
         private List<ScriptMapping> mappings;
-        private Dictionary<string, MappingAssembly> mapAssemblies;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public GeneralMappingStrategy()
-        {
-            this.mappings = null;
-            this.mapAssemblies = null;
-        }
+        private Dictionary<string, MappingAssembly>? mapAssemblies;
 
         /// <summary>
         /// 
@@ -69,14 +72,12 @@ namespace AsterNET.FastAGI.MappingStrategies
         public GeneralMappingStrategy(List<ScriptMapping> resources)
         {
             this.mappings = resources;
-            this.mapAssemblies = null;
         }
 
         public GeneralMappingStrategy(IServiceProvider provider, List<ScriptMapping> resources)
         {
             this.provider = provider;
             this.mappings = resources;
-            this.mapAssemblies = null;
         }
 
         /// <summary>
@@ -86,18 +87,19 @@ namespace AsterNET.FastAGI.MappingStrategies
         public GeneralMappingStrategy(string xmlFilePath)
         {
             this.mappings = ScriptMapping.LoadMappings(xmlFilePath);
-            this.mapAssemblies = null;
         }
 
-        public AGIScript DetermineScript(AGIRequest request)
+        public AGIScript? DetermineScript(AGIRequest request)
         {
-            AGIScript script = null;
+            AGIScript? script = null;
             if (mapAssemblies != null)
+            {
                 lock (mapAssemblies)
                 {
                     if (mapAssemblies.ContainsKey(request.Script))
                         script = mapAssemblies[request.Script].CreateInstance(provider);
                 }
+            }
             return script;
         }
 
@@ -105,39 +107,36 @@ namespace AsterNET.FastAGI.MappingStrategies
         {
             if (mapAssemblies == null)
                 mapAssemblies = new Dictionary<string, MappingAssembly>();
+
             lock (mapAssemblies)
             {
                 mapAssemblies.Clear();
 
-                if (this.mappings == null || this.mappings.Count == 0)
+                if (mappings == null || !mappings.Any())
                     throw new AGIException("No mappings were added, before Load method called.");
 
-                foreach (var de in this.mappings)
+                foreach (var de in mappings)
                 {
+                    // secure check of null mappings
+                    if (de == null) continue;
+
                     MappingAssembly ma;
-                    if(de.ScriptClass != null)
+                    if (de.ScriptClass != null)
                     {
-                        ma = new MappingAssembly()
-                        {
-                            ScriptClass = de.ScriptClass,
-                            LoadedAssembly = de.ScriptClass.Assembly
-                        };
+                        ma = new MappingAssembly(de.ScriptClass, de.ScriptClass.Assembly);
                         mapAssemblies.Add(de.ScriptName, ma);
                         continue;
                     }
 
-
                     if (mapAssemblies.ContainsKey(de.ScriptName))
-                        throw new AGIException(String.Format("Duplicate mapping name '{0}'", de.ScriptName));
-                    if (!string.IsNullOrEmpty(de.ScriptAssemblyLocation))
+                        throw new AGIException(string.Format("Duplicate mapping name '{0}'", de.ScriptName));
+
+                    if (!string.IsNullOrWhiteSpace(de.ScriptAssemblyLocation))
                     {
                         try
                         {
-                            ma = new MappingAssembly()
-                            {
-                                ScriptClass = de.ScriptClass,
-                                LoadedAssembly = Assembly.LoadFile(de.ScriptAssemblyLocation)
-                            };
+                            var assembly = Assembly.LoadFile(de.ScriptAssemblyLocation);
+                            ma = new MappingAssembly(de.ScriptClass, assembly);
                         }
                         catch (FileNotFoundException fnfex)
                         {
@@ -146,17 +145,11 @@ namespace AsterNET.FastAGI.MappingStrategies
                     }
                     else
                     {
-                        ma = new MappingAssembly()
-                        {
-                            ScriptClass = de.ScriptClass
-                        };
-                        if (de.PreLoadedAssembly != null)
-                            ma.LoadedAssembly = de.PreLoadedAssembly;
+                        ma = new MappingAssembly(de.ScriptClass, de.PreLoadedAssembly);
                     }
 
-                    mapAssemblies.Add(de.ScriptName, ma);
-                }
-                
+                    mapAssemblies.Add(de.ScriptName, ma);                    
+                }                
             }
         }
 

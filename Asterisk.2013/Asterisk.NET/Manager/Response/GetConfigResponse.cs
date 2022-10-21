@@ -14,8 +14,8 @@ namespace AsterNET.Manager.Response
     /// </summary>
     public class GetConfigResponse : ManagerResponse
     {
-        private Dictionary<int, string> categories;
-        private Dictionary<int, Dictionary<int, string>> lines;
+        private Dictionary<int, string>? categories;
+        private Dictionary<int, Dictionary<int, string>>? lines;
 
         /// <summary>
         ///     Get the map of category numbers to category names.
@@ -74,7 +74,7 @@ namespace AsterNET.Manager.Response
         /// <summary>
         ///     Returns the map of line number to line value for a given category.
         /// </summary>
-        /// <param name="categoryNumber">a valid category number from getCategories.</param>
+        /// <param name="category">a valid category number from getCategories.</param>
         /// <returns></returns>
         public Dictionary<int, string> Lines(int category)
         {
