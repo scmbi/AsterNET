@@ -48,7 +48,7 @@ namespace AsterNET.Manager.Event
         /// Use in default Parse method <see cref="ManagerEvent.Parse(string, string)"/>
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public Dictionary<string, string> Attributes { get; }
+        public Dictionary<string, string>? Attributes { get; }
 
         #region Methods
 
@@ -77,9 +77,15 @@ namespace AsterNET.Manager.Event
         /// </summary>
         /// <param name="attributes">dictionary</param>
         /// <returns>updated dictionary</returns>
-        public virtual Dictionary<string, string> ParseSpecial(Dictionary<string, string> attributes)
+        public virtual Dictionary<string, string> ParseSpecial(Dictionary<string, string>? attributes)
         {
-            return attributes;
+            if(attributes == null)
+                return new Dictionary<string, string>();
+
+            foreach(var pair in attributes)            
+                Parse(pair.Key, pair.Value);
+            
+            return Attributes;
         }
 
         #endregion

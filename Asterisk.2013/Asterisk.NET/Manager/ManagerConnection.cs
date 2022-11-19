@@ -30,7 +30,7 @@ namespace AsterNET.Manager
         private string username;
         private string password;
 
-        private SocketConnection mrSocket;
+        private SocketConnection? mrSocket;
         private Thread mrReaderThread;
         private ManagerReader mrReader;
 
@@ -1236,6 +1236,7 @@ namespace AsterNET.Manager
 
         internal void SendToAsterisk(ManagerAction action, string internalActionId)
         {
+            /* // Migrated to delegate, causes exception on same thread
             if (mrSocket == null)
                 throw new SystemException("Unable to send action: socket is null");
 
@@ -1244,6 +1245,7 @@ namespace AsterNET.Manager
                 mrSocket = null; // setting null to force a reconect on next time
                 throw new SystemException("Unable to send action: network stream null or disposed");
             }
+            */
 
             string buffer = BuildAction(action, internalActionId);
 
@@ -1256,10 +1258,19 @@ namespace AsterNET.Manager
         }
 
         private delegate void SendToAsteriskDelegate(string buffer);
-        private SendToAsteriskDelegate sa = null;
+        private SendToAsteriskDelegate? sa = null;
 
         private void sendToAsterisk(string buffer)
         {
+            if (mrSocket == null)
+                throw new SystemException("Unable to send action: socket is null");
+
+            if (mrSocket.NetworkStream == null)
+            {
+                mrSocket = null; // setting null to force a reconect on next time
+                throw new SystemException("Unable to send action: network stream null or disposed");
+            }
+
             lock (lockSocketWrite)
             {
                 mrSocket.Write(buffer);

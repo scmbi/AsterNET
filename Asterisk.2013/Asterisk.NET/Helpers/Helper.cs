@@ -524,7 +524,7 @@ namespace AsterNET.Helpers
 
         #region SetAttributes(object evt, IDictionary attributes) 
 
-        internal static void SetAttributes(IParseSupport o, Dictionary<string, string> attributes, ILogger logger = default)
+        internal static void SetAttributes(IParseSupport o, Dictionary<string, string> attributes, ILogger? logger = default)
         {
             Type dataType;
             object val;
