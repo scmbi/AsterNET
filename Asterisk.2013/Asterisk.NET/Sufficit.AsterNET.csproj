@@ -3,7 +3,11 @@
 
 	<PropertyGroup Label="Sufficit Targeting">
 		<TargetFramework>netstandard2.0</TargetFramework>
-		<LangVersion>10.0</LangVersion>
+		<RootNamespace>AsterNET</RootNamespace>
+		<LangVersion>8.0</LangVersion>
+		
+		<!-- Just enable if LangVersion >= 10 -->
+		<ImplicitUsings>false</ImplicitUsings>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
@@ -76,9 +80,6 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <DocumentationFile>bin\Travis\AsterNET.XML</DocumentationFile>
-  </PropertyGroup>
-  <PropertyGroup>
-    <RootNamespace>AsterNET</RootNamespace>
   </PropertyGroup>
   
   <ItemGroup>
