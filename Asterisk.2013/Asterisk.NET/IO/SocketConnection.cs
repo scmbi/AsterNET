@@ -11,8 +11,9 @@ namespace AsterNET.IO
 	/// </summary>
 	public class SocketConnection
 	{
-		private TcpClient tcpClient;
-		private NetworkStream networkStream;
+		public int ReceiveBufferSize { get; internal set; }
+
+		private NetworkStream? networkStream;
 		private StreamReader reader;
 		private BinaryWriter writer;
 		private Encoding encoding;
@@ -37,10 +38,10 @@ namespace AsterNET.IO
 		/// <param name="port">client port</param>
 		/// <param name="encoding">encoding</param>
 		/// <param name="receiveBufferSize">size of the receive buffer.</param>
-		public SocketConnection(string host, int port,int receiveBufferSize, Encoding encoding)
-			: this (new TcpClient(host, port) {ReceiveBufferSize = receiveBufferSize }, encoding)
+		public SocketConnection(string host, int port, int receiveBufferSize, Encoding encoding)
+			: this (new TcpClient(host, port) { ReceiveBufferSize = receiveBufferSize }, encoding)
 		{
-		}
+        }
 
 		#endregion
 
@@ -52,26 +53,34 @@ namespace AsterNET.IO
 		/// <param name="encoding">encoding</param>
 		internal SocketConnection(TcpClient tcpClient, Encoding encoding)
 		{
-			initial = true;
+            ReceiveBufferSize = tcpClient.ReceiveBufferSize;
+
+            initial = true;
 			this.encoding = encoding;
-			this.tcpClient = tcpClient;
-			this.networkStream = this.tcpClient.GetStream();
+			this.TcpClient = tcpClient;
+			this.networkStream = this.TcpClient.GetStream();
 			this.reader = new StreamReader(this.networkStream, encoding);
 			this.writer = new BinaryWriter(this.networkStream, encoding);
 		}
 		#endregion
 
-		public TcpClient TcpClient
-		{
-			get { return tcpClient; }
-		}
+		public NetworkStream GetStream()
+			=> TcpClient.GetStream();
 
-		public NetworkStream NetworkStream
-		{
-			get { return networkStream; }
-		}
+        public bool IsValid =>
+			TcpClient != null;
 
-		public Encoding Encoding
+		/// <summary>
+		/// Can be null, because it can be disposed from inside
+		/// </summary>
+		protected TcpClient? TcpClient { get; }
+
+        /// <summary>
+        /// Can be null, because it can be disposed from inside
+        /// </summary>
+        protected NetworkStream? NetworkStream { get; }
+
+        public Encoding Encoding
 		{
 			get { return encoding; }
 		}
@@ -82,14 +91,16 @@ namespace AsterNET.IO
 			set { initial = value; }
 		}
 
-		#region IsConnected 
+		#region IsConnected
+
 		/// <summary>
 		/// Returns the connection state of the socket.
 		/// </summary>
 		public bool IsConnected
 		{
-			get { return tcpClient.Connected; }
+			get { return TcpClient?.Connected ?? false; }
 		}
+
 		#endregion
 
 		#region LocalAddress 
@@ -97,7 +108,7 @@ namespace AsterNET.IO
 		{
 			get
 			{
-				return ((IPEndPoint)(tcpClient.Client.LocalEndPoint)).Address;
+				return ((IPEndPoint)(TcpClient.Client.LocalEndPoint)).Address;
 			}
 		}
 		#endregion
@@ -107,7 +118,7 @@ namespace AsterNET.IO
 		{
 			get
 			{
-				return ((IPEndPoint)(tcpClient.Client.LocalEndPoint)).Port;
+				return ((IPEndPoint)(TcpClient.Client.LocalEndPoint)).Port;
 			}
 		}
 		#endregion
@@ -117,7 +128,7 @@ namespace AsterNET.IO
 		{
 			get
 			{
-				return ((IPEndPoint)(tcpClient.Client.RemoteEndPoint)).Address;
+				return ((IPEndPoint)(TcpClient.Client.RemoteEndPoint)).Address;
 			}
 		}
 		#endregion
@@ -127,7 +138,7 @@ namespace AsterNET.IO
 		{
 			get
 			{
-				return ((IPEndPoint)(tcpClient.Client.LocalEndPoint)).Port;
+				return ((IPEndPoint)(TcpClient.Client.LocalEndPoint)).Port;
 			}
 		}
 		#endregion
@@ -200,7 +211,7 @@ namespace AsterNET.IO
 
 		private void onWriteFinished(IAsyncResult ar)
 		{
-			NetworkStream stream = (NetworkStream)ar.AsyncState;
+			var stream = (NetworkStream)ar.AsyncState;
 			stream.EndWrite(ar);
 		}
 		#endregion
@@ -217,9 +228,12 @@ namespace AsterNET.IO
 		{
 			try
 			{
-				tcpClient.Client?.Shutdown(SocketShutdown.Both);
-				tcpClient.Client?.Close();
-				tcpClient.Close();
+				if(TcpClient != null)
+				{
+                    TcpClient.Client?.Shutdown(SocketShutdown.Both);
+                    TcpClient.Client?.Close();
+                    TcpClient.Close();
+                }
 			}
 			catch { }
 		}

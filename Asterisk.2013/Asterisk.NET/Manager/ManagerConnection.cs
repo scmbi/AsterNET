@@ -32,7 +32,7 @@ namespace AsterNET.Manager
 
         private SocketConnection? mrSocket;
         private Thread mrReaderThread;
-        private ManagerReader mrReader;
+        private ManagerReader? mrReader;
 
         private int defaultResponseTimeout = 2000;
         private int defaultEventTimeout = 5000;
@@ -751,32 +751,30 @@ namespace AsterNET.Manager
                     Logger.LogInformation("Connecting to {0}:{1}", hostname, port);
                     try
                     {
-                        if (SocketReceiveBufferSize>0)
+                        if (SocketReceiveBufferSize > 0)
                             mrSocket = new SocketConnection(hostname, port, SocketReceiveBufferSize, socketEncoding);
                         else
-                            mrSocket = new SocketConnection(hostname, port, socketEncoding);                        
+                            mrSocket = new SocketConnection(hostname, port, socketEncoding); 
+                        
                         result = mrSocket.IsConnected;
                     }
                     catch (Exception ex)
                     {
                         Logger.LogInformation("Connect - Exception  : {0}", ex.Message);
-
                         result = false;
                     }
+
                     if (result)
                     {
                         if (mrReader == null)
                         {
                             mrReader = new ManagerReader(this);
-                            mrReaderThread = new Thread(mrReader.Run) { IsBackground = true, Name = "ManagerReader-" + DateTime.Now.Second };
-                            mrReader.Socket = mrSocket;
                             startReader = true;
-                        }
-                        else
-                        {
-                            mrReader.Socket = mrSocket;
-                        }
 
+                            mrReaderThread = new Thread(mrReader.Run) { IsBackground = true, Name = "ManagerReader-" + DateTime.Now.Second };                            
+                        }
+                       
+                        mrReader.Socket = mrSocket;   
                         mrReader.Reinitialize();
                     }
                     else
@@ -1265,10 +1263,10 @@ namespace AsterNET.Manager
             if (mrSocket == null)
                 throw new SystemException("Unable to send action: socket is null");
 
-            if (mrSocket.NetworkStream == null)
+            if (!mrSocket.IsValid)
             {
                 mrSocket = null; // setting null to force a reconect on next time
-                throw new SystemException("Unable to send action: network stream null or disposed");
+                throw new SystemException("Unable to send action: tcpclient or network stream null or disposed");
             }
 
             lock (lockSocketWrite)

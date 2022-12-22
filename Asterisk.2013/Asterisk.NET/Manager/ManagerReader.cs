@@ -22,7 +22,7 @@ namespace AsterNET.Manager
 #endif
 
 		private readonly ManagerConnection mrConnector;
-		private SocketConnection mrSocket;
+		private SocketConnection? mrSocket;
 
 		private bool die;
 		private bool is_logoff;
@@ -59,7 +59,7 @@ namespace AsterNET.Manager
 		/// <summary>
 		///     Sets the socket to use for reading from the asterisk server.
 		/// </summary>
-		internal SocketConnection Socket
+		internal SocketConnection? Socket
 		{
 			set { mrSocket = value; }
 		}
@@ -103,15 +103,15 @@ namespace AsterNET.Manager
 			if (mrReader.die)
 				return;
 
-			SocketConnection mrSocket = mrReader.mrSocket;
-			if (mrSocket == null || mrSocket.TcpClient == null)
+			var mrSocket = mrReader.mrSocket;
+			if (mrSocket == null || !mrSocket.IsValid)
 			{
 				// No socket - it's DISCONNECT !!!
 				disconnect = true;
 				return;
 			}
 
-			NetworkStream nstream = mrSocket.NetworkStream;
+			var nstream = mrSocket.GetStream();
 			if (nstream == null)
 			{
 				// No network stream - it's DISCONNECT !!!
@@ -174,11 +174,11 @@ namespace AsterNET.Manager
 			packet.Clear();
 			commandList.Clear();
 			lineBuffer = string.Empty;
-			lineBytes = new byte[mrSocket.TcpClient.ReceiveBufferSize];
+			lineBytes = new byte[mrSocket.ReceiveBufferSize];
 			lastPacketTime = DateTime.Now;
 			wait4identiier = true;
 			processingCommandResult = false;
-			mrSocket.NetworkStream.BeginRead(lineBytes, 0, lineBytes.Length, mrReaderCallbback, this);
+			mrSocket.GetStream().BeginRead(lineBytes, 0, lineBytes.Length, mrReaderCallbback, this);
 			lastPacketTime = DateTime.Now;
 		}
 
