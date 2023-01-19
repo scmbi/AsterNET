@@ -118,7 +118,7 @@
 	</ItemGroup>
 
 	<ItemGroup Label="Sufficit Dependencies on Packing" Condition=" '$(Configuration)' == 'Packing' Or '$(Configuration)' == 'Travis' ">
-		<PackageReference Include="Sufficit.Asterisk.Core" Version="1.22.*" />
+		<PackageReference Include="Sufficit.Asterisk.Core" Version="1.*" />
 	</ItemGroup>
 
 	<ItemGroup Label="Sufficit Local Dependencies" Condition=" '$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Release' ">
