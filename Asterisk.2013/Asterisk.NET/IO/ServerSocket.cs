@@ -18,7 +18,7 @@ namespace AsterNET.IO
 			tcpListener = new TcpListener(new IPEndPoint(bindAddress, port));
 			tcpListener.Server.DualMode = true;
 			tcpListener.Start();
-		}
+        }
 		
 		public IO.SocketConnection Accept()
 		{

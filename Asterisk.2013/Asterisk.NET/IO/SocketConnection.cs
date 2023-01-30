@@ -20,6 +20,7 @@ namespace AsterNET.IO
 		private bool initial;
 
 		#region Constructor - SocketConnection(string host, int port, int receiveTimeout) 
+
 		/// <summary>
 		/// Consructor
 		/// </summary>
@@ -27,7 +28,7 @@ namespace AsterNET.IO
 		/// <param name="port">client port</param>
 		/// <param name="encoding">encoding</param>
 		public SocketConnection(string host, int port, Encoding encoding)
-			:this(new TcpClient(host, port), encoding)
+			:this(new TcpClientMonitor(host, port), encoding)
 		{
 		}
 
@@ -39,41 +40,57 @@ namespace AsterNET.IO
 		/// <param name="encoding">encoding</param>
 		/// <param name="receiveBufferSize">size of the receive buffer.</param>
 		public SocketConnection(string host, int port, int receiveBufferSize, Encoding encoding)
-			: this (new TcpClient(host, port) { ReceiveBufferSize = receiveBufferSize }, encoding)
+			: this (new TcpClientMonitor(host, port) { ReceiveBufferSize = receiveBufferSize }, encoding)
 		{
         }
 
-		#endregion
+        #endregion
 
-		#region Constructor - SocketConnection(socket) 
-		/// <summary>
-		/// Constructor
-		/// </summary>
-		/// <param name="tcpClient">TCP client from Listener</param>
-		/// <param name="encoding">encoding</param>
-		internal SocketConnection(TcpClient tcpClient, Encoding encoding)
+        #region Constructor - SocketConnection(socket) 
+
+        public SocketConnection(TcpClientMonitor tcpClient, Encoding encoding)
+            : this((TcpClient)tcpClient, encoding)
+        {
+            tcpClient.OnDisposing += TcpClient_OnDisposing;
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="tcpClient">TCP client from Listener</param>
+        /// <param name="encoding">encoding</param>
+        internal SocketConnection(TcpClient tcpClient, Encoding encoding)
 		{
             ReceiveBufferSize = tcpClient.ReceiveBufferSize;
 
             initial = true;
 			this.encoding = encoding;
 			this.TcpClient = tcpClient;
+
 			this.networkStream = this.TcpClient.GetStream();
 			this.reader = new StreamReader(this.networkStream, encoding);
 			this.writer = new BinaryWriter(this.networkStream, encoding);
 		}
+
+        private void TcpClient_OnDisposing(object _, EventArgs __)
+        {
+			TcpClient = null;
+        }
+
 		#endregion
 
-		public NetworkStream GetStream()
+        public NetworkStream GetStream()
 			=> TcpClient.GetStream();
 
-        public bool IsValid =>
-			TcpClient != null;
+		/// <summary>
+		/// Indicates that the underlaying tcp client is not null and not disposed
+		/// </summary>
+        public bool IsValid => TcpClient != null;
 
 		/// <summary>
 		/// Can be null, because it can be disposed from inside
 		/// </summary>
-		protected TcpClient? TcpClient { get; }
+		protected TcpClient? TcpClient { get; set; }
 
         /// <summary>
         /// Can be null, because it can be disposed from inside
@@ -179,7 +196,6 @@ namespace AsterNET.IO
 			return line;
 		}
 		#endregion
-
 
 		#region Write(string s)
 		/// <summary>
