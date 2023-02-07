@@ -85,7 +85,7 @@ namespace AsterNET.FastAGI
         /// <summary>
         ///     Returns the unqiue id of the channel.
         /// </summary>
-        /// <returns>the unqiue id of the channel.</returns>
+        /// <returns>the unique id of the channel.</returns>
         public string UniqueId
         {
             get { return request["uniqueid"]; }
@@ -152,7 +152,7 @@ namespace AsterNET.FastAGI
                 {
                     if (_arguments == null)
                     {
-                        Dictionary<int, string> dic = new Dictionary<int, string>();
+                        var dic = new Dictionary<int, string>();
                         foreach (string key in request.Keys)
                         {
                             if (key.StartsWith("arg_"))
@@ -161,7 +161,7 @@ namespace AsterNET.FastAGI
                             }
                         }
 
-                        if(dic.Count > 0) _arguments = dic.OrderBy(order => order.Key).Select(item => item.Value);                        
+                        if(dic.Any()) _arguments = dic.OrderBy(order => order.Key).Select(item => item.Value);                        
                         else { _arguments = new List<string>(); }
                     }
                     return _arguments;
@@ -171,7 +171,7 @@ namespace AsterNET.FastAGI
 
         public string Argument(int position)
         {
-            IEnumerable<string> args = Arguments;
+            var args = Arguments;
             int count = args.Count();
             if (count > 0)
             {               

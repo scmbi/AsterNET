@@ -1,5 +1,6 @@
 using AsterNET.FastAGI.Command;
 using AsterNET.IO;
+using Sufficit.Asterisk;
 using System;
 
 namespace AsterNET.FastAGI
@@ -520,6 +521,22 @@ namespace AsterNET.FastAGI
 		{
 			source.SendCommand(new SetVariableCommand(name, val));
 		}
+
+        public static void GoSub(this AGIChannel source, string context, string extension, string priority, string? args = null)
+        {
+            source.SendCommand(new GoSubCommand(context, extension, priority, args));
+        }
+
+        #endregion
+        #region SetVariable(string name, string value_Renamed)
+
+        /// <summary>
+        /// Sets the value for return to asterisk
+        /// </summary>
+        public static void SetReturn(this AGIChannel source, string? val = default)
+        {
+            source.SendCommand(new SetVariableCommand(Common.AGI_DEFAULT_RETURN_VALUE, val));
+        }
 
         #endregion
         #region WaitForDigit(int timeout)

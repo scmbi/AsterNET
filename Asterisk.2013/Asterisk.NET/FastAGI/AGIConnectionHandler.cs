@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AsterNET.FastAGI.Command;
 using AsterNET.IO;
 using Microsoft.Extensions.Logging;
+using Sufficit.Asterisk;
 
 namespace AsterNET.FastAGI
 {
@@ -121,7 +122,7 @@ namespace AsterNET.FastAGI
             {
                 if (!string.IsNullOrWhiteSpace(statusMessage))
                 {
-                    SetVariableCommand command = new SetVariableCommand("AGISTATUSMESSAGE", statusMessage);
+                    SetVariableCommand command = new SetVariableCommand(Common.AGI_DEFAULT_RETURN_STATUS, statusMessage);
                     socket.Write(command.BuildCommand() + "\n");
                 }
 
@@ -132,8 +133,6 @@ namespace AsterNET.FastAGI
                 logger.LogError(ex, $"IDX00000(IOClosing): { ex.Message }");
             }
 			catch (Exception ex) { logger.LogError(ex, $"IDX00005(Unknown): {ex.Message}"); }
-
-            // await Task.CompletedTask;
         }
     }
 }
