@@ -30,7 +30,7 @@ namespace AsterNET.Manager
         private string username;
         private string password;
 
-        private SocketConnection? mrSocket;
+        private ISocketConnection? mrSocket;
         private Thread mrReaderThread;
         private ManagerReader? mrReader;
 
@@ -751,12 +751,9 @@ namespace AsterNET.Manager
                     Logger.LogInformation("Connecting to {0}:{1}", hostname, port);
                     try
                     {
-                        if (SocketReceiveBufferSize > 0)
-                            mrSocket = new SocketConnection(hostname, port, SocketReceiveBufferSize, socketEncoding);
-                        else
-                            mrSocket = new SocketConnection(hostname, port, socketEncoding); 
-                        
-                        result = mrSocket.IsConnected;
+                        SocketReceiveBufferSize = 100000;
+                        mrSocket = new SocketConnection(hostname, port, SocketReceiveBufferSize, socketEncoding, Logger);
+                        result = mrSocket.Connected;
                     }
                     catch (Exception ex)
                     {
@@ -963,7 +960,7 @@ namespace AsterNET.Manager
         {
             bool result = false;
             lock (lockSocket)
-                result = mrSocket != null && mrSocket.IsConnected;
+                result = mrSocket != null && mrSocket.Connected;
             return result;
         }
         #endregion
@@ -1234,17 +1231,6 @@ namespace AsterNET.Manager
 
         internal void SendToAsterisk(ManagerAction action, string internalActionId)
         {
-            /* // Migrated to delegate, causes exception on same thread
-            if (mrSocket == null)
-                throw new SystemException("Unable to send action: socket is null");
-
-            if (mrSocket.NetworkStream == null)
-            {
-                mrSocket = null; // setting null to force a reconect on next time
-                throw new SystemException("Unable to send action: network stream null or disposed");
-            }
-            */
-
             string buffer = BuildAction(action, internalActionId);
 
             Logger.LogDebug("Sent action : '{0}' : {1}", internalActionId, action);
@@ -1263,7 +1249,7 @@ namespace AsterNET.Manager
             if (mrSocket == null)
                 throw new SystemException("Unable to send action: socket is null");
 
-            if (!mrSocket.IsValid)
+            if (!mrSocket.Connected)
             {
                 mrSocket = null; // setting null to force a reconect on next time
                 throw new SystemException("Unable to send action: tcpclient or network stream null or disposed");

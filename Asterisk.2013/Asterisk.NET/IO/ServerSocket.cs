@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -9,31 +10,31 @@ namespace AsterNET.IO
 	/// </summary>
 	public class ServerSocket
 	{
-		private TcpListener tcpListener;
-		private Encoding encoding;
+		private readonly TcpListener _listener;
+		private readonly Encoding _encoding;
 
 		public ServerSocket(int port, IPAddress bindAddress, Encoding encoding)
 		{
-			this.encoding = encoding;
-			tcpListener = new TcpListener(new IPEndPoint(bindAddress, port));
-			tcpListener.Server.DualMode = true;
-			tcpListener.Start();
-        }
+            _encoding = encoding;
+            _listener = new TcpListener(new IPEndPoint(bindAddress, port));
+            _listener.Server.DualMode = true;
+            _listener.Start();
+		}
 		
-		public IO.SocketConnection Accept()
+		public ISocketConnection Accept(ILoggerFactory? factory)
 		{
-			if (tcpListener != null)
+			if (_listener != null)
 			{
-				TcpClient tcpClient = tcpListener.AcceptTcpClient();
-				if (tcpClient != null)
-					return new IO.SocketConnection(tcpClient, encoding);
+				var socket = _listener.AcceptSocket();
+				if (socket != null)
+					return new SocketConnectionAsync(socket, _encoding, factory?.CreateLogger<ISocketConnection>());
 			}
 			return null;
 		}
 		
 		public void Close()
 		{
-			tcpListener.Stop();
+            _listener.Stop();
 		}
 	}
 }

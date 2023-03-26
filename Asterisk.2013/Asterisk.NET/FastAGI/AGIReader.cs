@@ -1,90 +1,46 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using AsterNET.IO;
+using AsterNET.Manager;
+using Microsoft.Extensions.Logging;
 
 namespace AsterNET.FastAGI
 {
     public class AGIReader
     {
-#if LOGGER
-        private readonly Logger logger = Logger.Instance();
-#endif
-        private readonly SocketConnection socket;
+        private readonly ILogger _logger;
+        private readonly ISocketConnection _socket;
+        private readonly Random _random; 
 
-        public AGIReader(SocketConnection socket)
+        public AGIReader(ISocketConnection socket, ILogger? logger = null)
         {
-            this.socket = socket;
+            _socket = socket;
+            _logger = logger ?? new LoggerFactory().CreateLogger<AGIReader>();
+
+            _random = new Random();
         }
 
-        public AGIRequest ReadRequest()
+        public AGIReply ReadReply(int? timeoutms = null)
         {
-            var lines = new List<string>();
-            try
+            // reading id
+            using (_logger.BeginScope<string>($"[RD:{_random.Next()}]"))
             {
-#if LOGGER
-                logger.Info("AGIReader.ReadRequest():");
-#endif
-                string line;
-                while ((line = socket.ReadLine()) != null)
+                var lines = new List<string>();
+                
+                int count = 0;
+                var result = _socket.ReadLines(timeoutms);
+                foreach (var line in result)
                 {
-                    if (line.Length == 0)
-                        break;
+                    count++;
+                    _logger.LogTrace($"line from reply ({count}): {line}");
                     lines.Add(line);
-#if LOGGER
-                    logger.Info(line);
-#endif
                 }
-            }
-            catch (IOException ex)
-            {
-                throw new AGINetworkException("Unable to read request from Asterisk: " + ex.Message, ex);
-            }
-
-            var request = new AGIRequest(lines)
-            {
-                LocalAddress = socket.LocalAddress,
-                LocalPort = socket.LocalPort,
-                RemoteAddress = socket.RemoteAddress,
-                RemotePort = socket.RemotePort
-            };
-
-            return request;
-        }
-
-        public AGIReply ReadReply()
-        {
-            string line;
-            var badSyntax = ((int) AGIReplyStatuses.SC_INVALID_COMMAND_SYNTAX).ToString();
-
-            var lines = new List<string>();
-            try
-            {
-                line = socket.ReadToEnd();
-            }
-            catch (IOException ex)
-            {
-                throw new AGINetworkException("Unable to read reply from Asterisk: " + ex.Message, ex);
-            }
-            if (line == null)
-                throw new AGIHangupException();
-
-            lines.Add(line);
-            // read synopsis and usage if statuscode is 520
-            if (line.StartsWith(badSyntax))
-                try
-                {
-                    while ((line = socket.ReadLine()) != null)
-                    {
-                        lines.Add(line);
-                        if (line.StartsWith(badSyntax))
-                            break;
-                    }
-                }
-                catch (IOException ex)
-                {
-                    throw new AGINetworkException("Unable to read reply from Asterisk: " + ex.Message, ex);
-                }
-            return new AGIReply(lines);
+                
+                return new AGIReply(lines);
+            }            
         }
     }
 }

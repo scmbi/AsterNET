@@ -2,6 +2,7 @@ using AsterNET.FastAGI.Command;
 using AsterNET.IO;
 using Sufficit.Asterisk;
 using System;
+using System.Xml.Linq;
 
 namespace AsterNET.FastAGI
 {
@@ -310,31 +311,18 @@ namespace AsterNET.FastAGI
         #region StreamFile(string file)
 
         /// <summary>
-        /// Plays the given file.
-        /// </summary>
-        /// <param name="source"></param>
-        /// <param name="file">name of the file to play.</param>
-        /// <returns>failure: -1; failure on open: 0; success: 0; digit pressed: (digit) > 0.</returns>
-        public static int StreamFile(this AGIChannel source, string file)
-		{
-			AGIReply lastReply = source.SendCommand(new StreamFileCommand(file));
-			return lastReply.ResultCode;
-		}
-
-        #endregion
-
-        #region StreamFile(string file, string escapeDigits)
-
-        /// <summary>
-        /// Plays the given file and allows the user to escape by pressing one of the given digit.
+        /// Plays the given file and allows the user to escape by pressing one of the given digit. <br />
+        /// WatchOut for default read timeout, may influence at long audio files
         /// </summary>
         /// <param name="source"></param>
         /// <param name="file">name of the file to play.</param>
         /// <param name="escapeDigits">a String containing the DTMF digits that allow the user to escape.</param>
+        /// <param name="offset">skip mili-seconds from start.</param>
+        /// <param name="timeout">max timeout for wait a response, useful at long audio files</param>
         /// <returns> the DTMF digit pressed or 0x0 if none was pressed.</returns>
-        public static char StreamFile(this AGIChannel source, string file, string escapeDigits)
+        public static char StreamFile(this AGIChannel source, string file, string escapeDigits = "", int? offset = null, int? timeout = 60000)
 		{
-			AGIReply lastReply = source.SendCommand(new StreamFileCommand(file, escapeDigits));
+			var lastReply = source.SendCommand(new StreamFileCommand(file, escapeDigits, offset) { ReadTimeOut = timeout });
 			return lastReply.ResultCodeAsChar;
 		}
 
@@ -502,7 +490,7 @@ namespace AsterNET.FastAGI
         /// <returns> the value of the given variable or null if not set.</returns>
         public static string? GetVariable(this AGIChannel source, string name)
 		{
-			AGIReply lastReply = source.SendCommand(new GetVariableCommand(name));
+			var lastReply = source.SendCommand(new GetVariableCommand(name));
 			if (lastReply.ResultCode != 1)
 				return null;
 			return lastReply.Extra;
@@ -523,9 +511,7 @@ namespace AsterNET.FastAGI
 		}
 
         public static void GoSub(this AGIChannel source, string context, string extension, string priority, string? args = null)
-        {
-            source.SendCommand(new GoSubCommand(context, extension, priority, args));
-        }
+            => source.SendCommand(new GoSubCommand(context, extension, priority, args));
 
         #endregion
         #region SetVariable(string name, string value_Renamed)

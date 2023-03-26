@@ -37,10 +37,11 @@ namespace AsterNET.FastAGI
         ///     Creates a new AGIRequest.
         /// </summary>
         /// <param name="environment">the first lines as received from Asterisk containing the environment.</param>
-        public AGIRequest(List<string> environment)
+        public AGIRequest(IEnumerable<string> environment)
         {
             if (environment == null)
-                throw new ArgumentException("Environment must not be null.");
+                throw new ArgumentException("must not be null", nameof(environment));
+
             request = buildMap(environment);
         }
 
@@ -276,31 +277,15 @@ namespace AsterNET.FastAGI
         #region Dnid 
 
         public string Dnid
-        {
-            get
-            {
-                string dnid = request["dnid"];
-                if (dnid == null || dnid.ToLower(Helper.CultureInfo) == "unknown")
-                    return null;
-                return dnid;
-            }
-        }
+            => request.TryGetValue("dnid", out string value) && value.ToLower(Helper.CultureInfo) != "unknown" ? value : null;
 
         #endregion
 
         #region Rdnis 
 
-        public string Rdnis
-        {
-            get
-            {
-                string rdnis = request["rdnis"];
-                if (rdnis == null || rdnis.ToLower(Helper.CultureInfo) == "unknown")
-                    return null;
-                return rdnis;
-            }
-        }
-
+        public string? Rdnis
+            => request.TryGetValue("rdnis", out string value) && value.ToLower(Helper.CultureInfo) != "unknown" ? value : null;
+        
         #endregion
 
         #region Context
@@ -333,16 +318,7 @@ namespace AsterNET.FastAGI
         ///     Returns the priority in the dial plan from which the AGI script was called.
         /// </summary>
         public string Priority
-        {
-            get
-            {
-                if (request["priority"] != null)
-                {
-                    return request["priority"];
-                }
-                return "";
-            }
-        }
+            => request.ContainsKey("priority") ? request["priority"] : string.Empty;
 
         #endregion
 
@@ -354,14 +330,7 @@ namespace AsterNET.FastAGI
         ///     true if this agi is passed audio, false otherwise.
         /// </summary>
         public bool Enhanced
-        {
-            get
-            {
-                if (request["enhanced"] != null && request["enhanced"] == "1.0")
-                    return true;
-                return false;
-            }
-        }
+            => request.ContainsKey("enhanced") && request["enhanced"] == "1.0";
 
         #endregion
 
@@ -370,10 +339,8 @@ namespace AsterNET.FastAGI
         /// <summary>
         ///     Returns the account code set for the call.
         /// </summary>
-        public string AccountCode
-        {
-            get { return request["accountcode"]; }
-        }
+        public string? AccountCode
+            => request.ContainsKey("accountcode") ? request["accountcode"] : null;
 
         #endregion
 
@@ -513,13 +480,10 @@ namespace AsterNET.FastAGI
 
         #region Parameter(string name) 
 
-        public string Parameter(string name)
+        public string? Parameter(string name)
         {
-            List<string> values;
-            values = ParameterValues(name);
-            if (values == null || values.Count == 0)
-                return null;
-            return values[0];
+            var values = ParameterValues(name);
+            return values?.FirstOrDefault();
         }
 
         #endregion
@@ -533,7 +497,7 @@ namespace AsterNET.FastAGI
         /// <returns></returns>
         public List<string> ParameterValues(string name)
         {
-            List<string> result = new List<string>();
+            var result = new List<string>();
             if (ParameterMap().Any())
                 if(!string.IsNullOrWhiteSpace(name) && parameterMap.ContainsKey(name.ToLowerInvariant()))
                     result = parameterMap[name.ToLowerInvariant()];
@@ -570,13 +534,13 @@ namespace AsterNET.FastAGI
         /// </summary>
         /// <param name="lines">the environment to transform.</param>
         /// <returns> a map with the variables set corresponding to the given environment.</returns>
-        private Dictionary<string, string> buildMap(List<string> lines)
+        private Dictionary<string, string> buildMap(IEnumerable<string> lines)
         {
             int colonPosition;
             string key;
             string value;
 
-            var map = new Dictionary<string, string>(lines.Count);
+            var map = new Dictionary<string, string>();
             foreach (var line in lines)
             {
                 colonPosition = line.IndexOf(':');

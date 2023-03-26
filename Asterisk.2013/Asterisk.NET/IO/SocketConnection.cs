@@ -3,104 +3,104 @@ using System.Text;
 using System.Net.Sockets;
 using System.Net;
 using System;
+using System.Collections.Generic;
+using Sufficit.Asterisk;
+using AsterNET.Manager;
+using Microsoft.Extensions.Logging;
+using AsterNET.FastAGI;
+using System.Net.Http;
 
 namespace AsterNET.IO
 {
 	/// <summary>
 	/// Socket connection to asterisk.
 	/// </summary>
-	public class SocketConnection
-	{
-		public int ReceiveBufferSize { get; internal set; }
+	public class SocketConnection : TcpClient, ISocketConnection
+    {
+		public const int RECEIVE_TIMEOUT = 10000;
+        public const int SEND_TIMEOUT = 5000;
 
-		private NetworkStream? networkStream;
-		private StreamReader reader;
-		private BinaryWriter writer;
-		private Encoding encoding;
-		private bool initial;
+        public const string AGI_REPLY_HANGUP = "HANGUP";
 
-		#region Constructor - SocketConnection(string host, int port, int receiveTimeout) 
+        #region DISPOSING
 
-		/// <summary>
-		/// Consructor
-		/// </summary>
-		/// <param name="host">client host</param>
-		/// <param name="port">client port</param>
-		/// <param name="encoding">encoding</param>
-		public SocketConnection(string host, int port, Encoding encoding)
-			:this(new TcpClientMonitor(host, port), encoding)
-		{
-		}
+        /// <summary>
+        /// Monitor dispose event
+        /// </summary>
+        public event EventHandler<bool>? OnDisposing;
 
-		/// <summary>
-		/// Consructor
-		/// </summary>
-		/// <param name="host">client host</param>
-		/// <param name="port">client port</param>
-		/// <param name="encoding">encoding</param>
-		/// <param name="receiveBufferSize">size of the receive buffer.</param>
-		public SocketConnection(string host, int port, int receiveBufferSize, Encoding encoding)
-			: this (new TcpClientMonitor(host, port) { ReceiveBufferSize = receiveBufferSize }, encoding)
-		{
+        protected override void Dispose(bool disposing)
+        {
+            _logger.LogTrace("disposing");
+            OnDisposing?.Invoke(this, disposing);
+            base.Dispose(disposing);
         }
 
         #endregion
-
-        #region Constructor - SocketConnection(socket) 
-
-        public SocketConnection(TcpClientMonitor tcpClient, Encoding encoding)
-            : this((TcpClient)tcpClient, encoding)
-        {
-            tcpClient.OnDisposing += TcpClient_OnDisposing;
-        }
+        #region HANGUP CONTROL
 
         /// <summary>
-        /// Constructor
+        ///  Indicates that hangup message is received
         /// </summary>
-        /// <param name="tcpClient">TCP client from Listener</param>
-        /// <param name="encoding">encoding</param>
-        internal SocketConnection(TcpClient tcpClient, Encoding encoding)
-		{
-            ReceiveBufferSize = tcpClient.ReceiveBufferSize;
+        public bool IsHangUp { get; internal set; }
 
-            initial = true;
-			this.encoding = encoding;
-			this.TcpClient = tcpClient;
+        public event EventHandler? OnHangUp;
 
-			this.networkStream = this.TcpClient.GetStream();
-			this.reader = new StreamReader(this.networkStream, encoding);
-			this.writer = new BinaryWriter(this.networkStream, encoding);
-		}
-
-        private void TcpClient_OnDisposing(object _, EventArgs __)
+        protected void HangUpTrigger()
         {
-			TcpClient = null;
+            IsHangUp = true;
+			_logger.LogTrace("hangup");
+            OnHangUp?.Invoke(this, EventArgs.Empty);
         }
 
 		#endregion
 
-        public NetworkStream GetStream()
-			=> TcpClient.GetStream();
+		public Encoding Encoding { get; internal set; } 
+			= Encoding.ASCII; // default value
 
-		/// <summary>
-		/// Indicates that the underlaying tcp client is not null and not disposed
-		/// </summary>
-        public bool IsValid => TcpClient != null;
+		private readonly ILogger _logger;
+        private readonly StreamReader reader;
+		private readonly BinaryWriter writer;
+		private bool initial;
 
-		/// <summary>
-		/// Can be null, because it can be disposed from inside
-		/// </summary>
-		protected TcpClient? TcpClient { get; set; }
+        #region Constructor - SocketConnection(socket) 
 
-        /// <summary>
-        /// Can be null, because it can be disposed from inside
-        /// </summary>
-        protected NetworkStream? NetworkStream { get; }
+        public SocketConnection(Socket socket, Encoding? encoding = null, ILogger? logger = null)   
+        {
+			Client = socket;
 
-        public Encoding Encoding
+            if (encoding != null)
+                Encoding = encoding;
+
+            this.reader = new StreamReader(this.GetStream(), Encoding);
+            this.writer = new BinaryWriter(this.GetStream(), Encoding);
+			
+            ReceiveTimeout = RECEIVE_TIMEOUT; 
+			SendTimeout = SEND_TIMEOUT;
+
+            _logger = logger ?? new LoggerFactory().CreateLogger<SocketConnection>();
+        }
+
+        public SocketConnection(string host, int port, int receiveBufferSize = 0, Encoding? encoding = null, ILogger? logger = null) : base(host, port) 
 		{
-			get { return encoding; }
+			if (receiveBufferSize > 0)
+				ReceiveBufferSize = receiveBufferSize;
+			
+			if (encoding != null)
+				Encoding = encoding;
+
+            this.reader = new StreamReader(this.GetStream(), Encoding);
+            this.writer = new BinaryWriter(this.GetStream(), Encoding);
+
+			ReceiveTimeout = RECEIVE_TIMEOUT;
+            SendTimeout = SEND_TIMEOUT;
+
+            _logger = logger ?? new LoggerFactory().CreateLogger<SocketConnection>();
+
+            initial = true;		
 		}
+
+		#endregion
 
 		public bool Initial
 		{
@@ -108,24 +108,15 @@ namespace AsterNET.IO
 			set { initial = value; }
 		}
 
-		#region IsConnected
-
-		/// <summary>
-		/// Returns the connection state of the socket.
-		/// </summary>
-		public bool IsConnected
-		{
-			get { return TcpClient?.Connected ?? false; }
-		}
-
-		#endregion
+		public bool IsRemoteRequest
+			=> Client.IsRemoteRequest();
 
 		#region LocalAddress 
 		public IPAddress LocalAddress
 		{
 			get
 			{
-				return ((IPEndPoint)(TcpClient.Client.LocalEndPoint)).Address;
+				return ((IPEndPoint)(Client.LocalEndPoint)).Address;
 			}
 		}
 		#endregion
@@ -135,7 +126,7 @@ namespace AsterNET.IO
 		{
 			get
 			{
-				return ((IPEndPoint)(TcpClient.Client.LocalEndPoint)).Port;
+				return ((IPEndPoint)(Client.LocalEndPoint)).Port;
 			}
 		}
 		#endregion
@@ -145,7 +136,7 @@ namespace AsterNET.IO
 		{
 			get
 			{
-				return ((IPEndPoint)(TcpClient.Client.RemoteEndPoint)).Address;
+				return ((IPEndPoint)(Client.RemoteEndPoint)).Address;
 			}
 		}
 		#endregion
@@ -155,12 +146,13 @@ namespace AsterNET.IO
 		{
 			get
 			{
-				return ((IPEndPoint)(TcpClient.Client.LocalEndPoint)).Port;
+				return ((IPEndPoint)(Client.LocalEndPoint)).Port;
 			}
 		}
 		#endregion
 
 		#region ReadLine()
+
 		/// <summary>
 		/// Reads a line of text from the socket connection. The current thread is
 		/// blocked until either the next line is received or an IOException
@@ -168,21 +160,122 @@ namespace AsterNET.IO
 		/// </summary>
 		/// <returns>the line of text received excluding any newline character</returns>
 		/// <throws>  IOException if the connection has been closed. </throws>
-		public string ReadLine()
+		public string? ReadLine()
 		{
-			string line = null;
 			try
 			{
-				line = reader.ReadLine();
+				return reader.ReadLine();
 			}
 			catch
 			{
-				line = null;
+				return null;
 			}
-			return line;
 		}
 
-		public string ReadToEnd()
+
+		public IEnumerable<string> ReadLines(int? timeoutms = null)
+		{
+			if (timeoutms.HasValue)
+			{
+				// saving previous value
+				var defaultms = ReceiveTimeout;
+				ReceiveTimeout = timeoutms.Value;
+
+				foreach (var line in ReadLines())
+					yield return line;
+
+				// restoring previous value
+				ReceiveTimeout = defaultms;
+			} else
+			{
+                foreach (var line in ReadLines())
+                    yield return line;
+            }
+        }
+
+        public IEnumerable<string> ReadLines()
+        {	
+            string line = string.Empty;
+            do
+            {
+                try
+                {
+                    line = reader.ReadLine();
+					if (line == AGI_REPLY_HANGUP)
+					{
+						HangUpTrigger();
+						continue;
+					}
+                }
+                catch(Exception ex) { 
+					break;
+					_logger.LogError(ex, "error reading lines");
+				}
+		
+				yield return line;				
+            } while (Reading(reader.Peek(), line));
+        }
+
+		/// <summary>
+		/// Continue if still contains bytes or received a 100 status code
+		/// </summary>
+		private bool Reading(int peek, string line)
+		{
+			// returns true, continue reading, if ....
+			
+			// is a valid next available caracter
+			if (peek >= 0) return true;
+
+			if (!string.IsNullOrWhiteSpace(line))
+			{
+				// was hangup
+				if (line == AGI_REPLY_HANGUP) return true;
+
+				var matcher = Common.AGI_STATUS_PATTERN_NAMED.Match(line);
+				if (matcher.Groups["code"].Success)
+				{
+					if (int.TryParse(matcher.Groups["code"].Value, out int status))
+					{
+						if (
+							status == 100 ||    // CONTINUE STATUS LIKE GOSUB COMMAND
+							status == 520       // SC_INVALID_COMMAND_SYNTAX
+							)
+						{
+							return true;
+						}
+						/*
+						else
+						{
+                            _logger.LogTrace("expected result code: {code}", status);
+                        }
+						*/
+					}
+					/*
+					else
+					{
+                        _logger.LogWarning("no int result code: {code}", matcher.Groups["code"].Value);
+                    }
+					*/
+				}
+				/*
+				else
+				{
+                    _logger.LogWarning("no valid result code, line: {line}", line);
+                }
+				*/
+			}
+			/*
+			else {
+                _logger.LogWarning("reading empty line, continue");                
+			}
+			*/
+
+			// otherwise, stops ...
+            return false;
+        }
+
+		/*
+        public string? ReadToEnd()
 		{
 			string line = string.Empty;
 			do
@@ -195,9 +288,12 @@ namespace AsterNET.IO
 			} while (reader.Peek() >= 0);
 			return line;
 		}
+		*/
+
 		#endregion
 
 		#region Write(string s)
+
 		/// <summary>
 		/// Sends a given String to the socket connection.
 		/// </summary>
@@ -206,12 +302,11 @@ namespace AsterNET.IO
 		/// <summary>connection has already been closed.</summary>
 		public void Write(string s)
 		{
-			writer.Write(encoding.GetBytes(s));
+			writer.Write(Encoding.GetBytes(s));
 			writer.Flush();
 		}
-		#endregion
 
-		#region Write(string msg) 
+		/*
 		/// <summary>
 		/// Sends a given String to the socket connection.
 		/// </summary>
@@ -220,9 +315,10 @@ namespace AsterNET.IO
 		/// <summary>connection has already been closed.</summary>
 		public void WriteEx(string msg)
 		{
-			byte[] data = encoding.GetBytes(msg);
-			networkStream.BeginWrite(data, 0, data.Length, onWriteFinished, networkStream);
-			networkStream.Flush();
+			byte[] data = Encoding.GetBytes(msg);
+			var stream = GetStream();
+            stream.BeginWrite(data, 0, data.Length, onWriteFinished, stream);
+            stream.Flush();
 		}
 
 		private void onWriteFinished(IAsyncResult ar)
@@ -230,6 +326,9 @@ namespace AsterNET.IO
 			var stream = (NetworkStream)ar.AsyncState;
 			stream.EndWrite(ar);
 		}
+
+		*/
+
 		#endregion
 
 		#region Close
@@ -243,16 +342,19 @@ namespace AsterNET.IO
 		public void Close()
 		{
 			try
-			{
-				if(TcpClient != null)
-				{
-                    TcpClient.Client?.Shutdown(SocketShutdown.Both);
-                    TcpClient.Client?.Close();
-                    TcpClient.Close();
-                }
+			{				
+                Client.Shutdown(SocketShutdown.Both);
+                Client.Close();
+                Close();                
 			}
 			catch { }
 		}
-		#endregion
-	}
+        #endregion
+
+        /// <summary>
+        /// Recover the underlaying log system to use on extensions
+        /// </summary>
+        /// <returns></returns>
+        public ILogger GetLogger() => _logger;
+    }
 }

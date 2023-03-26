@@ -36,15 +36,17 @@ namespace AsterNET.FastAGI.MappingStrategies
 			this.mapping = null;
 		}
 
-	    public AGIScript DetermineScript(AGIRequest request)
+	    public AGIScript? DetermineScript(AGIRequest request)
 		{
-			AGIScript script = null;
+			AGIScript? script = null;
 			if (mapping != null)
+			{
 				lock (mapping.SyncRoot)
 				{
 					if (mapping.Contains(request.Script))
 						script = (AGIScript)mapping[request.Script];
 				}
+			}
 			return script;
 		}
 
@@ -78,7 +80,7 @@ namespace AsterNET.FastAGI.MappingStrategies
 				mapping.Clear();
 				try
 				{
-					ResourceReader rr = new ResourceReader(AppDomain.CurrentDomain.BaseDirectory + resourceName);
+					var rr = new ResourceReader(AppDomain.CurrentDomain.BaseDirectory + resourceName);
 					foreach (DictionaryEntry de in rr)
 					{
 						scriptName = (string)de.Key;

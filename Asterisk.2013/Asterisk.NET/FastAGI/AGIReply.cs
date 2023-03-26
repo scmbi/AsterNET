@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using AsterNET.Helpers;
+using System.Linq;
 
 namespace AsterNET.FastAGI
 {
@@ -59,10 +60,8 @@ namespace AsterNET.FastAGI
         private bool attributesCreated;
 
         /// <summary> The contents of the parenthesis.</summary>
-        private string extra;
+        private string? _extra;
 
-        private bool extraCreated;
-        private Match matcher;
 
         /// <summary> The result, that is the part directly following the "result=" string.</summary>
         private string result;
@@ -94,16 +93,11 @@ namespace AsterNET.FastAGI
 
         #region Constructor - AGIReply(lines)
 
+        /// <param name="lines">If empty array, means no problems, success</param>
         public AGIReply(List<string> lines)
         {
             this.lines = lines;
-            try
-            {
-                firstLine = lines[0];
-            }
-            catch
-            {
-            }
+            firstLine = lines.FirstOrDefault() ?? string.Empty;            
         }
 
         #endregion
@@ -136,36 +130,28 @@ namespace AsterNET.FastAGI
         {
             get
             {
-                string result;
-                result = GetResult();
-                if (result == null)
-                    return -1;
-                try
-                {
-                    return Int32.Parse(result);
-                }
-                catch
-                {
-                    return -1;
-                }
+                string result = GetResult();                
+                if (string.IsNullOrWhiteSpace(result))
+                    return 0;
+
+                if (int.TryParse(result, out int resultCode))
+                    return resultCode;
+
+                return -1;
             }
         }
 
-        #endregion
-
-        #region ResultCodeAsChar
-
         /// <summary>
-        ///     Returns the return code as character.
+        ///     Returns the return code as character. 
         /// </summary>
-        /// <returns>the return code as character.</returns>
+        /// <returns>the return code as character. || char.MaxValue for errors</returns>
         public char ResultCodeAsChar
         {
             get
             {
                 int resultCode = ResultCode;
                 if (resultCode < 0)
-                    return (char) (0x0);
+                    return char.MaxValue;
                 return (char) resultCode;
             }
         }
@@ -180,23 +166,23 @@ namespace AsterNET.FastAGI
         ///     contains a flag like "timeout" or "hangup" or - in case of the
         ///     GetVariableCommand - the value of the variable.
         /// </summary>
-        /// <returns>the text in the parenthesis or  null if not set.</returns>
-        public string Extra
+        /// <returns>the text in the parenthesis or null if not set.</returns>
+        public string? Extra
         {
             get
             {
-                if (GetStatus() != (int) AGIReplyStatuses.SC_SUCCESS)
+                if (GetStatus() != (int)AGIReplyStatuses.SC_SUCCESS)
                     return null;
 
-                if (extraCreated)
-                    return extra;
+                if (_extra != null)
+                    return _extra;
 
-                matcher = Common.AGI_PARENTHESIS_PATTERN.Match(firstLine);
-                if (matcher.Success)
-                    extra = matcher.Groups[1].Value;
+                var matcher = Common.AGI_PARENTHESIS_PATTERN_NAMED.Match(firstLine);
+                if (matcher.Success)                                   
+                    //if (matcher.Groups["code"].Value == "200")                   
+                        _extra = matcher.Groups["value"].Value;    
 
-                extraCreated = true;
-                return extra;
+                return _extra;
             }
         }
 
@@ -213,7 +199,7 @@ namespace AsterNET.FastAGI
             if (resultCreated)
                 return result;
 
-            matcher = Common.AGI_RESULT_PATTERN.Match(firstLine);
+            var matcher = Common.AGI_RESULT_PATTERN.Match(firstLine);
             if (matcher.Success)
                 result = matcher.Groups[1].Value;
 
@@ -237,7 +223,7 @@ namespace AsterNET.FastAGI
         {
             if (statusCreated)
                 return status;
-            matcher = Common.AGI_STATUS_PATTERN.Match(firstLine);
+            var matcher = Common.AGI_STATUS_PATTERN.Match(firstLine);
             if (matcher.Success)
                 status = Int32.Parse(matcher.Groups[1].Value);
             statusCreated = true;
@@ -266,7 +252,7 @@ namespace AsterNET.FastAGI
 
             if (!attributesCreated)
             {
-                matcher = Common.AGI_ADDITIONAL_ATTRIBUTES_PATTERN.Match(firstLine);
+                var matcher = Common.AGI_ADDITIONAL_ATTRIBUTES_PATTERN.Match(firstLine);
                 if (matcher.Success)
                 {
                     string s;

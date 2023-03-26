@@ -22,7 +22,7 @@ namespace AsterNET.Manager
 #endif
 
 		private readonly ManagerConnection mrConnector;
-		private SocketConnection? mrSocket;
+		private ISocketConnection? mrSocket;
 
 		private bool die;
 		private bool is_logoff;
@@ -59,7 +59,7 @@ namespace AsterNET.Manager
 		/// <summary>
 		///     Sets the socket to use for reading from the asterisk server.
 		/// </summary>
-		internal SocketConnection? Socket
+		internal ISocketConnection? Socket
 		{
 			set { mrSocket = value; }
 		}
@@ -104,7 +104,7 @@ namespace AsterNET.Manager
 				return;
 
 			var mrSocket = mrReader.mrSocket;
-			if (mrSocket == null || !mrSocket.IsValid)
+			if (mrSocket == null || !mrSocket.Connected)
 			{
 				// No socket - it's DISCONNECT !!!
 				disconnect = true;

@@ -60,6 +60,21 @@
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <NoWarn>1701;1702;CS1591</NoWarn>
   </PropertyGroup>
+	
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='TortuTeam|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;LOGGER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>0</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+    <DocumentationFile>bin\Debug\AsterNET.XML</DocumentationFile>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <NoWarn>1701;1702;CS1591</NoWarn>
+  </PropertyGroup>
+	
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
@@ -71,6 +86,7 @@
     <DocumentationFile>bin\Release\AsterNET.XML</DocumentationFile>
     <NoWarn>1701;1702;CS1591</NoWarn>
   </PropertyGroup>
+	
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Travis|AnyCPU'">
     <OutputPath>bin\Travis\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
@@ -117,7 +133,7 @@
 		</None>
 	</ItemGroup>
 
-	<ItemGroup Label="Sufficit Dependencies on Packing" Condition=" '$(Configuration)' == 'Packing' Or '$(Configuration)' == 'Travis' ">
+	<ItemGroup Label="Sufficit Dependencies on Packing" Condition=" '$(Configuration)' != 'Debug' And '$(Configuration)' != 'Release' ">
 		<PackageReference Include="Sufficit.Asterisk.Core" Version="1.*" />
 	</ItemGroup>
 

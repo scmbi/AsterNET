@@ -4,6 +4,7 @@ using System.Text;
 namespace AsterNET.FastAGI.Command
 {
 	/// <summary>
+	/// Must be with $, prefer ${var} notation <br />
 	/// Returns the value of the given channel varible and understands complex
 	/// variable names and builtin variables, unlike the GetVariableCommand.<br/>
 	/// You can also use this command to use custom Asterisk functions. Syntax is "func(args)".<br/>

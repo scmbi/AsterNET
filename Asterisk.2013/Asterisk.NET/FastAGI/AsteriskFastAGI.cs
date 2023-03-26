@@ -161,7 +161,7 @@ namespace AsterNET.FastAGI
         }
 
         #endregion
-        #region Constructor - AsteriskFastAGI(ILogger<AsteriskFastAGI>, IMappingStrategy, string ipaddress, int port, int poolSize) 
+        #region Constructor - AsteriskFastAGI(IServiceProvider provider, IMappingStrategy, string ipaddress, int port, int poolSize) 
 
         public AsteriskFastAGI(IServiceProvider provider, IMappingStrategy mappingStrategy, string ipaddress, int port, int poolSize)
         {
@@ -243,7 +243,7 @@ namespace AsterNET.FastAGI
             mappingStrategy.Load();
             pool = new AsterNET.Util.ThreadPool("AGIServer", poolSize);
 
-            logger?.LogInformation("Thread pool started.");
+            logger.LogDebug("Thread pool started.");
 
             try
             {
@@ -276,12 +276,12 @@ namespace AsterNET.FastAGI
 
             try
             {
-                SocketConnection socket;
-                while ((socket = serverSocket.Accept()) != null || !cancellationToken.IsCancellationRequested)
-                {                    
-                    logger.LogInformation("Received connection.");
+                var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
 
-                    var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+                ISocketConnection socket;
+                while ((socket = serverSocket.Accept(loggerFactory)) != null || !cancellationToken.IsCancellationRequested)
+                {                    
+                    logger.LogDebug("Received connection.");
                     var connectionHandler = new AGIConnectionHandler(loggerFactory, socket, mappingStrategy, SC511_CAUSES_EXCEPTION, SCHANGUP_CAUSES_EXCEPTION);
                     pool.AddJob(connectionHandler);
                 }

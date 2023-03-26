@@ -1,6 +1,7 @@
 using System.IO;
 using AsterNET.FastAGI.Command;
 using AsterNET.IO;
+using AsterNET.Manager;
 
 namespace AsterNET.FastAGI
 {
@@ -9,9 +10,9 @@ namespace AsterNET.FastAGI
     /// </summary>
     public class AGIWriter
     {
-        private readonly SocketConnection socket;
+        private readonly ISocketConnection socket;
 
-        public AGIWriter(SocketConnection socket)
+        public AGIWriter(ISocketConnection socket)
         {
             lock (this)
                 this.socket = socket;
@@ -28,7 +29,7 @@ namespace AsterNET.FastAGI
         public void SendCommand(string buffer)
         {
             try
-            {
+            {                
                 socket.Write(buffer);
             }
             catch (IOException e)
