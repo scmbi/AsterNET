@@ -753,7 +753,7 @@ namespace AsterNET.Manager
                     {
                         SocketReceiveBufferSize = 100000;
                         mrSocket = new SocketConnection(hostname, port, SocketReceiveBufferSize, socketEncoding, Logger);
-                        result = mrSocket.Connected;
+                        result = mrSocket.IsConnected();
                     }
                     catch (Exception ex)
                     {
@@ -957,12 +957,8 @@ namespace AsterNET.Manager
         /// asterisk server, false otherwise.
         /// </returns>
         public bool IsConnected()
-        {
-            bool result = false;
-            lock (lockSocket)
-                result = mrSocket != null && mrSocket.Connected;
-            return result;
-        }
+            => mrSocket?.IsConnected() ?? false;
+
         #endregion
 
         #region Logoff()
@@ -1249,9 +1245,9 @@ namespace AsterNET.Manager
             if (mrSocket == null)
                 throw new SystemException("Unable to send action: socket is null");
 
-            if (!mrSocket.Connected)
+            if (!mrSocket.IsConnected())
             {
-                mrSocket = null; // setting null to force a reconect on next time
+                mrSocket = null; // setting null to force a reconnect on next time
                 throw new SystemException("Unable to send action: tcpclient or network stream null or disposed");
             }
 

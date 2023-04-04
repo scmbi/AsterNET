@@ -29,8 +29,11 @@ namespace AsterNET.IO
         /// </summary>
         public event EventHandler<bool>? OnDisposing;
 
+		private bool _disposed;
+
         protected override void Dispose(bool disposing)
         {
+			_disposed = true;
             _logger.LogTrace("disposing");
             OnDisposing?.Invoke(this, disposing);
             base.Dispose(disposing);
@@ -110,9 +113,12 @@ namespace AsterNET.IO
 
 		public bool IsRemoteRequest
 			=> Client.IsRemoteRequest();
+		
+		public bool IsConnected()
+            => !_disposed && Connected;
 
-		#region LocalAddress 
-		public IPAddress LocalAddress
+        #region LocalAddress 
+        public IPAddress LocalAddress
 		{
 			get
 			{

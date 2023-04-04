@@ -90,13 +90,13 @@ namespace AsterNET.Manager
 
 		#endregion
 
-		#region mrReaderCallbback(IAsyncResult ar) 
+		#region mrReaderCallback(IAsyncResult ar) 
 
 		/// <summary>
 		/// Async Read callback
 		/// </summary>
 		/// <param name="ar">IAsyncResult</param>
-		private void mrReaderCallbback(IAsyncResult ar)
+		private void mrReaderCallback(IAsyncResult ar)
 		{
 			// mreader = Mr.Reader
 			var mrReader = (ManagerReader) ar.AsyncState;
@@ -104,7 +104,7 @@ namespace AsterNET.Manager
 				return;
 
 			var mrSocket = mrReader.mrSocket;
-			if (mrSocket == null || !mrSocket.Connected)
+			if (mrSocket == null || !mrSocket.IsConnected())
 			{
 				// No socket - it's DISCONNECT !!!
 				disconnect = true;
@@ -144,7 +144,7 @@ namespace AsterNET.Manager
 						lineQueue.Enqueue(line);
 					}
 				// Give a next portion !!!
-				nstream.BeginRead(mrReader.lineBytes, 0, mrReader.lineBytes.Length, mrReaderCallbback, mrReader);
+				nstream.BeginRead(mrReader.lineBytes, 0, mrReader.lineBytes.Length, mrReaderCallback, mrReader);
 			}
 #if LOGGER
 			catch (Exception ex)
@@ -178,7 +178,7 @@ namespace AsterNET.Manager
 			lastPacketTime = DateTime.Now;
 			wait4identiier = true;
 			processingCommandResult = false;
-			mrSocket.GetStream().BeginRead(lineBytes, 0, lineBytes.Length, mrReaderCallbback, this);
+			mrSocket.GetStream().BeginRead(lineBytes, 0, lineBytes.Length, mrReaderCallback, this);
 			lastPacketTime = DateTime.Now;
 		}
 

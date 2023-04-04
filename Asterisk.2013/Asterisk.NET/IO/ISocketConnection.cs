@@ -8,7 +8,7 @@ namespace AsterNET.IO
 {
     public interface ISocketConnection
     {
-        bool Connected { get; }
+        bool IsConnected();
 
         bool Initial { get; set; }
 

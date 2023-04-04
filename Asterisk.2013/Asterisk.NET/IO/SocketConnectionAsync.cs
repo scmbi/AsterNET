@@ -34,23 +34,37 @@ namespace AsterNET.IO
         /// </summary>
         public event EventHandler<bool>? OnDisposing;
 
+		private bool _disposed;
+
         protected override void Dispose(bool disposing)
         {
-            _logger.LogTrace("disposing");
+			if (!_disposed)
+			{
+				_disposed = true;
+				_logger.LogTrace("disposing");
 
-			// invoking before dispose internals, to grant availability
-            OnDisposing?.Invoke(this, disposing);
+				// invoking before dispose internals, to grant availability
+				OnDisposing?.Invoke(this, disposing);
 
-            _hgcts.Cancel();
-			_hgcts.Dispose();
+				_hgcts.Cancel();
+				_hgcts.Dispose();
 
-            if (writer != null) writer.Dispose();
+				// Avoid new remote commands
+				if (writer != null)
+					writer.Dispose();
 
+				// Closing client after disconnect remote
+				if (Client != null)
+				{
+					if (Client.Connected)
+						Client.Close();
+				}
+			}
             base.Dispose(disposing);
         }
 
-        #endregion
-        #region HANGUP CONTROL
+		#endregion
+		#region HANGUP CONTROL
 
         /// <summary>
         ///  Indicates that hangup message is received
@@ -144,8 +158,11 @@ namespace AsterNET.IO
             }
 		}
 
-		#region LocalAddress 
-		public IPAddress LocalAddress
+        public bool IsConnected()
+            => !_disposed && Connected;
+
+        #region LocalAddress 
+        public IPAddress LocalAddress
 		{
 			get
 			{
