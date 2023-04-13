@@ -37,13 +37,13 @@ namespace AsterNET.Manager
 		private readonly Dictionary<string, string> packet;
 		private readonly List<string> commandList;
 
-		#region ManagerReader(dispatcher, asteriskServer) 
+        #region ManagerReader(dispatcher, asteriskServer) 
 
-		/// <summary>
-		///     Creates a new ManagerReader.
-		/// </summary>
-		/// <param name="dispatcher">the dispatcher to use for dispatching events and responses.</param>
-		public ManagerReader(ManagerConnection connection)
+        /// <summary>
+        ///     Creates a new ManagerReader.
+        /// </summary>
+        /// <param name="connection">the dispatcher to use for dispatching events and responses.</param>
+        public ManagerReader(ManagerConnection connection)
 		{
 			mrConnector = connection;
 			die = false;
@@ -96,7 +96,7 @@ namespace AsterNET.Manager
 		/// Async Read callback
 		/// </summary>
 		/// <param name="ar">IAsyncResult</param>
-		private void mrReaderCallback(IAsyncResult ar)
+		private static void mrReaderCallback(IAsyncResult ar)
 		{
 			// mreader = Mr.Reader
 			var mrReader = (ManagerReader) ar.AsyncState;
@@ -106,16 +106,16 @@ namespace AsterNET.Manager
 			var mrSocket = mrReader.mrSocket;
 			if (mrSocket == null || !mrSocket.IsConnected())
 			{
-				// No socket - it's DISCONNECT !!!
-				disconnect = true;
+                // No socket - it's DISCONNECT !!!
+                mrReader.disconnect = true;
 				return;
 			}
 
 			var nstream = mrSocket.GetStream();
 			if (nstream == null)
 			{
-				// No network stream - it's DISCONNECT !!!
-				disconnect = true;
+                // No network stream - it's DISCONNECT !!!
+                mrReader.disconnect = true;
 				return;
 			}
 
@@ -125,8 +125,8 @@ namespace AsterNET.Manager
 				if (count == 0)
 				{
 					// No received data - it's may be DISCONNECT !!!
-					if (!is_logoff)
-						disconnect = true;
+					if (!mrReader.is_logoff)
+                        mrReader.disconnect = true;
 					return;
 				}
 				string line = mrSocket.Encoding.GetString(mrReader.lineBytes, 0, count);
@@ -134,14 +134,14 @@ namespace AsterNET.Manager
 				int idx;
 				// \n - because not all dev in Digium use \r\n
 				// .Trim() kill \r
-				lock (((ICollection) lineQueue).SyncRoot)
+				lock (((ICollection)mrReader.lineQueue).SyncRoot)
 					while (!string.IsNullOrEmpty(mrReader.lineBuffer) && (idx = mrReader.lineBuffer.IndexOf('\n')) >= 0)
 					{
 						line = idx > 0 ? mrReader.lineBuffer.Substring(0, idx).Trim() : string.Empty;
 						mrReader.lineBuffer = (idx + 1 < mrReader.lineBuffer.Length
 							? mrReader.lineBuffer.Substring(idx + 1)
 							: string.Empty);
-						lineQueue.Enqueue(line);
+                        mrReader.lineQueue.Enqueue(line);
 					}
 				// Give a next portion !!!
 				nstream.BeginRead(mrReader.lineBytes, 0, mrReader.lineBytes.Length, mrReaderCallback, mrReader);
@@ -154,8 +154,8 @@ namespace AsterNET.Manager
 			catch
 			{
 #endif
-				// Any catch - disconncatch !
-				disconnect = true;
+                // Any catch - disconncatch !
+                mrReader.disconnect = true;
 				if (mrReader.mrSocket != null)
 					mrReader.mrSocket.Close();
 				mrReader.mrSocket = null;

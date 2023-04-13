@@ -1384,9 +1384,9 @@ namespace AsterNET.Manager
         #region DispatchResponse(response)
         /// <summary>
         /// This method is called by the reader whenever a ManagerResponse is
-        /// received. The response is dispatched to the associated <see cref="IManagerResponseHandler"/>ManagerResponseHandler.
+        /// received. The response is dispatched to the associated <see cref="IResponseHandler"/>ManagerResponseHandler.
         /// </summary>
-        /// <param name="response">the response received by the reader</param>
+        /// <param name="buffer">the response received by the reader</param>
         /// <seealso cref="ManagerReader" />
         internal void DispatchResponse(Dictionary<string, string> buffer)
         {
@@ -1400,11 +1400,11 @@ namespace AsterNET.Manager
             DispatchResponse(null, response);
         }
 
-        internal void DispatchResponse(Dictionary<string, string> buffer, ManagerResponse response)
+        internal void DispatchResponse(Dictionary<string, string>? buffer, ManagerResponse? response)
         {
             string responseActionId = string.Empty;
             string actionId = string.Empty;
-            IResponseHandler responseHandler = null;
+            IResponseHandler? responseHandler = null;
 
             if (buffer != null)
             {
@@ -1429,7 +1429,7 @@ namespace AsterNET.Manager
                 {
                     if (response == null)
                     {
-                        ManagerActionResponse action = responseHandler.Action as ManagerActionResponse;
+                        ManagerActionResponse? action = responseHandler.Action as ManagerActionResponse;
                         if (action == null || (response = action.ActionCompleteResponseClass() as ManagerResponse) == null)
                             response = Helper.BuildResponse(buffer);
                         else
@@ -1449,7 +1449,7 @@ namespace AsterNET.Manager
                 }
             }
 
-            if (response == null && buffer.ContainsKey("ping") && buffer["ping"] == "Pong")
+            if (response == null && buffer.ContainsKey("ping") && buffer["ping"].ToLower() == "pong")
             {
                 response = Helper.BuildResponse(buffer);
                 foreach (ResponseHandler pingHandler in pingHandlers.Values)
