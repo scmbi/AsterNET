@@ -23,7 +23,7 @@ namespace AsterNET.Manager
     /// </summary>
     public partial class ManagerConnection : IManagerConnection
     {
-        public readonly ILogger<ManagerConnection> Logger;
+        private readonly ILogger _logger;
         private long actionIdCount = 0;
         private string hostname;
         private int port;
@@ -80,13 +80,17 @@ namespace AsterNET.Manager
         /// control logic in your application will need to handle synchronization.
         /// </summary>
         public bool UseASyncEvents = false;
-              
+
+        /// <summary>
+        /// Permit extensions to log using this object as state
+        /// </summary>
+        public ILogger Logger => _logger;
+
         #region Constructor - ManagerConnection()
         /// <summary> Creates a new instance.</summary>
-        public ManagerConnection()
+        public ManagerConnection(ILogger<ManagerConnection> logger)
         {
-            if (Logger == null)
-                Logger = new LoggerFactory().CreateLogger<ManagerConnection>();
+            _logger = logger;
 
             callerThread = Thread.CurrentThread;
 
@@ -97,7 +101,7 @@ namespace AsterNET.Manager
             responseEventHandlers = new Dictionary<int, IResponseHandler>();
             registeredEventClasses = new Dictionary<int, ConstructorInfo>();
 
-            Helper.RegisterBuiltinEventClasses(registeredEventClasses, Logger);
+            Helper.RegisterBuiltinEventClasses(registeredEventClasses, _logger);
 
             registeredEventHandlers = new Dictionary<int, Func<IManagerEvent, bool>>();
 
@@ -228,12 +232,9 @@ namespace AsterNET.Manager
         /// <param name="port">the port where Asterisk listens for incoming Manager API connections, usually 5038.</param>
         /// <param name="username">the username to use for login</param>
         /// <param name="password">the password to use for login</param>
-        public ManagerConnection(string hostname, int port, string username, string password)
-            : this()
+        public ManagerConnection(string hostname, int port, string username, string password) 
+           : this(new LoggerFactory().CreateLogger<ManagerConnection>())
         {
-            if (Logger == null)
-                Logger = new LoggerFactory().CreateLogger<ManagerConnection>();
-
             this.hostname = hostname;
             this.port = port;
             this.username = username;
@@ -241,11 +242,9 @@ namespace AsterNET.Manager
         }
         #endregion
 
-        public ManagerConnection(ILogger<ManagerConnection> extLogger, string hostname, int port, string username, string password) : this()
+        public ManagerConnection(ILogger<ManagerConnection> logger, string hostname, int port, string username, string password) 
+            : this(logger)
         {
-            if (extLogger != null)
-                Logger = extLogger;
-
             this.hostname = hostname;
             this.port = port;
             this.username = username;
@@ -261,12 +260,9 @@ namespace AsterNET.Manager
         /// <param name="username">the username to use for login</param>
         /// <param name="password">the password to use for login</param>
         /// <param name="socketEncoding">text encoding to asterisk input/output stream</param>
-        public ManagerConnection(string hostname, int port, string username, string password, Encoding socketEncoding)
-            : this()
+        public ManagerConnection(string hostname, int port, string username, string password, Encoding socketEncoding) 
+            : this(new LoggerFactory().CreateLogger<ManagerConnection>())
         {
-            if (Logger == null)
-                Logger = new LoggerFactory().CreateLogger<ManagerConnection>();
-
             this.hostname = hostname;
             this.port = port;
             this.username = username;
@@ -538,7 +534,7 @@ namespace AsterNET.Manager
             {
                 string description = "Unable login during reconnect state.";
                 var ex = new AuthenticationFailedException(description);
-                Logger.LogError(ex, description);
+                _logger.LogError(ex, description);
                 throw ex;
             }
 
@@ -586,7 +582,7 @@ namespace AsterNET.Manager
 
                     string description = "Unable to create login key using MD5 Message Digest.";
                     var newException = new AuthenticationFailedException(description, ex);
-                    Logger.LogError(newException, description);
+                    _logger.LogError(newException, description);
                     throw newException;
                 }
 
@@ -601,11 +597,11 @@ namespace AsterNET.Manager
                 // successfully logged in so assure that we keep trying to reconnect when disconnected
                 reconnectEnable = keepAlive;
 
-                Logger.LogInformation($"Successfully LoggedIn: { loginResponse.ToJson() }");
+                _logger.LogInformation($"Successfully LoggedIn: { loginResponse.ToJson() }");
 
                 asteriskVersion = determineVersion();
 
-                Logger.LogInformation("Determined Asterisk version: " + asteriskVersion);
+                _logger.LogInformation("Determined Asterisk version: " + asteriskVersion);
 
 				enableEvents = true;
 				ConnectEvent ce = new ConnectEvent();
@@ -622,118 +618,149 @@ namespace AsterNET.Manager
 
 		#region determineVersion()
 
-		protected internal AsteriskVersion determineVersion()
-		{
-			Response.ManagerResponse response;
-			response = SendAction(new Action.CommandAction("core show version"), defaultResponseTimeout * 2);
-			if (response is Response.CommandResponse)
-			{
-                if (response.Response == "Error")
-                { 
-                    Logger.LogDebug("Determine Version W 'core show' :: " + response.Message); 
-                }
-                else
+        protected internal bool TryVersionByCoreShowVersion(out AsteriskVersion astversion, out string version)
+        {
+            var command = new CommandAction("core show version");
+            var actionResponse = SendAction(command, defaultResponseTimeout * 2);
+            if (actionResponse is ManagerError error)
+            {
+                _logger.LogWarning("'core show version' error: {message}", error.Message);
+            }
+            else if (actionResponse is CommandResponse response) 
+            {
+                foreach (string line in response.Result)
                 {
-                    foreach (string line in ((Response.CommandResponse)response).Result)
+                    foreach (Match m in Common.ASTERISK_VERSION.Matches(line))
                     {
-
-                        foreach (Match m in Common.ASTERISK_VERSION.Matches(line))
+                        if (m.Groups.Count >= 2)
                         {
-                            if (m.Groups.Count >= 2)
+                            version = m.Groups[1].Value;
+                            if (version.StartsWith("1.4."))
                             {
-                                version = m.Groups[1].Value;
-                                if (version.StartsWith("1.4."))
-                                {
-                                    VAR_DELIMITER = new char[] { '|' };
-                                    return AsteriskVersion.ASTERISK_1_4;
-                                }
-                                else if (version.StartsWith("1.6."))
-                                {
-                                    VAR_DELIMITER = new char[] { '|' };
-                                    return AsteriskVersion.ASTERISK_1_6;
-                                }
-                                else if (version.StartsWith("1.8."))
-                                {
-                                    VAR_DELIMITER = new char[] { '|' };
-                                    return AsteriskVersion.ASTERISK_1_8;
-                                }
-                                else if (version.StartsWith("10."))
-                                {
-                                    VAR_DELIMITER = new char[] { '|' };
-                                    return AsteriskVersion.ASTERISK_10;
-                                }
-                                else if (version.StartsWith("11."))
-                                {
-                                    VAR_DELIMITER = new char[] { ',' };
-                                    return AsteriskVersion.ASTERISK_11;
-                                }
-                                else if (version.StartsWith("12."))
-                                {
-                                    VAR_DELIMITER = new char[] { ',' };
-                                    return AsteriskVersion.ASTERISK_12;
-                                }
-                                else if (version.StartsWith("13."))
-                                {
-                                    VAR_DELIMITER = new char[] { ',' };
-                                    return AsteriskVersion.ASTERISK_13;
-                                }
-                                else if (version.StartsWith("14."))
-                                {
-                                    VAR_DELIMITER = new char[] { ',' };
-                                    return AsteriskVersion.ASTERISK_14;
-                                }
-                                else if (version.StartsWith("15."))
-                                {
-                                    VAR_DELIMITER = new char[] { ',' };
-                                    return AsteriskVersion.ASTERISK_15;
-                                }
-                                else if (version.StartsWith("16."))
-                                {
-                                    VAR_DELIMITER = new char[] { ',' };
-                                    return AsteriskVersion.ASTERISK_16;
-                                }
-                                else if (version.StartsWith("17."))
-                                {
-                                    VAR_DELIMITER = new char[] { ',' };
-                                    return AsteriskVersion.ASTERISK_17;
-                                }
-                                else if (version.IndexOf('.') >= 2)
-                                {
-                                    VAR_DELIMITER = new char[] { ',' };
-                                    return AsteriskVersion.ASTERISK_Newer;
-                                }
-                                else
-                                    throw new ManagerException("Unknown Asterisk version " + version);
+                                VAR_DELIMITER = new char[] { '|' };
+                                astversion = AsteriskVersion.ASTERISK_1_4;
+                                return true;
                             }
+                            else if (version.StartsWith("1.6."))
+                            {
+                                VAR_DELIMITER = new char[] { '|' };
+                                astversion = AsteriskVersion.ASTERISK_1_6;
+                                return true;
+                            }
+                            else if (version.StartsWith("1.8."))
+                            {
+                                VAR_DELIMITER = new char[] { '|' };
+                                astversion = AsteriskVersion.ASTERISK_1_8;
+                                return true;
+                            }
+                            else if (version.StartsWith("10."))
+                            {
+                                VAR_DELIMITER = new char[] { '|' };
+                                astversion = AsteriskVersion.ASTERISK_10;
+                                return true;
+                            }
+                            else if (version.StartsWith("11."))
+                            {
+                                VAR_DELIMITER = new char[] { ',' };
+                                astversion = AsteriskVersion.ASTERISK_11;
+                                return true;
+                            }
+                            else if (version.StartsWith("12."))
+                            {
+                                VAR_DELIMITER = new char[] { ',' };
+                                astversion = AsteriskVersion.ASTERISK_12;
+                                return true;
+                            }
+                            else if (version.StartsWith("13."))
+                            {
+                                VAR_DELIMITER = new char[] { ',' };
+                                astversion = AsteriskVersion.ASTERISK_13;
+                                return true;
+                            }
+                            else if (version.StartsWith("14."))
+                            {
+                                VAR_DELIMITER = new char[] { ',' };
+                                astversion = AsteriskVersion.ASTERISK_14;
+                                return true;
+                            }
+                            else if (version.StartsWith("15."))
+                            {
+                                VAR_DELIMITER = new char[] { ',' };
+                                astversion = AsteriskVersion.ASTERISK_15;
+                                return true;
+                            }
+                            else if (version.StartsWith("16."))
+                            {
+                                VAR_DELIMITER = new char[] { ',' };
+                                astversion = AsteriskVersion.ASTERISK_16;
+                                return true;
+                            }
+                            else if (version.StartsWith("17."))
+                            {
+                                VAR_DELIMITER = new char[] { ',' };
+                                astversion = AsteriskVersion.ASTERISK_17;
+                                return true;
+                            }
+                            else if (version.IndexOf('.') >= 2)
+                            {
+                                VAR_DELIMITER = new char[] { ',' };
+                                astversion = AsteriskVersion.ASTERISK_Newer;
+                                return true;
+                            }
+                            else
+                                throw new ManagerException("Unknown Asterisk version " + version);
                         }
                     }
-                }
-			}
+                }                
+            }
+            else
+            {
+                _logger.LogWarning("'core show version' unknown type response: {message}, {type}", actionResponse.Message, actionResponse.GetType());
+            }
 
-			Response.ManagerResponse showVersionFilesResponse = SendAction(new Action.CommandAction("show version files"), defaultResponseTimeout * 2);
-			if (showVersionFilesResponse is Response.CommandResponse)
-			{
-                if (response.Response == "Error")
+            astversion = default;
+            version = default;
+            return false;
+        }
+
+        protected internal bool TryVersionByShowVersionFiles(out AsteriskVersion astversion)
+        {
+            var command = new CommandAction("show version files");
+            var actionResponse = SendAction(command, defaultResponseTimeout * 2);
+            if (actionResponse is ManagerError error)
+            {
+                _logger.LogWarning("'show version files' error: {message}", error.Message);
+            }
+            else if (actionResponse is CommandResponse response)
+            {
+                IList showVersionFilesResult = response.Result;
+                if (showVersionFilesResult != null && showVersionFilesResult.Count > 0)
                 {
-                    Logger.LogDebug("Determine Version W 'show version' :: " + response.Message);
-                }
-                else
-                {
-                    IList showVersionFilesResult = ((Response.CommandResponse)showVersionFilesResponse).Result;
-                    if (showVersionFilesResult != null && showVersionFilesResult.Count > 0)
+                    var line1 = (string)showVersionFilesResult[0];
+                    if (line1 != null && line1.StartsWith("File"))
                     {
-                        string line1;
-                        line1 = (string)showVersionFilesResult[0];
-                        if (line1 != null && line1.StartsWith("File"))
-                        {
-                            VAR_DELIMITER = new char[] { '|' };
-                            return AsteriskVersion.ASTERISK_1_2;
-                        }
+                        VAR_DELIMITER = new char[] { '|' };
+                        astversion = AsteriskVersion.ASTERISK_1_2;
+                        return true;
                     }
-                }
-			}
+                }                
+            }
+            else
+            {
+                _logger.LogWarning("'show version files' unknown type response: {message}, {type}", actionResponse.Message, actionResponse.GetType());
+            }
 
-			return AsteriskVersion.Unknown;
+            astversion = AsteriskVersion.Unknown;
+            return false;
+        }
+
+        protected internal AsteriskVersion determineVersion()
+		{
+            if (!TryVersionByCoreShowVersion(out AsteriskVersion asteriskVersion, out string version))
+                TryVersionByShowVersionFiles(out asteriskVersion);
+            
+            this.version = version;
+            return asteriskVersion;
 		}
 
 		#endregion
@@ -748,16 +775,16 @@ namespace AsterNET.Manager
 			{
 				if (mrSocket == null)
 				{
-                    Logger.LogInformation("Connecting to {0}:{1}", hostname, port);
+                    _logger.LogInformation("Connecting to {0}:{1}", hostname, port);
                     try
                     {
                         SocketReceiveBufferSize = 100000;
-                        mrSocket = new SocketConnection(hostname, port, SocketReceiveBufferSize, socketEncoding, Logger);
+                        mrSocket = new SocketConnection(hostname, port, SocketReceiveBufferSize, socketEncoding, _logger);
                         result = mrSocket.IsConnected();
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogInformation("Connect - Exception  : {0}", ex.Message);
+                        _logger.LogInformation("Connect - Exception  : {0}", ex.Message);
                         result = false;
                     }
 
@@ -840,7 +867,7 @@ namespace AsterNET.Manager
         private void reconnect(bool init)
         {
 
-            Logger.LogWarning("reconnect (init: {0}), reconnectCount:{1}", init, reconnectCount);
+            _logger.LogWarning("reconnect (init: {0}), reconnectCount:{1}", init, reconnectCount);
             if (init)
                 reconnectCount = 0;
             else if (reconnectCount++ > reconnectRetryMax)
@@ -848,7 +875,7 @@ namespace AsterNET.Manager
 
             if (reconnectEnable)
             {
-                Logger.LogWarning("Try reconnect.");
+                _logger.LogWarning("Try reconnect.");
                 enableEvents = false;
                 reconnected = true;
                 disconnect(false);
@@ -866,13 +893,13 @@ namespace AsterNET.Manager
                             {
                                 // Try to reconnect quite fast for the first times
                                 // this succeeds if the server has just been restarted
-                                Logger.LogInformation("Reconnect delay : {0}, retry : {1}", reconnectIntervalFast, retryCount);
+                                _logger.LogInformation("Reconnect delay : {0}, retry : {1}", reconnectIntervalFast, retryCount);
                                 Thread.Sleep(reconnectIntervalFast);
                             }
                             else
                             {
                                 // slow down after unsuccessful attempts assuming a shutdown of the server
-                                Logger.LogInformation("Reconnect delay : {0}, retry : {1}", reconnectIntervalMax, retryCount);
+                                _logger.LogInformation("Reconnect delay : {0}, retry : {1}", reconnectIntervalMax, retryCount);
                                 Thread.Sleep(reconnectIntervalMax);
                             }
                         }
@@ -882,19 +909,19 @@ namespace AsterNET.Manager
                         }
                         catch (Exception ex)
                         {
-                            Logger.LogInformation("Reconnect delay exception : ", ex.Message);
+                            _logger.LogInformation("Reconnect delay exception : ", ex.Message);
                             continue;
                         }
 
                         try
                         {
-                            Logger.LogInformation("Try connect.");
+                            _logger.LogInformation("Try connect.");
                             if (connect())
                                 break;
                         }
                         catch (Exception ex)
                         {
-                            Logger.LogInformation("Connect exception : ", ex.Message);
+                            _logger.LogInformation("Connect exception : ", ex.Message);
                         }
                         retryCount++;
                     }
@@ -903,7 +930,7 @@ namespace AsterNET.Manager
 
             if (!reconnectEnable)
             {
-                Logger.LogInformation("Can't reconnect.");
+                _logger.LogInformation("Can't reconnect.");
                 enableEvents = true;
                 reconnected = false;
                 disconnect(true);
@@ -982,7 +1009,7 @@ namespace AsterNET.Manager
                     }
                     catch(Exception ex)
                     {
-                        Logger.LogError(ex, "error on logoff");
+                        _logger.LogError(ex, "error on logoff");
                     }
                 }
             }
@@ -1229,7 +1256,7 @@ namespace AsterNET.Manager
         {
             string buffer = BuildAction(action, internalActionId);
 
-            Logger.LogDebug("Sent action : '{0}' : {1}", internalActionId, action);
+            _logger.LogDebug("Sent action : '{0}' : {1}", internalActionId, action);
 
             if (sa == null)
                 sa = new SendToAsteriskDelegate(sendToAsterisk);
@@ -1390,13 +1417,13 @@ namespace AsterNET.Manager
         /// <seealso cref="ManagerReader" />
         internal void DispatchResponse(Dictionary<string, string> buffer)
         {
-            Logger.LogDebug("Dispatch response packet : {0}", Helper.JoinVariables(buffer, ", ", ": "));
+            _logger.LogDebug("Dispatch response packet : {0}", Helper.JoinVariables(buffer, ", ", ": "));
             DispatchResponse(buffer, null);
         }
 
         internal void DispatchResponse(ManagerResponse response)
         {
-            Logger.LogTrace("Dispatch response : {0}", response);
+            _logger.LogTrace("Dispatch response : {0}", response);
             DispatchResponse(null, response);
         }
 
@@ -1443,7 +1470,7 @@ namespace AsterNET.Manager
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogError(ex, "Unexpected exception in responseHandler {0}\n{1}", response);
+                        _logger.LogError(ex, "Unexpected exception in responseHandler {0}\n{1}", response);
 						throw new ManagerException("Unexpected exception in responseHandler " + responseHandler.GetType().FullName, ex);
                     }
                 }
@@ -1465,7 +1492,7 @@ namespace AsterNET.Manager
                 response = Helper.BuildResponse(buffer);
                 response.ActionId = responseActionId;
             }
-            Logger.LogInformation("Reconnected - DispatchEvent : " + response);
+            _logger.LogInformation("Reconnected - DispatchEvent : " + response);
             #region Support background reconnect
             if (response is ChallengeResponse)
             {
@@ -1485,7 +1512,7 @@ namespace AsterNET.Manager
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogError(ex, "Unable to create login key using MD5 Message Digest");
+                        _logger.LogError(ex, "Unable to create login key using MD5 Message Digest");
                         key = null;
                     }
                 }
@@ -1554,7 +1581,7 @@ namespace AsterNET.Manager
             if (e is IResponseEvent responseEvent)
             {
                 if (e is IActionListComplete complete)
-                    Logger.LogDebug($"Action({responseEvent.ActionId}) completed: {complete.EventList}, items: {complete.ListItems}");
+                    _logger.LogDebug($"Action({responseEvent.ActionId}) completed: {complete.EventList}, items: {complete.ListItems}");
 
                 if (!string.IsNullOrEmpty(responseEvent.ActionId) && !string.IsNullOrEmpty(responseEvent.InternalActionId))
                 {
@@ -1566,7 +1593,7 @@ namespace AsterNET.Manager
                         }
                         catch (SystemException ex)
                         {
-                            Logger.LogError(ex, "Unexpected exception");
+                            _logger.LogError(ex, "Unexpected exception");
 							throw ex;
                         }
                 }
@@ -1576,7 +1603,7 @@ namespace AsterNET.Manager
             if (e is ConnectEvent)
             {
                 string protocol = ((ConnectEvent)e).ProtocolIdentifier;
-                Logger.LogInformation("Connected via {0}", protocol);
+                _logger.LogInformation("Connected via {0}", protocol);
 
                 if (!string.IsNullOrEmpty(protocol) && protocol.StartsWith("Asterisk Call Manager"))
                 {
@@ -1585,11 +1612,11 @@ namespace AsterNET.Manager
                 else
                 {
                     this.protocolIdentifier = (string.IsNullOrEmpty(protocol) ? "Empty" : protocol);
-                    Logger.LogWarning("Unsupported protocol version '{0}'. Use at your own risk.", protocol);
+                    _logger.LogWarning("Unsupported protocol version '{0}'. Use at your own risk.", protocol);
                 }
                 if (reconnected)
                 {
-                    Logger.LogInformation("Send Challenge action.");
+                    _logger.LogInformation("Send Challenge action.");
                     ChallengeAction challengeAction = new ChallengeAction();
                     try
                     {
@@ -1597,7 +1624,7 @@ namespace AsterNET.Manager
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogInformation("Send Challenge fail : ", ex.Message);
+                        _logger.LogInformation("Send Challenge fail : ", ex.Message);
                         disconnect(true);
                     }
                     return;

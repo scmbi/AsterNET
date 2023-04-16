@@ -74,23 +74,25 @@ namespace AsterNET.FastAGI
                     // eg. telnet to the service 
                     if (request.Request.Count > 0)
                     {
-                        var script = mappingStrategy.DetermineScript(request);
-                        if (script != null)
+                        using (var script = mappingStrategy.DetermineScript(request))
                         {
-                            var loggerChannel = loggerFactory.CreateLogger<AGIChannel>();
-                            var channel = new AGIChannel(loggerChannel, socket, _SC511_CAUSES_EXCEPTION, _SCHANGUP_CAUSES_EXCEPTION);
-                            Thread.SetData(_channel, channel);
+                            if (script != null)
+                            {
+                                var loggerChannel = loggerFactory.CreateLogger<AGIChannel>();
+                                var channel = new AGIChannel(loggerChannel, socket, _SC511_CAUSES_EXCEPTION, _SCHANGUP_CAUSES_EXCEPTION);
+                                Thread.SetData(_channel, channel);
 
-                            _logger.LogDebug("Begin AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
-                            await script.ExecuteAsync(request, channel, cancellationToken);
-                            statusMessage = "SUCCESS";
+                                _logger.LogDebug("Begin AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
+                                await script.ExecuteAsync(request, channel, cancellationToken);
+                                statusMessage = "SUCCESS";
 
-                            _logger.LogDebug("End AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
-                        }
-                        else
-                        {
-                            statusMessage = "No script configured for URL '" + request.RequestURL + "' (script '" + request.Script + "')";
-                            throw new FileNotFoundException(statusMessage);
+                                _logger.LogDebug("End AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
+                            }
+                            else
+                            {
+                                statusMessage = "No script configured for URL '" + request.RequestURL + "' (script '" + request.Script + "')";
+                                throw new FileNotFoundException(statusMessage);
+                            }
                         }
                     }
                     else
