@@ -16,10 +16,15 @@ namespace AsterNET.Helpers
 {
     internal class Helper
     {
+        /// <summary>
+        /// Update internal logger
+        /// </summary>
+        public static void Log(ILogger logger) => _logger = logger;
+
         private static CultureInfo defaultCulture;
-#if LOGGER
-        private static readonly ILogger logger = new LoggerFactory().CreateLogger<Helper>();
-#endif
+
+        private static ILogger _logger 
+            = new LoggerFactory().CreateLogger<Helper>();
 
         #region CultureInfo 
 
@@ -696,38 +701,63 @@ namespace AsterNET.Helpers
         ///     Register buildin Event classes or any executing assembly
         /// </summary>
         /// <param name="list"></param>
-        internal static void RegisterBuiltinEventClasses(Dictionary<int, ConstructorInfo> list, ILogger logger = default)
+        internal static void RegisterBuiltinEventClasses(Dictionary<int, ConstructorInfo> list)
         {
-            foreach (var type in GetDiscoveredTypes(logger))
+            foreach (var type in GetDiscoveredTypes())
                 RegisterEventClass(list, type);
         }
 
         internal static object _lockDiscovered = new object();
         internal static IEnumerable<Type> DiscoveredTypes;
 
-        internal static IEnumerable<Type> GetDiscoveredTypes(ILogger logger = default)
+        internal static bool AssemblyMatch(Assembly assembly)
+        {
+            return 
+                !assembly.IsDynamic && ( 
+                assembly.FullName.StartsWith(nameof(Sufficit), true, CultureInfo.InvariantCulture) ||
+                assembly.FullName.StartsWith(nameof(AsterNET), true, CultureInfo.InvariantCulture)
+                );
+        }
+
+        internal static IEnumerable<Type> GetDiscoveredTypes()
         {
             // Thread safe
             lock (_lockDiscovered)
             {
                 if (DiscoveredTypes == null)
                 {
-                    DiscoveredTypes = new List<Type>();
-                    foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+                    Type manager = typeof(IManagerEvent);
+                    var discovered = new List<Type>();
+
+                    var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+                    foreach (Assembly assembly in assemblies)
                     {
-                        Type manager = typeof(IManagerEvent);
-                        try
-                        {
-                            foreach (var type in assembly.GetTypes())
-                                if (type.IsPublic && !type.IsAbstract && manager.IsAssignableFrom(type))
-                                    ((IList)DiscoveredTypes).Add(type);
-                        }
+                        // searching in assemblies
+                        if (!AssemblyMatch(assembly))
+                            continue;
+
+                        IEnumerable<Type> types = Array.Empty<Type>();
+                        try { types = assembly.GetTypes(); }
                         catch (Exception ex)
                         {
-                            logger?.LogError(ex, "error finding manager events on assembly");
+                            if (ex is System.Reflection.ReflectionTypeLoadException typeLoadException)
+                            {
+                                foreach (var loaderException in typeLoadException.LoaderExceptions)
+                                    _logger.LogError(loaderException, "error getting types on assembly: {assembly}", assembly);
+                            } else _logger.LogError(ex, "error getting types on assembly: {assembly}", assembly);
+                            continue;
                         }
+
+                        foreach (var type in types)
+                        {
+                            if (type.IsPublic && !type.IsAbstract && manager.IsAssignableFrom(type))
+                                discovered.Add(type);
+                        }                        
                     }
+
+                    DiscoveredTypes = discovered;
                 }
+
                 return DiscoveredTypes;
             }
         }

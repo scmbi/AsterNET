@@ -190,9 +190,7 @@ namespace AsterNET.Manager
 		/// Reads line by line from the asterisk server, sets the protocol identifier as soon as it is
 		/// received and dispatches the received events and responses via the associated dispatcher.
 		/// </summary>
-		/// <seealso cref="ManagerConnection.DispatchEvent(IManagerEvent)" />
 		/// <seealso cref="ManagerConnection.DispatchResponse(Response.ManagerResponse)" />
-		/// <seealso cref="ManagerConnection.setProtocolIdentifier(String)" />
 		internal void Run()
 		{
 			if (mrSocket == null)

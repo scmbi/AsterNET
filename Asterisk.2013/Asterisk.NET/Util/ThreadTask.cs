@@ -30,7 +30,7 @@ namespace AsterNET.Util
 		/// <summary>
 		/// Get a job from the pool, run it, repeat. If the obtained job is null, we exit the loop and the thread.
 		/// </summary>
-		public override async void Run(object obj)
+		public override async void Run(object? obj)
 		{
 			CancellationTokenSource cts = obj is CancellationToken cancellationToken 
 				? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken) : new CancellationTokenSource();

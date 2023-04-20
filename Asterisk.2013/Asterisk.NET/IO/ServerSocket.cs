@@ -27,7 +27,7 @@ namespace AsterNET.IO
 			{
 				var socket = _listener.AcceptSocket();
 				if (socket != null)
-					return new SocketConnectionAsync(socket, _encoding, factory?.CreateLogger<ISocketConnection>());
+					return (new SocketConnectionAsync(socket, _encoding, factory?.CreateLogger<ISocketConnection>()).Start());
 			}
 			return null;
 		}

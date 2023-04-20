@@ -1,5 +1,6 @@
 using AsterNET.FastAGI.Command;
 using AsterNET.IO;
+using Microsoft.Extensions.Logging;
 using Sufficit.Asterisk;
 using System;
 using System.Xml.Linq;
@@ -125,45 +126,6 @@ namespace AsterNET.FastAGI
 
         #endregion
 
-        #region GetData(string file)
-
-        /// <summary>
-        /// Plays the given file and waits for the user to enter DTMF digits until he
-        /// presses '#'. The user may interrupt the streaming by starting to enter
-        /// digits.
-        /// </summary>
-        /// <param name="source"></param>
-        /// <param name="file">the name of the file to play</param>
-        /// <returns> a String containing the DTMF the user entered</returns>
-        public static string GetData(this AGIChannel source, string file)
-		{
-			var lastReply = source.SendCommand(new GetDataCommand(file));
-			return lastReply.GetResult();
-		}
-
-        #endregion
-
-        #region GetData(string file, int timeout)
-
-        /// <summary>
-        /// Plays the given file and waits for the user to enter DTMF digits until he
-        /// presses '#' or the timeout occurs. The user may interrupt the streaming
-        /// by starting to enter digits.
-        /// </summary>
-        /// <param name="source"></param>
-        /// <param name="file">the name of the file to play</param>
-        /// <param name="timeout">the timeout in milliseconds to wait for user input.<br/>
-        /// 0 means standard timeout value, -1 means "ludicrous time"
-        /// (essentially never times out).</param>
-        /// <returns> a String containing the DTMF the user entered</returns>
-        public static string GetData(this AGIChannel source, string file, long timeout)
-		{
-			var lastReply = source.SendCommand(new GetDataCommand(file, timeout));
-			return lastReply.GetResult();
-		}
-
-        #endregion
-
         #region GetData(string file, int timeout, int maxDigits)
 
         /// <summary>
@@ -179,10 +141,10 @@ namespace AsterNET.FastAGI
         /// (essentially never times out).</param>
         /// <param name="maxDigits">the maximum number of digits the user is allowed to enter</param>
         /// <returns> a String containing the DTMF the user entered</returns>
-        public static string GetData(this AGIChannel source, string file, long timeout, int maxDigits)
+        public static string GetData(this AGIChannel source, string? file = null, int? timeout = null, int? maxDigits = null, int? readtime = 60000)
 		{
-			var lastReply = source.SendCommand(new GetDataCommand(file, timeout, maxDigits));
-			return lastReply.GetResult();
+			var lastReply = source.SendCommand(new GetDataCommand(file, timeout, maxDigits) {  ReadTimeOut = readtime });
+            return lastReply.GetResult();
 		}
 
         #endregion
@@ -320,9 +282,9 @@ namespace AsterNET.FastAGI
         /// <param name="offset">skip mili-seconds from start.</param>
         /// <param name="timeout">max timeout for wait a response, useful at long audio files</param>
         /// <returns> the DTMF digit pressed or 0x0 if none was pressed.</returns>
-        public static char StreamFile(this AGIChannel source, string file, string escapeDigits = "", int? offset = null, int? timeout = 60000)
+        public static char StreamFile(this AGIChannel source, string file, string escapeDigits = "", int? offset = null, int? readtime = 60000)
 		{
-			var lastReply = source.SendCommand(new StreamFileCommand(file, escapeDigits, offset) { ReadTimeOut = timeout });
+			var lastReply = source.SendCommand(new StreamFileCommand(file, escapeDigits, offset) { ReadTimeOut = readtime });
 			return lastReply.ResultCodeAsChar;
 		}
 

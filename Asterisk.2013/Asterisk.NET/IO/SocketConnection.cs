@@ -338,6 +338,7 @@ namespace AsterNET.IO
 		#endregion
 
 		#region Close
+
 		/// <summary>
 		/// Closes the socket connection including its input and output stream and
 		/// frees all associated ressources.<br/>
@@ -345,13 +346,14 @@ namespace AsterNET.IO
 		/// will be unblocked and receive an IOException.
 		/// </summary>
 		/// <throws>  IOException if the socket connection cannot be closed. </throws>
-		public void Close()
+		public new void Close()
 		{
 			try
 			{				
                 Client.Shutdown(SocketShutdown.Both);
                 Client.Close();
-                Close();                
+
+                base.Close();                
 			}
 			catch { }
 		}

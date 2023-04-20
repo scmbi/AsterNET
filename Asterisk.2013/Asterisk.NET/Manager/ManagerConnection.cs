@@ -101,7 +101,8 @@ namespace AsterNET.Manager
             responseEventHandlers = new Dictionary<int, IResponseHandler>();
             registeredEventClasses = new Dictionary<int, ConstructorInfo>();
 
-            Helper.RegisterBuiltinEventClasses(registeredEventClasses, _logger);
+            Helper.Log(logger);
+            Helper.RegisterBuiltinEventClasses(registeredEventClasses);
 
             registeredEventHandlers = new Dictionary<int, Func<IManagerEvent, bool>>();
 
