@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using AsterNET.Manager.Event;
 using Sufficit.Asterisk.Manager.Events;
 
@@ -25,7 +26,7 @@ namespace AsterNET.Manager.Action
     /// <seealso cref="AsterNET.Manager.Event.OriginateFailureEvent" />
     public class OriginateAction : ManagerActionEvent, IActionVariable
     {
-        private Dictionary<string, string> variables;
+        private NameValueCollection variables;
 
         #region Action 
 
@@ -183,7 +184,7 @@ namespace AsterNET.Manager.Action
         /// <summary>
         ///     Get the variables dictionary to set on the originated call.
         /// </summary>
-        public Dictionary<string, string> GetVariables()
+        public NameValueCollection GetVariables()
         {
             return variables;
         }
@@ -195,7 +196,7 @@ namespace AsterNET.Manager.Action
         /// <summary>
         ///     Set the variables dictionary to set on the originated call.
         /// </summary>
-        public void SetVariables(Dictionary<string, string> vars)
+        public void SetVariables(NameValueCollection vars)
         {
             variables = vars;
         }
@@ -224,11 +225,9 @@ namespace AsterNET.Manager.Action
         public void SetVariable(string key, string value)
         {
             if (variables == null)
-                variables = new Dictionary<string, string>();
-            if (variables.ContainsKey(key))
-                variables[key] = value;
-            else
-                variables.Add(key, value);
+                variables = new NameValueCollection();
+
+            variables.Set(key, value);
         }
 
         #endregion

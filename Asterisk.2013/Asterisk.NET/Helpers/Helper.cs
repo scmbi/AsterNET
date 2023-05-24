@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using AsterNET.Manager;
@@ -254,21 +256,49 @@ namespace AsterNET.Helpers
         /// <param name="delim"></param>
         /// <param name="delimKeyValue"></param>
         /// <returns></returns>
-        internal static string JoinVariables(IDictionary dictionary, char[] delim, string delimKeyValue)
+        internal static string JoinVariables(NameValueCollection? collection, char[] delim, string delimKeyValue)
         {
-            return JoinVariables(dictionary, new string(delim), delimKeyValue);
+            return JoinVariables(collection, new string(delim), delimKeyValue);
         }
 
-        internal static string JoinVariables(IDictionary dictionary, string delim, string delimKeyValue)
+        internal static string JoinVariables(NameValueCollection? collection, string delim, string delimKeyValue)
         {
-            if (dictionary == null)
+            if (collection == null)
                 return string.Empty;
+
             var sb = new StringBuilder();
-            foreach (DictionaryEntry var in dictionary)
+            var items = collection.AllKeys.SelectMany(collection.GetValues, (k, v) => new { Key = k, Value = v });
+            foreach (var pair in items)
             {
                 if (sb.Length > 0)
                     sb.Append(delim);
-                sb.Append(string.Concat(var.Key, delimKeyValue, var.Value));
+                sb.Append(string.Concat(pair.Key, delimKeyValue, pair.Value));
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>
+        ///     Join variables dictionary to string.
+        /// </summary>
+        /// <param name="dictionary"></param>
+        /// <param name="delim"></param>
+        /// <param name="delimKeyValue"></param>
+        /// <returns></returns>
+        internal static string JoinVariables(IDictionary collection, char[] delim, string delimKeyValue)
+        {
+            return JoinVariables(collection, new string(delim), delimKeyValue);
+        }
+        internal static string JoinVariables(IDictionary? dictionary, string delim, string delimKeyValue)
+        {
+            if (dictionary == null)
+                return string.Empty;
+
+            var sb = new StringBuilder();
+            foreach (DictionaryEntry pair in dictionary)
+            {
+                if (sb.Length > 0)
+                    sb.Append(delim);
+                sb.Append(string.Concat(pair.Key, delimKeyValue, pair.Value));
             }
             return sb.ToString();
         }
@@ -496,9 +526,10 @@ namespace AsterNET.Helpers
                     }
                     sb.Append("]");
                 }
-                    #endregion
 
-                    #region IDictionary 
+                #endregion
+                #region IDictionary 
+
                 if (value is IDictionary && ((IDictionary) value).Count > 0)
                 {
                     if (notFirst)
@@ -553,15 +584,7 @@ namespace AsterNET.Helpers
 
                 if (setter == null)
                 {
-                    // No setter found to key, try general parser
-                    if (!o.Parse(name, attributes[name]))
-                    {
-                        var ex = new ManagerException("Parse error key '" + name + "' on " + o.GetType());
-#if LOGGER
-                        logger?.LogError(ex, "Unable to set property '" + name + "' on " + o.GetType() + ": no setter");
-#endif
-                        throw ex;
-                    }
+                    o.Parse(name, attributes[name]);
                 }
                 else
                 {                    

@@ -1,4 +1,7 @@
 using AsterNET.Helpers;
+using System.Collections;
+using System.Collections.Specialized;
+
 namespace AsterNET.Manager.Action
 {
     /// <summary>
@@ -7,41 +10,31 @@ namespace AsterNET.Manager.Action
     /// </summary>
     public abstract class ManagerAction
     {
-        private string actionId;
-        private string proxyKey;
-        private string server;
-
         /// <summary>
         ///     Manager API Action key. Also use as ProxyAction key to <see cref="ProxyAction">ProxyAction</see> actions.
         /// </summary>
         public abstract string Action { get; }
 
-        #region ActionId 
+        /// <summary>
+        /// Key: Value <br />
+        /// All action lines skipping the reserved ones like "variable"
+        /// </summary>
+        public virtual IDictionary? Dictionary { get; set; }
 
-        public string ActionId
-        {
-            get { return this.actionId; }
-            set { this.actionId = value; }
-        }
+        /// <summary>
+        /// Variable: concat all items here ... <br />
+        /// Can have multiple keys with the same name
+        /// </summary>
+        public virtual NameValueCollection? Variable { get; set; }
 
-        #endregion
-
-        #region Server 
+        public string ActionId { get; set; }
 
         /// <summary>
         ///     Specify a server to which to send your commands (x.x.x.x or hostname).<br />
         ///     This should match the server name specified in your config file's "host" entry.
         ///     If you do not specify a server, the proxy will pick the first one it finds -- fine in single-server configurations.
         /// </summary>
-        public string Server
-        {
-            get { return this.server; }
-            set { this.server = value; }
-        }
-
-        #endregion
-
-        #region ProxyKey 
+        public string Server { get; set; }
 
         /// <summary>
         ///     You can use this as a simple authentication mechanism.<br />
@@ -51,13 +44,7 @@ namespace AsterNET.Manager.Action
         ///     This is helpful in situations where you would like to authenticate and
         ///     execute an action in a single step.
         /// </summary>
-        public virtual string ProxyKey
-        {
-            get { return this.proxyKey; }
-            set { this.proxyKey = value; }
-        }
-
-        #endregion
+        public virtual string ProxyKey { get; set; }
 
         public override string ToString()
         {

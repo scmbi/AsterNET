@@ -12,7 +12,6 @@ namespace AsterNET.Manager.Response
         /// <summary>
         ///     Get/Set the challenge to use when creating the key for log in.
         /// </summary>
-        /// <seealso cref="Manager.Action.LoginAction.key" />
         public string Challenge
         {
             get { return challenge; }

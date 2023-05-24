@@ -14,6 +14,7 @@ using Sufficit.Asterisk.Manager;
 using Sufficit.Asterisk;
 using Sufficit.Asterisk.Manager.Events;
 using Microsoft.Extensions.Logging;
+using Sufficit.Manager.Events;
 
 namespace AsterNET.Manager
 {
@@ -181,15 +182,6 @@ namespace AsterNET.Manager
         /// A NewState is triggered when the state of a channel has changed.<br/>
         /// </summary>
         public event EventHandler<NewStateEvent> NewState;
-        // public event EventHandler<OriginateEvent> Originate;
-        /// <summary>
-        /// An OriginateFailure is triggered when the execution of an OriginateAction failed.
-        /// </summary>
-        // public event EventHandler<OriginateFailureEvent> OriginateFailure;
-        /// <summary>
-        /// An OriginateSuccess is triggered when the execution of an OriginateAction succeeded.
-        /// </summary>
-        // public event EventHandler<OriginateSuccessEvent> OriginateSuccess;
         /// <summary>
         /// An OriginateResponse is triggered when the execution of an Originate.
         /// </summary>
@@ -363,6 +355,11 @@ namespace AsterNET.Manager
         /// This event is sent when a Confbridge participant unmutes.
         /// </summary>
         public event EventHandler<ConfbridgeUnmuteEvent> ConfbridgeUnmute;
+
+        public event EventHandler<ChannelUpdateEvent> ChannelUpdate;
+        
+        public event EventHandler<CoreShowChannelEvent> CoreShowChannel;
+        public event EventHandler<CoreShowChannelsCompleteEvent> CoreShowChannelsComplete;
 
         /// <summary>
         /// 

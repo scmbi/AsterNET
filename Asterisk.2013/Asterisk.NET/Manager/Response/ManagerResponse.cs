@@ -145,7 +145,7 @@ namespace AsterNET.Manager.Response
         /// <param name="key">key name</param>
         /// <param name="value">key value</param>
         /// <returns>true - value parsed, false - can't parse value</returns>
-        public virtual bool Parse(string key, string value)
+        public virtual void Parse(string key, string value)
         {
             if (Attributes == null)
                 Attributes = new Dictionary<string, string>();
@@ -155,7 +155,6 @@ namespace AsterNET.Manager.Response
                 Attributes[key] += string.Concat(Common.LINE_SEPARATOR, value);
             else
                 Attributes.Add(key, value);
-            return true;
         }
 
         #endregion
@@ -173,6 +172,10 @@ namespace AsterNET.Manager.Response
         }
 
         #endregion
+
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull | JsonIgnoreCondition.WhenWritingDefault)]
+        public string? EventList { get; set; }
 
         #region ToString() 
 

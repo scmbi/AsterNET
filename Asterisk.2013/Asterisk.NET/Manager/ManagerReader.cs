@@ -8,6 +8,7 @@ using AsterNET.IO;
 using AsterNET.Manager.Action;
 using AsterNET.Manager.Event;
 using AsterNET.Manager.Response;
+using Microsoft.Extensions.Logging;
 using Sufficit.Asterisk.Manager.Events;
 
 namespace AsterNET.Manager
@@ -17,10 +18,7 @@ namespace AsterNET.Manager
 	/// </summary>
 	public class ManagerReader
 	{
-#if LOGGER
-		private readonly Logger logger = Logger.Instance();
-#endif
-
+		private readonly ILogger _logger;
 		private readonly ManagerConnection mrConnector;
 		private ISocketConnection? mrSocket;
 
@@ -45,7 +43,8 @@ namespace AsterNET.Manager
         /// <param name="connection">the dispatcher to use for dispatching events and responses.</param>
         public ManagerReader(ManagerConnection connection)
 		{
-			mrConnector = connection;
+            _logger = connection.Logger;
+            mrConnector = connection;
 			die = false;
 			lineQueue = new Queue<string>();
 			packet = new Dictionary<string, string>();
@@ -146,14 +145,10 @@ namespace AsterNET.Manager
 				// Give a next portion !!!
 				nstream.BeginRead(mrReader.lineBytes, 0, mrReader.lineBytes.Length, mrReaderCallback, mrReader);
 			}
-#if LOGGER
 			catch (Exception ex)
 			{
-				mrReader.logger.Error("Read data error", ex.Message);
-#else
-			catch
-			{
-#endif
+				mrReader._logger.LogError(ex, "Read data error: {message}", ex.Message);
+			
                 // Any catch - disconncatch !
                 mrReader.disconnect = true;
 				if (mrReader.mrSocket != null)
@@ -264,9 +259,8 @@ namespace AsterNET.Manager
 						lastPacketTime = DateTime.Now;
 						lock (((ICollection) lineQueue).SyncRoot)
 							line = lineQueue.Dequeue().Trim();
-#if LOGGER
-						logger.Debug(line);
-#endif
+						
+						_logger.LogTrace(line);
 
 						#region processing Response: Follows
 
@@ -338,22 +332,15 @@ namespace AsterNET.Manager
 						mrSocket.Close();
 					break;
 				}
-#if LOGGER
 				catch (Exception ex)
 				{
-					logger.Info("Exception : {0}", ex.Message);
-#else
-				catch
-				{
-#endif
+                    _logger.LogError(ex, "Exception : {0}", ex.Message);				
 				}
 
 				if (die)
 					break;
 
-#if LOGGER
-				logger.Info("No die, any error - send disconnect.");
-#endif
+                _logger.LogTrace("No die, any error - send disconnect.");
 				mrConnector.DispatchEvent(new DisconnectEvent());
 			}
 		}

@@ -45,7 +45,7 @@ namespace AsterNET.Manager.Event
 
         /// <summary>
         /// Store all unknown (without setter) keys from manager event.<br/>
-        /// Use in default Parse method <see cref="ManagerEvent.Parse(string, string)"/>
+        /// Use in default Parse method <see cref="IParseSupport.Parse(string, string)"/>
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Dictionary<string, string>? Attributes { get; }
@@ -58,18 +58,12 @@ namespace AsterNET.Manager.Event
         /// <param name="key">key name</param>
         /// <param name="value">key value</param>
         /// <returns>true - value parsed, false - can't parse value</returns>
-        public virtual bool Parse(string key, string value)
+        public virtual void Parse(string key, string value)
         {
-            if (Attributes.ContainsKey(key))
-            {
-                Attributes[key] += string.Concat(Common.LINE_SEPARATOR, value); // Key already presents, add with delimiter
-            }
-            else
-            {
-                Attributes.Add(key, value);
-            }
-
-            return true;
+            if (Attributes.ContainsKey(key))            
+                Attributes[key] = value;            
+            else            
+                Attributes.Add(key, value);      
         }
 
         /// <summary>

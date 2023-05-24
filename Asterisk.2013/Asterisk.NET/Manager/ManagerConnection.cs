@@ -15,6 +15,8 @@ using Sufficit.Asterisk;
 using Sufficit.Asterisk.Manager.Events;
 using Microsoft.Extensions.Logging;
 using AsterNET.Helpers;
+using System.Linq;
+using Sufficit.Manager.Events;
 
 namespace AsterNET.Manager
 {
@@ -23,6 +25,8 @@ namespace AsterNET.Manager
     /// </summary>
     public partial class ManagerConnection : IManagerConnection
     {
+        public char[] VAR_DELIMITER = { '|' };
+
         private readonly ILogger _logger;
         private long actionIdCount = 0;
         private string hostname;
@@ -72,7 +76,6 @@ namespace AsterNET.Manager
         /// <summary> Default Slow Reconnect interval in milliseconds.</summary>
         private int reconnectIntervalMax = 10000;
 
-		public char[] VAR_DELIMITER = { '|' };
 
         /// <summary>
         /// Allows you to specifiy how events are fired. If false (default) then
@@ -196,6 +199,11 @@ namespace AsterNET.Manager
             Helper.RegisterEventHandler(registeredEventHandlers, typeof(ConfbridgeUnmuteEvent), arg => fireEvent(ConfbridgeUnmute, arg));
 
             Helper.RegisterEventHandler(registeredEventHandlers, typeof(FailedACLEvent), arg => fireEvent(FailedACL, arg));
+
+            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ChannelUpdateEvent), arg => fireEvent(ChannelUpdate, arg));
+
+            Helper.RegisterEventHandler(registeredEventHandlers, typeof(CoreShowChannelEvent), arg => fireEvent(CoreShowChannel, arg));
+            Helper.RegisterEventHandler(registeredEventHandlers, typeof(CoreShowChannelsCompleteEvent), arg => fireEvent(CoreShowChannelsComplete, arg));
 
             Helper.RegisterEventHandler(registeredEventHandlers, typeof(AttendedTransferEvent), arg => fireEvent(AttendedTransfer, arg));
             Helper.RegisterEventHandler(registeredEventHandlers, typeof(BridgeCreateEvent), arg => fireEvent(BridgeCreate, arg));
@@ -1029,7 +1037,7 @@ namespace AsterNET.Manager
         /// </summary>
         /// <param name="action"></param>
         /// <returns></returns>
-        public Response.ManagerResponse SendAction(Action.ManagerAction action)
+        public ManagerResponse SendAction(ManagerAction action)
         {
             return SendAction(action, defaultResponseTimeout);
         }
@@ -1043,12 +1051,12 @@ namespace AsterNET.Manager
         /// <param name="action">action to send</param>
         /// <param name="timeout">timeout in milliseconds</param>
         /// <returns></returns>
-        public Response.ManagerResponse SendAction(ManagerAction action, int timeout)
+        public ManagerResponse SendAction(ManagerAction action, int timeout)
         {
             AutoResetEvent autoEvent = new AutoResetEvent(false);
             ResponseHandler handler = new ResponseHandler(action, autoEvent);
 
-            int hash = SendAction(action, handler);
+            _ = SendAction(action, handler);
             bool result = autoEvent.WaitOne(timeout <= 0 ? -1 : timeout, true);
 
             RemoveResponseHandler(handler);
@@ -1105,9 +1113,7 @@ namespace AsterNET.Manager
           var source = handler.TaskCompletionSource;
 
           SendAction(action, handler);
-
-          if (cancellationToken != default)
-                cancellationToken.Register(() => { source.TrySetCanceled(); });
+          cancellationToken.Register(() => { source.TrySetCanceled(); });
 
           return source.Task.ContinueWith(x =>
           {
@@ -1295,6 +1301,9 @@ namespace AsterNET.Manager
         #endregion
 
         #region BuildAction(action, internalActionId)
+
+        private static string[] IgnoreKeys = { "class", "action", "actionid", "variable", "dictionary" };
+
         public string BuildAction(ManagerAction action, string internalActionId)
         {
             MethodInfo getter;
@@ -1314,13 +1323,26 @@ namespace AsterNET.Manager
 
             if (!string.IsNullOrEmpty(valueAsString))
                 sb.Append(string.Concat("ActionID: ", valueAsString, Common.LINE_SEPARATOR));
+                       
+            if (action.Dictionary != null)
+            {
+                foreach (DictionaryEntry entry in action.Dictionary)
+                {
+                    string concatItemsValue = Helper.JoinVariables(action.Dictionary, Common.LINE_SEPARATOR, ": ");
+                    if (concatItemsValue.Length == 0)
+                        continue;
 
-            Dictionary<string, MethodInfo> getters = Helper.GetGetters(action.GetType());
+                    sb.Append(concatItemsValue);
+                    sb.Append(Common.LINE_SEPARATOR);
+                    continue;
+                }
+            }            
 
+            var getters = Helper.GetGetters(action.GetType());
             foreach (string name in getters.Keys)
             {
                 string nameLower = name.ToLower(Helper.CultureInfo);
-                if (nameLower == "class" || nameLower == "action" || nameLower == "actionid")
+                if (IgnoreKeys.Contains(nameLower))
                     continue;
 
                 getter = getters[name];
@@ -1361,9 +1383,9 @@ namespace AsterNET.Manager
                     valueAsString = ((bool)value ? "true" : "false");
                 else if (value is DateTime)
                     valueAsString = value.ToString();
-                else if (value is IDictionary)
+                else if (value is IDictionary dictionary)
                 {
-                    valueAsString = Helper.JoinVariables((IDictionary)value, Common.LINE_SEPARATOR, ": ");
+                    valueAsString = Helper.JoinVariables(dictionary, Common.LINE_SEPARATOR, ": ");
                     if (valueAsString.Length == 0)
                         continue;
                     sb.Append(valueAsString);
@@ -1372,21 +1394,19 @@ namespace AsterNET.Manager
                 }
                 else
                     valueAsString = value.ToString();
-
+                
                 sb.Append(string.Concat(name, ": ", valueAsString, Common.LINE_SEPARATOR));
             }
 
-            IActionVariable actionVar = action as IActionVariable;
-            if (actionVar != null)
+            if (action.Variable != null && action.Variable.Count > 0)
             {
-                var variables = actionVar.GetVariables();
-                if (variables != null && variables.Count > 0)
-                {
-                    sb.Append(string.Concat("Variable: ", Helper.JoinVariables(actionVar.GetVariables(), VAR_DELIMITER, "="), Common.LINE_SEPARATOR));
-                }
-            }
+                string concatItemsValue = Helper.JoinVariables(action.Variable, VAR_DELIMITER, "=");
+                string concatValue = string.Concat("Variable: ", concatItemsValue);
+                sb.Append(concatValue); 
+                sb.Append(Common.LINE_SEPARATOR);
+            }            
 
-            sb.Append(Common.LINE_SEPARATOR);
+            sb.Append(Common.LINE_SEPARATOR);  
             return sb.ToString();
         }
         #endregion
@@ -1565,7 +1585,6 @@ namespace AsterNET.Manager
         /// This method is called by the reader whenever a IManagerEvent is received.
         /// The event is dispatched to all registered IManagerEventHandlers.
         /// </summary>
-        /// <param name="e">the event received by the reader</param>
         /// <seealso cref="ManagerReader"/>
         internal void DispatchEvent(Dictionary<string, string> buffer)
         {
@@ -1582,7 +1601,7 @@ namespace AsterNET.Manager
             if (e is IResponseEvent responseEvent)
             {
                 if (e is IActionListComplete complete)
-                    _logger.LogDebug($"Action({responseEvent.ActionId}) completed: {complete.EventList}, items: {complete.ListItems}");
+                    _logger.LogDebug("Action({actionid}) completed: {eventlist}, items: {items}", responseEvent.ActionId, complete.EventList, complete.ListItems);
 
                 if (!string.IsNullOrEmpty(responseEvent.ActionId) && !string.IsNullOrEmpty(responseEvent.InternalActionId))
                 {
