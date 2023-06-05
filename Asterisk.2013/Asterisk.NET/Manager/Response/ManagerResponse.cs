@@ -95,12 +95,14 @@ namespace AsterNET.Manager.Response
         #region IsSuccess() 
 
         /// <summary>
-        ///     Return true if Response is success
+        ///     Return true if Response is "success", or "goodbye" for logoff <br />
+        ///     (Extra: yes, asterisk sends a "goodbye" msg, a despite off success, why we need standards in the world ?!) fuck developers ...
         /// </summary>
         /// <returns></returns>
         public bool IsSuccess()
         {
-            return Response == "Success";
+            var response = Response.ToLower().Trim();
+            return response == "success" || response == "goodbye";
         }
 
         #endregion

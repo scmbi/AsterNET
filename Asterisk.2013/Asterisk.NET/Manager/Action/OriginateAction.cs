@@ -26,8 +26,6 @@ namespace AsterNET.Manager.Action
     /// <seealso cref="AsterNET.Manager.Event.OriginateFailureEvent" />
     public class OriginateAction : ManagerActionEvent, IActionVariable
     {
-        private NameValueCollection variables;
-
         #region Action 
 
         /// <summary>
@@ -161,24 +159,6 @@ namespace AsterNET.Manager.Action
 
         #endregion
 
-        #region Variable 
-
-        /// <summary>
-        ///     Get/Set the variables to set on the originated call.<br />
-        ///     Variable assignments are of the form "VARNAME=VALUE". You can specify
-        ///     multiple variable assignments separated by the '|' character.<br />
-        ///     Example: "VAR1=abc|VAR2=def" sets the channel variables VAR1 to "abc" and VAR2 to "def".
-        /// </summary>
-        
-        [Obsolete("Use GetVariables and SetVariables instead.", true)]
-        public string Variable
-        {
-            get { return null; /* return Helper.JoinVariables(variables, Common.GET_VAR_DELIMITER(this.Server), "="); */ }
-            set { /* variables = Helper.ParseVariables(variables, value, Common.GET_VAR_DELIMITER(this.Server)); */ }
-        }
-
-        #endregion
-
         #region GetVariables() 
 
         /// <summary>
@@ -186,7 +166,7 @@ namespace AsterNET.Manager.Action
         /// </summary>
         public NameValueCollection GetVariables()
         {
-            return variables;
+            return Variable ?? new NameValueCollection();
         }
 
         #endregion
@@ -198,7 +178,7 @@ namespace AsterNET.Manager.Action
         /// </summary>
         public void SetVariables(NameValueCollection vars)
         {
-            variables = vars;
+            Variable = vars;
         }
 
         #endregion
@@ -210,9 +190,9 @@ namespace AsterNET.Manager.Action
         /// </summary>
         public string GetVariable(string key)
         {
-            if (variables == null)
+            if (Variable == null)
                 return string.Empty;
-            return variables[key];
+            return Variable[key];
         }
 
         #endregion
@@ -224,10 +204,10 @@ namespace AsterNET.Manager.Action
         /// </summary>
         public void SetVariable(string key, string value)
         {
-            if (variables == null)
-                variables = new NameValueCollection();
+            if (Variable == null)
+                Variable = new NameValueCollection();
 
-            variables.Set(key, value);
+            Variable.Set(key, value);
         }
 
         #endregion

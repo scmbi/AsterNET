@@ -30,14 +30,8 @@ namespace AsterNET.FastAGI
 		/// <summary>
 		/// Default asyncronous executing starting point
 		/// </summary>
-		public virtual ValueTask ExecuteAsync(AGIRequest request, AGIChannel channel, CancellationToken cancellationToken)
-        {
-			// normal sincronous execution
-			Execute(request, channel);
-
-			// returning task
-            return new ValueTask();
-        }
+		public virtual async ValueTask ExecuteAsync(AGIRequest request, AGIChannel channel, CancellationToken cancellationToken)
+            => await Task.Run(() => Execute(request, channel));
 
         public void Dispose()
         {

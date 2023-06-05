@@ -23,7 +23,7 @@ namespace AsterNET.FastAGI
             _random = new Random();
         }
 
-        public AGIReply ReadReply(int? timeoutms = null)
+        public virtual AGIReply ReadReply(int? timeoutms = null)
         {
             // reading id
             using (_logger.BeginScope<string>($"[RD:{_random.Next()}]"))

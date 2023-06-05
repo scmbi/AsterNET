@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using AsterNET.IO;
 using AsterNET.Manager;
 using Microsoft.Extensions.Logging;
@@ -26,35 +25,29 @@ namespace AsterNET.FastAGI
             _random = new Random();
         }
 
-        public AGIRequest Read()
+        public AGIRequest Read(int? timeoutms = null)
         {
             // reading id
             using (_logger.BeginScope<string>($"[RD:{_random.Next()}]"))
             {
                 var lines = new List<string>();
-                try
+
+                int count = 0;
+                var result = _socket.ReadLines(timeoutms);
+                foreach (var line in result)
                 {
-                    _logger.LogTrace("AGIReader.ReadRequest():");                   
-                    foreach (var line in _socket.ReadLines())
-                    {
-                        lines.Add(line);
-                        _logger.LogTrace($"line from request ({line})");
-                    }
-                }
-                catch (IOException ex)
-                {
-                    throw new AGINetworkException("Unable to read request from Asterisk: " + ex.Message, ex);
+                    count++;
+                    _logger.LogTrace($"line from reply ({count}): {line}");
+                    lines.Add(line);
                 }
 
-                var request = new AGIRequest(lines)
+                return new AGIRequest(lines)
                 {
                     LocalAddress = _socket.LocalAddress,
                     LocalPort = _socket.LocalPort,
                     RemoteAddress = _socket.RemoteAddress,
                     RemotePort = _socket.RemotePort
                 };
-
-                return request;
             }
         }
     }

@@ -92,7 +92,7 @@ namespace AsterNET.FastAGI.MappingStrategies
         public AGIScript? DetermineScript(AGIRequest request)
         {
             AGIScript? script = null;
-            if (mapAssemblies != null)
+            if (mapAssemblies != null && !string.IsNullOrWhiteSpace(request.Script))
             {
                 lock (mapAssemblies)
                 {

@@ -41,8 +41,8 @@ namespace AsterNET.FastAGI
         {
             if (environment == null)
                 throw new ArgumentException("must not be null", nameof(environment));
-
-            request = buildMap(environment);
+                       
+            request = buildMap(environment);            
         }
 
         #endregion
