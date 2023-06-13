@@ -534,7 +534,7 @@ namespace AsterNET.FastAGI
         /// </summary>
         /// <param name="lines">the environment to transform.</param>
         /// <returns> a map with the variables set corresponding to the given environment.</returns>
-        private Dictionary<string, string> buildMap(IEnumerable<string> lines)
+        private static Dictionary<string, string> buildMap(IEnumerable<string> lines)
         {
             int colonPosition;
             string key;
@@ -564,7 +564,7 @@ namespace AsterNET.FastAGI
         /// </summary>
         /// <param name="s">the parameter string to parse</param>
         /// <returns> a Map made up of parameter names their values</returns>
-        private Dictionary<string, List<string>> parseParameters(string parameters)
+        private static Dictionary<string, List<string>> parseParameters(string parameters)
         {
             var result = new Dictionary<string, List<string>>();
             string name;

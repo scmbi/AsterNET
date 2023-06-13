@@ -204,9 +204,7 @@ namespace AsterNET.Manager.Action
         /// </summary>
         public void SetVariable(string key, string value)
         {
-            if (Variable == null)
-                Variable = new NameValueCollection();
-
+            Variable ??= new NameValueCollection();
             Variable.Set(key, value);
         }
 

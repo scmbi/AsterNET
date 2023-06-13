@@ -88,7 +88,9 @@ namespace AsterNET.IO
 		private readonly BinaryWriter writer;
 		private readonly CancellationTokenSource _hgcts;
 		private readonly Queue<string?> _queue;
+
 		private bool initial;
+		private Task? current;
 
         #region Constructor - SocketConnection(socket) 
 
@@ -249,7 +251,7 @@ namespace AsterNET.IO
 		/// </summary>
 		public SocketConnectionAsync Start()
 		{
-			_ = ListenerAsync(_hgcts.Token).ConfigureAwait(false);
+            current ??= ListenerAsync(_hgcts.Token);
 			return this;
 		}			 
 

@@ -257,10 +257,8 @@ namespace AsterNET.Helpers
         /// <param name="delimKeyValue"></param>
         /// <returns></returns>
         internal static string JoinVariables(NameValueCollection? collection, char[] delim, string delimKeyValue)
-        {
-            return JoinVariables(collection, new string(delim), delimKeyValue);
-        }
-
+            => JoinVariables(collection, new string(delim), delimKeyValue);
+        
         internal static string JoinVariables(NameValueCollection? collection, string delim, string delimKeyValue)
         {
             if (collection == null)
