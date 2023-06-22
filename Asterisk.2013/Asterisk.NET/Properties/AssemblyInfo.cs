@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCulture("")]
 [assembly: Guid("abe98502-ea83-4b04-98c3-ffe3eabe06b0")]
 [assembly: AssemblyVersion("1.0.6.*")]
-[assembly: AssemblyFileVersion("1.0.6.2")]
+[assembly: AssemblyFileVersion("1.0.6.3")]
 
 // Setting ComVisible to false makes the types in this assembly not visible 
 // to COM components.  If you need to access a type in this assembly from 
