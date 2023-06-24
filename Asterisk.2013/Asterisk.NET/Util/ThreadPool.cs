@@ -54,9 +54,9 @@ namespace AsterNET.Util
 		/// blocked until one is added.
 		/// </summary>
 		/// <returns>the next job to service, null if the worker thread should be shut down.</returns>
-		internal AGIConnectionHandler obtainJob()
+		internal AGIConnectionHandler? obtainJob()
 		{
-			AGIConnectionHandler job = null;
+			AGIConnectionHandler? job = null;
 			lock (jobs)
 			{
 				while (job == null && running)

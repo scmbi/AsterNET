@@ -26,8 +26,6 @@ namespace AsterNET.FastAGI
         private readonly ILogger _logger;
         private readonly bool _SC511_CAUSES_EXCEPTION;
         private readonly bool _SCHANGUP_CAUSES_EXCEPTION;
-        private readonly AGIReader agiReader;
-        private readonly AGIWriter agiWriter;
 
         public AGIChannel(ILogger<AGIChannel> logger, ISocketConnection socket, bool SC511_CAUSES_EXCEPTION, bool SCHANGUP_CAUSES_EXCEPTION)
         {
@@ -35,8 +33,7 @@ namespace AsterNET.FastAGI
             _logger.BeginScope(this);
 
             Socket = socket;
-            agiWriter = new AGIWriter(socket);
-            agiReader = new AGIReader(socket, logger);
+            _logger.LogDebug("agi channel id: {id}", socket.Handle);
 
             _SC511_CAUSES_EXCEPTION = SC511_CAUSES_EXCEPTION;
             _SCHANGUP_CAUSES_EXCEPTION = SCHANGUP_CAUSES_EXCEPTION;
@@ -56,8 +53,8 @@ namespace AsterNET.FastAGI
 		/// <throws>  AGIException if the command could not be processed properly </throws>
         public AGIReply SendCommand(AGICommand command)
         {
-            agiWriter.SendCommand(command);
-            var agiReply = agiReader.ReadReply(command.ReadTimeOut);
+            Socket.SendCommand(command);
+            var agiReply = Socket.GetReply(command.ReadTimeOut);
             int status = agiReply.GetStatus();
             if (status == (int) AGIReplyStatuses.SC_INVALID_OR_UNKNOWN_COMMAND)
                 throw new InvalidOrUnknownCommandException(command.BuildCommand());

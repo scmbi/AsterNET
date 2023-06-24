@@ -17,6 +17,8 @@ using Microsoft.Extensions.Logging;
 using AsterNET.Helpers;
 using System.Linq;
 using Sufficit.Manager.Events;
+using System.Net.Sockets;
+using Sufficit.Asterisk.IO;
 
 namespace AsterNET.Manager
 {
@@ -788,7 +790,13 @@ namespace AsterNET.Manager
                     try
                     {
                         SocketReceiveBufferSize = 100000;
-                        mrSocket = new SocketConnection(hostname, port, SocketReceiveBufferSize, socketEncoding, _logger);
+                        var options = new AGISocketExtendedOptions()
+                        {
+                            BufferSize = (uint)SocketReceiveBufferSize,
+                            Encoding = socketEncoding,
+                        };                        
+                        var client = new TcpClient(hostname, port);
+                        mrSocket = new SocketConnection(_logger, options, client.Client);
                         result = mrSocket.IsConnected();
                     }
                     catch (Exception ex)

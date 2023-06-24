@@ -1,8 +1,11 @@
-﻿using System;
+﻿using Sufficit.Asterisk.IO;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace AsterNET.IO
 {
@@ -13,8 +16,6 @@ namespace AsterNET.IO
         bool Initial { get; set; }
 
         bool IsHangUp { get; }
-
-        int ReceiveBufferSize { get; }
 
         IPAddress LocalAddress { get; }
         int LocalPort { get; }
@@ -28,13 +29,19 @@ namespace AsterNET.IO
         void Write(string s);
 
         NetworkStream GetStream();
+                
+        //IEnumerable<string> ReadRequest(uint? timeoutms = null);
 
-        Encoding Encoding { get; }
+        IEnumerable<string> ReadRequest(CancellationToken cancellationToken);
+        
+        IEnumerable<string> ReadReply(uint? timeoutms = null);
 
-        IEnumerable<string> ReadLines(int? timeoutms = null);
-
-        string? ReadLine();
+        //IAsyncEnumerable<string> ReadReplyAsync(uint? timeoutms = null);
 
         event EventHandler? OnHangUp;
+
+        IntPtr Handle { get; }
+
+        AGISocketOptions Options { get; }
     }
 }

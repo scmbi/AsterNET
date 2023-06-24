@@ -52,7 +52,7 @@ namespace AsterNET.FastAGI
         #region Variables
 
         private readonly string firstLine;
-        private readonly List<string> lines;
+        private readonly string[] _lines;
 
         /// <summary>Additional attributes contained in this reply, for example endpos.</summary>
         private Dictionary<string, string> attributes;
@@ -94,9 +94,9 @@ namespace AsterNET.FastAGI
         #region Constructor - AGIReply(lines)
 
         /// <param name="lines">If empty array, means no problems, success</param>
-        public AGIReply(List<string> lines)
+        public AGIReply(string[] lines)
         {
-            this.lines = lines;
+            _lines = lines;
             firstLine = lines.FirstOrDefault() ?? string.Empty;            
         }
 
@@ -115,7 +115,7 @@ namespace AsterNET.FastAGI
 
         public IList Lines
         {
-            get { return lines; }
+            get { return _lines; }
         }
 
         #endregion
@@ -296,12 +296,12 @@ namespace AsterNET.FastAGI
 
             if (!synopsisCreated)
             {
-                if (lines.Count > 1)
+                if (_lines.Length > 1)
                 {
                     string secondLine;
                     Match synopsisMatcher;
 
-                    secondLine = lines[1];
+                    secondLine = _lines[1];
                     synopsisMatcher = Common.AGI_SYNOPSIS_PATTERN.Match(secondLine);
                     if (synopsisMatcher.Success)
                         synopsis = synopsisMatcher.Groups[1].Value;
@@ -310,9 +310,9 @@ namespace AsterNET.FastAGI
 
                 var sbUsage = new StringBuilder();
                 string line;
-                for (int i = 2; i < lines.Count; i++)
+                for (int i = 2; i < _lines.Length; i++)
                 {
-                    line = lines[i];
+                    line = _lines[i];
                     if (line == Common.AGI_END_OF_PROPER_USAGE)
                         break;
                     sbUsage.Append(line.Trim());

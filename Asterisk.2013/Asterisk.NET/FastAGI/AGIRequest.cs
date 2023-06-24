@@ -37,11 +37,11 @@ namespace AsterNET.FastAGI
         ///     Creates a new AGIRequest.
         /// </summary>
         /// <param name="environment">the first lines as received from Asterisk containing the environment.</param>
-        public AGIRequest(IEnumerable<string> environment)
+        public AGIRequest(string[] environment)
         {
-            if (environment == null)
-                throw new ArgumentException("must not be null", nameof(environment));
-                       
+            if (environment == null || environment.Length == 0)
+                throw new ArgumentException("must not be null either empty", nameof(environment));
+                        
             request = buildMap(environment);            
         }
 
@@ -536,19 +536,15 @@ namespace AsterNET.FastAGI
         /// <returns> a map with the variables set corresponding to the given environment.</returns>
         private static Dictionary<string, string> buildMap(IEnumerable<string> lines)
         {
-            int colonPosition;
-            string key;
-            string value;
-
             var map = new Dictionary<string, string>();
             foreach (var line in lines)
             {
-                colonPosition = line.IndexOf(':');
+                var colonPosition = line.IndexOf(':');
                 if (colonPosition < 0 || !line.StartsWith("agi_") || line.Length < colonPosition + 2)
                     continue;
 
-                key = line.Substring(4, colonPosition - 4).ToLower(Helper.CultureInfo);
-                value = line.Substring(colonPosition + 2);
+                var key = line.Substring(4, colonPosition - 4).ToLower(Helper.CultureInfo);
+                var value = line.Substring(colonPosition + 2);
                 if (value.Length != 0)
                     map.Add(key, value);
             }

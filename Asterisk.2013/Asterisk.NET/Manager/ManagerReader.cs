@@ -9,6 +9,7 @@ using AsterNET.Manager.Action;
 using AsterNET.Manager.Event;
 using AsterNET.Manager.Response;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Sufficit.Asterisk.Manager.Events;
 
 namespace AsterNET.Manager
@@ -128,7 +129,7 @@ namespace AsterNET.Manager
                         mrReader.disconnect = true;
 					return;
 				}
-				string line = mrSocket.Encoding.GetString(mrReader.lineBytes, 0, count);
+				string line = mrSocket.Options.Encoding.GetString(mrReader.lineBytes, 0, count);
 				mrReader.lineBuffer += line;
 				int idx;
 				// \n - because not all dev in Digium use \r\n
@@ -169,7 +170,7 @@ namespace AsterNET.Manager
 			packet.Clear();
 			commandList.Clear();
 			lineBuffer = string.Empty;
-			lineBytes = new byte[mrSocket.ReceiveBufferSize];
+			lineBytes = new byte[mrSocket.Options.BufferSize];
 			lastPacketTime = DateTime.Now;
 			wait4identiier = true;
 			processingCommandResult = false;

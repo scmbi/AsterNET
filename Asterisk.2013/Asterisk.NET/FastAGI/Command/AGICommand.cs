@@ -8,7 +8,7 @@ namespace AsterNET.FastAGI.Command
 		/// <summary>
 		/// Change the default timeout for wait a valid response
 		/// </summary>
-		public int? ReadTimeOut { get; set; }
+		public uint? ReadTimeOut { get; set; }
 
 		public abstract string BuildCommand();
 

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using AsterNET.FastAGI.Command;
@@ -20,24 +21,10 @@ namespace AsterNET.FastAGI
     {
         private readonly ILoggerFactory loggerFactory;
         private readonly ILogger _logger;
-        private static readonly LocalDataStoreSlot _channel = Thread.AllocateDataSlot();
-        private readonly ISocketConnection socket;
+        private readonly ISocketConnection _socket;
         private readonly IMappingStrategy mappingStrategy;
         private readonly bool _SC511_CAUSES_EXCEPTION;
         private readonly bool _SCHANGUP_CAUSES_EXCEPTION;
-
-        #region Channel
-
-        /// <summary>
-        ///     Returns the AGIChannel associated with the current thread.
-        /// </summary>
-        /// <returns>the AGIChannel associated with the current thread or  null if none is associated.</returns>
-        internal static AGIChannel? Channel
-        {
-            get { return (AGIChannel) Thread.GetData(_channel); }
-        }
-
-        #endregion
 
         #region AGIConnectionHandler(socket, mappingStrategy)
 
@@ -49,7 +36,7 @@ namespace AsterNET.FastAGI
         public AGIConnectionHandler(ILoggerFactory loggerFactory, ISocketConnection socket, IMappingStrategy mappingStrategy, bool SC511_CAUSES_EXCEPTION, bool SCHANGUP_CAUSES_EXCEPTION)
         {
             this.loggerFactory = loggerFactory;
-            this.socket = socket;
+            _socket = socket;
             this.mappingStrategy = mappingStrategy;
             _SC511_CAUSES_EXCEPTION = SC511_CAUSES_EXCEPTION;
             _SCHANGUP_CAUSES_EXCEPTION = SCHANGUP_CAUSES_EXCEPTION;
@@ -66,9 +53,7 @@ namespace AsterNET.FastAGI
                 string? statusMessage = null;
                 try
                 {
-                    var loggerRequestReader = loggerFactory.CreateLogger<AGIRequestReader>();
-                    var reader = new AGIRequestReader(socket, loggerRequestReader);
-                    var request = reader.Read();
+                    var request = _socket.GetRequest(cancellationToken);
 
                     // Added check for when the request is empty
                     // eg. telnet to the service 
@@ -79,14 +64,13 @@ namespace AsterNET.FastAGI
                             if (script != null)
                             {
                                 var loggerChannel = loggerFactory.CreateLogger<AGIChannel>();
-                                var channel = new AGIChannel(loggerChannel, socket, _SC511_CAUSES_EXCEPTION, _SCHANGUP_CAUSES_EXCEPTION);
-                                Thread.SetData(_channel, channel);
+                                var channel = new AGIChannel(loggerChannel, _socket, _SC511_CAUSES_EXCEPTION, _SCHANGUP_CAUSES_EXCEPTION);
 
-                                _logger.LogDebug("Begin AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
+                                _logger.LogTrace("Begin AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
                                 await script.ExecuteAsync(request, channel, cancellationToken);
                                 statusMessage = "SUCCESS";
 
-                                _logger.LogDebug("End AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
+                                _logger.LogTrace("End AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
                             }
                             else
                             {
@@ -122,16 +106,15 @@ namespace AsterNET.FastAGI
                     _logger.LogError(ex, $"IDX00001(Unexpected): {statusMessage}");
                 }
 
-                Thread.SetData(_channel, null);
                 try
                 {
                     if (!string.IsNullOrWhiteSpace(statusMessage))
                     {
                         var command = new SetVariableCommand(Common.AGI_DEFAULT_RETURN_STATUS, statusMessage);
-                        socket.Write(command.BuildCommand() + "\n");
+                        _socket.SendCommand(command);
                     }
 
-                    socket.Close();
+                    _socket.Close();
                 }
                 catch (IOException ex)
                 {
