@@ -36,14 +36,12 @@ namespace AsterNET.IO
         /// </summary>
         public const string AGI_REPLY_HANGUP = "HANGUP";
 
-		public NetworkStream GetStream()
-			=> new NetworkStream(_socket);		
+		public NetworkStream? GetStream()
+			=> !_disposed ? new NetworkStream(_socket) : null;		
 
         #region DISPOSING
 
-        /// <summary>
-        ///     Monitor dispose event
-        /// </summary>
+        /// <inheritdoc cref="ISocketConnection.OnDisposing" />
         public event EventHandler? OnDisposing;
 
 		private bool _disposed;
@@ -69,14 +67,15 @@ namespace AsterNET.IO
 			}
         }
 
-		#endregion
-		#region HANGUP CONTROL
+        #endregion
+        #region HANGUP CONTROL
 
         /// <summary>
         ///  Indicates that hangup message is received
         /// </summary>
         public bool IsHangUp { get; internal set; }
 
+        /// <inheritdoc cref="ISocketConnection.OnHangUp" />
         public event EventHandler? OnHangUp;
 
         protected void HangUpTrigger()
@@ -89,11 +88,7 @@ namespace AsterNET.IO
         #endregion
         #region DISCONNECTED
 
-        /// <summary>
-        ///		Triggered at socket disconnect event for any reason. <br />
-        ///		Source parameter may be null because disposing <br />
-		///		Nulls cause means expected behaviors <br />
-        /// </summary>
+        /// <inheritdoc cref="ISocketConnection.OnDisconnected"/>
         public event EventHandler<string?>? OnDisconnected;
 
         protected virtual void DisconnectedTrigger(string? cause = null)
@@ -120,7 +115,7 @@ namespace AsterNET.IO
 		private readonly BlockingCollection<string?> _buffer;
 		private bool initial;
 
-        #region Constructor - SocketConnection(socket) 
+        #region CONSTRUCTORS
 
 		public SocketConnection(AGISocketOptions options, Socket socket) : 
 			this(new LoggerFactory().CreateLogger<SocketConnection>(), options, socket){ }
@@ -188,14 +183,19 @@ namespace AsterNET.IO
 					}
 					else
 					{
-						DisconnectedTrigger("not receiving anymore");
+                        DisconnectedTrigger();
 						break;
 					}
                 }
             }
-            catch (SocketException ex)
-            {
-				_logger.LogError(ex, "error on receiving raw data from socket");
+            catch (OperationCanceledException) {
+                _logger.LogTrace("receiving raw data from socket cancelled requested");
+            } 
+            catch (SocketException ex) {
+                if (ex.Message.Contains("WSACancelBlockingCall"))
+                    _logger.LogTrace("receiving raw data from socket cancelled requested at buffering");
+                else
+				    _logger.LogError(ex, "error on receiving raw data from socket");
             }
         }
 

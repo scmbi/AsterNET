@@ -38,7 +38,22 @@ namespace AsterNET.IO
 
         //IAsyncEnumerable<string> ReadReplyAsync(uint? timeoutms = null);
 
+        /// <summary>
+        ///     Monitor channel hangup event
+        /// </summary>
         event EventHandler? OnHangUp;
+
+        /// <summary>
+        ///     Monitor dispose event
+        /// </summary>
+        event EventHandler? OnDisposing;
+
+        /// <summary>
+        ///		Triggered at socket disconnect event for any reason. <br />
+        ///		Source parameter may be null because disposing <br />
+		///		Nulls cause means expected behaviors <br />
+        /// </summary>
+        event EventHandler<string?>? OnDisconnected;
 
         IntPtr Handle { get; }
 

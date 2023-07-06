@@ -27,6 +27,32 @@ namespace AsterNET.Manager
     /// </summary>
     public partial class ManagerConnection : IManagerConnection
     {
+        private ISocketConnection? mrSocket;
+        protected void SocketDisposing(object? sender, EventArgs args)
+        {
+            _logger.LogDebug("internal socket is disposing");
+            if (mrSocket != null)
+            {
+                mrSocket.OnDisposing -= SocketDisposing;
+                mrSocket = null;
+            }
+
+            // what to do ?
+        }
+
+        protected void SocketDisconnected(object? sender, string? cause)
+        {
+            _logger.LogDebug("internal socket was disconnected, cause: {cause}", cause);
+            if (mrSocket != null && !keepAlive)
+            {
+                mrSocket.OnDisconnected -= SocketDisconnected;
+                mrSocket = null;
+            }
+
+            // what to do ?
+        }
+
+
         public char[] VAR_DELIMITER = { '|' };
 
         private readonly ILogger _logger;
@@ -36,12 +62,11 @@ namespace AsterNET.Manager
         private string username;
         private string password;
 
-        private ISocketConnection? mrSocket;
         private Thread mrReaderThread;
         private ManagerReader? mrReader;
 
-        private int defaultResponseTimeout = 2000;
-        private int defaultEventTimeout = 5000;
+        private uint defaultResponseTimeout = 2000;
+        private uint defaultEventTimeout = 5000;
         private int sleepTime = 50;
         private bool keepAlive = true;
         private bool keepAliveAfterAuthenticationFailure = false;
@@ -414,7 +439,7 @@ namespace AsterNET.Manager
         /// will wait for a response before throwing a TimeoutException.<br/>
         /// Default is 2000.
         /// </summary>
-        public int DefaultResponseTimeout
+        public uint DefaultResponseTimeout
         {
             get { return defaultResponseTimeout; }
             set { defaultResponseTimeout = value; }
@@ -426,7 +451,7 @@ namespace AsterNET.Manager
         /// will wait for a response and the last response event before throwing a TimeoutException.<br/>
         /// Default is 5000.
         /// </summary>
-        public int DefaultEventTimeout
+        public uint DefaultEventTimeout
         {
             get { return defaultEventTimeout; }
             set { defaultEventTimeout = value; }
@@ -521,25 +546,26 @@ namespace AsterNET.Manager
         #endregion
 
         #region login(timeout)
-        /// <summary>
-        /// Does the real login, following the steps outlined below.<br/>
-        /// Connects to the asterisk server by calling connect() if not already connected<br/>
-        /// Waits until the protocol identifier is received. This is checked every sleepTime ms but not longer than timeout ms in total.<br/>
-        /// Sends a ChallengeAction requesting a challenge for authType MD5.<br/>
-        /// When the ChallengeResponse is received a LoginAction is sent using the calculated key (MD5 hash of the password appended to the received challenge).<br/>
-        /// </summary>
-        /// <param name="timeout">the maximum time to wait for the protocol identifier (in ms)</param>
-        /// <throws>
-        /// AuthenticationFailedException if username or password are incorrect and the login action returns an error or if the MD5
-        /// hash cannot be computed. The connection is closed in this case.
-        /// </throws>
-        /// <throws>
-        /// TimeoutException if a timeout occurs either while waiting for the
-        /// protocol identifier or when sending the challenge or login
-        /// action. The connection is closed in this case.
-        /// </throws>
-        private void login(int timeout)
+
+        public Task Login(uint? timeout = null)
         {
+            var cts = new CancellationTokenSource((int)(timeout ?? defaultResponseTimeout));
+            return Login(cts.Token);
+        }
+
+
+        /// <summary>
+        /// Logs in to the Asterisk manager using asterisk's MD5 based
+        /// challenge/response protocol. The login is delayed until the protocol
+        /// identifier has been received by the reader.
+        /// </summary>
+        /// <throws>  AuthenticationFailedException if the username and/or password are incorrect</throws>
+        /// <throws>  TimeoutException if no response is received within the specified timeout period</throws>
+        /// <seealso cref="Action.ChallengeAction"/>
+        /// <seealso cref="Action.LoginAction"/>
+        public async Task Login(CancellationToken cancellationToken)
+        {
+            
             enableEvents = false;
             if (reconnected)
             {
@@ -551,8 +577,14 @@ namespace AsterNET.Manager
 
             reconnectEnable = false;
             DateTime start = DateTime.Now;
-            do
+            while (string.IsNullOrEmpty(protocolIdentifier))
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    disconnect(true);
+                    throw new TimeoutException("Timeout waiting for protocol identifier");
+                }
+
                 if (connect())
                 {
                     // Increase delay after connection up to 500 ms
@@ -564,13 +596,7 @@ namespace AsterNET.Manager
                 }
                 catch
                 { }
-
-                if (string.IsNullOrEmpty(protocolIdentifier) && timeout > 0 && Helper.GetMillisecondsFrom(start) > timeout)
-                {
-                    disconnect(true);
-                    throw new TimeoutException("Timeout waiting for protocol identifier");
-                }
-            } while (string.IsNullOrEmpty(protocolIdentifier));
+            };
 
             ChallengeAction challengeAction = new ChallengeAction();
             Response.ManagerResponse response = SendAction(challengeAction, defaultResponseTimeout * 2);
@@ -623,8 +649,8 @@ namespace AsterNET.Manager
 				throw new ManagerException("Unable login to Asterisk - " + response.Message);
 			else
 				throw new ManagerException("Unknown response during login to Asterisk - " + response.GetType().Name + " with message " + response.Message);
-
 		}
+
 		#endregion
 
 		#region determineVersion()
@@ -792,11 +818,15 @@ namespace AsterNET.Manager
                         SocketReceiveBufferSize = 100000;
                         var options = new AGISocketExtendedOptions()
                         {
+                            Start = false,
                             BufferSize = (uint)SocketReceiveBufferSize,
                             Encoding = socketEncoding,
                         };                        
                         var client = new TcpClient(hostname, port);
                         mrSocket = new SocketConnection(_logger, options, client.Client);
+                        mrSocket.OnDisposing += SocketDisposing;
+                        mrSocket.OnDisconnected += SocketDisconnected;
+
                         result = mrSocket.IsConnected();
                     }
                     catch (Exception ex)
@@ -966,33 +996,8 @@ namespace AsterNET.Manager
         }
         #endregion
 
-        #region Login()
-        /// <summary>
-        /// Logs in to the Asterisk manager using asterisk's MD5 based
-        /// challenge/response protocol. The login is delayed until the protocol
-        /// identifier has been received by the reader.
-        /// </summary>
-        /// <throws>  AuthenticationFailedException if the username and/or password are incorrect</throws>
-        /// <throws>  TimeoutException if no response is received within the specified timeout period</throws>
-        /// <seealso cref="Action.ChallengeAction"/>
-        /// <seealso cref="Action.LoginAction"/>
-        public void Login()
-        {
-            login(defaultResponseTimeout);
-        }
-        /// <summary>
-        /// Log in to the Asterisk manager using asterisk's MD5 based
-        /// challenge/response protocol. The login is delayed until the protocol
-        /// identifier has been received by the reader.
-        /// </summary>
-        /// <param name="timeout">Timeout in milliseconds to login.</param>
-        public void Login(int timeout)
-        {
-            login(timeout);
-        }
-        #endregion
-
         #region IsConnected()
+
         /// <summary> Returns true if there is a socket connection to the
         /// asterisk server, false otherwise.
         /// 
@@ -1059,13 +1064,13 @@ namespace AsterNET.Manager
         /// <param name="action">action to send</param>
         /// <param name="timeout">timeout in milliseconds</param>
         /// <returns></returns>
-        public ManagerResponse SendAction(ManagerAction action, int timeout)
+        public ManagerResponse SendAction(ManagerAction action, uint timeout)
         {
             AutoResetEvent autoEvent = new AutoResetEvent(false);
             ResponseHandler handler = new ResponseHandler(action, autoEvent);
 
             _ = SendAction(action, handler);
-            bool result = autoEvent.WaitOne(timeout <= 0 ? -1 : timeout, true);
+            bool result = autoEvent.WaitOne(timeout <= 0 ? -1 : (int)timeout, true);
 
             RemoveResponseHandler(handler);
 
@@ -1145,7 +1150,7 @@ namespace AsterNET.Manager
         /// <param name="action"></param>
         /// <param name="timeout">wait timeout in milliseconds</param>
         /// <returns></returns>
-        public ResponseEvents SendEventGeneratingAction(ManagerActionEvent action, int timeout)
+        public ResponseEvents SendEventGeneratingAction(ManagerActionEvent action, uint timeout)
         {
             if (action == null)
                 throw new ArgumentException("Unable to send action: action is null.");
@@ -1167,7 +1172,7 @@ namespace AsterNET.Manager
 
             SendToAsterisk(action, internalActionId);
 
-            bool result = autoEvent.WaitOne(timeout <= 0 ? -1 : timeout, true);
+            bool result = autoEvent.WaitOne(timeout <= 0 ? -1 : (int)timeout, true);
 
             RemoveResponseHandler(handler);
             RemoveResponseEventHandler(handler);

@@ -59,17 +59,18 @@ namespace AsterNET.IO
         void RequestReceived(Socket socket)
         {
             count++;
-            simultaneous++;
-
-            var listener = new SocketConnection(_logger, _options, socket);
-            _logger.LogInformation("dispatching request received, thread id: {thread_id}, thread name: {thread_name}, socket id: {socket}, simultaneous: {simultaneous}",
-                    Thread.CurrentThread.ManagedThreadId,
-                    Thread.CurrentThread.Name,
-                    socket.Handle,
-                    simultaneous);
-
             try
             {
+                // simultaneous count here because socket maybe cancelled, so can throw a exception
+                simultaneous++;
+
+                var listener = new SocketConnection(_logger, _options, socket);
+                _logger.LogInformation("dispatching request received, thread id: {thread_id}, thread name: {thread_name}, socket id: {socket}, simultaneous: {simultaneous}",
+                        Thread.CurrentThread.ManagedThreadId,
+                        Thread.CurrentThread.Name,
+                        socket.Handle,
+                        simultaneous);
+
                 OnRequest?.Invoke(this, listener);
             }
             catch (Exception ex)
