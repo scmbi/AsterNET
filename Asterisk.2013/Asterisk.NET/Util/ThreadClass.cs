@@ -1,12 +1,13 @@
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace AsterNET.Util
 {
 	/// <summary>
 	/// Support class used to handle threads
 	/// </summary>
-	public class ThreadClass
+	public abstract class ThreadClass
 	{
 		/// <summary>The instance of Threading.Thread</summary>
 		private Thread thread;
@@ -17,20 +18,22 @@ namespace AsterNET.Util
 		/// </summary>
 		public ThreadClass()
 		{
-			thread = new Thread(new ThreadStart(Run));
+			var pts = new ParameterizedThreadStart(Run);
+			thread = new Thread(pts);
 		}
 		#endregion
 
 		#region ThreadClass(name)
+
 		/// <summary>
 		/// Initializes a new instance of the Thread class.
 		/// </summary>
 		/// <param name="Name">The name of the thread</param>
-		public ThreadClass(string Name)
+		public ThreadClass(string Name) : this()
 		{
-			thread = new Thread(new ThreadStart(Run));
 			this.Name = Name;
 		}
+
 		#endregion
 
 		#region ThreadClass(start)
@@ -58,21 +61,21 @@ namespace AsterNET.Util
 		#endregion
 
 		#region Run()
+
 		/// <summary>
 		/// This method has no functionality unless the method is overridden
 		/// </summary>
-		public virtual void Run()
-		{
-		}
+		public abstract void Run(object? state);
+
 		#endregion
 
 		#region Start()
 		/// <summary>
 		/// Causes the operating system to change the state of the current thread instance to ThreadState.Running
 		/// </summary>
-		public void Start()
+		public void Start(CancellationToken cancellationToken = default)
 		{
-			thread.Start();
+			thread.Start(cancellationToken);
 		}
 		#endregion
 

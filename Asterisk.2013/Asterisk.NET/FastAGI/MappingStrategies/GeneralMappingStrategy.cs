@@ -1,83 +1,55 @@
-﻿using System;
-using System.Collections;
-using System.Resources;
+using System;
 using System.Reflection;
 using System.Collections.Generic;
 using System.IO;
-using System.Xml.Serialization;
+using Microsoft.Extensions.DependencyInjection;
+using System.Linq;
 
 namespace AsterNET.FastAGI.MappingStrategies
 {
 
     internal class MappingAssembly
     {
-        public string ClassName { get; set; }
-        public Assembly LoadedAssembly { get; set; }
-
-        public AGIScript CreateInstance()
+        public MappingAssembly(Type scriptClass, Assembly? loadedAssembly = null)
         {
-            AGIScript rtn = null;
-            try
-            {
-                if (LoadedAssembly != null)
-                    rtn = (AGIScript)LoadedAssembly.CreateInstance(ClassName);
-                else
-                    rtn = (AGIScript)Assembly.GetEntryAssembly().CreateInstance(ClassName);
-            }
-            catch (Exception ex)
-            {
-
-            }
-            return rtn;
-        }
-    }
-
-    public class ScriptMapping
-    {
-        /// <summary>
-        /// The name of the script as called by FastAGI
-        /// </summary>
-        public string ScriptName { get; set; }
-        /// <summary>
-        /// The class containing the AGIScript to be run
-        /// </summary>
-        public string ScriptClass{ get; set; }
-        /// <summary>
-        /// The name of the assembly to load, that contains the ScriptClass. Optional, if not specified, the class will be loaded from the current assembly
-        /// </summary>
-        public string ScriptAssmebly { get; set; }
-
-        [XmlIgnoreAttribute]
-        public Assembly PreLoadedAssembly { get; set; }
-
-        public static List<ScriptMapping> LoadMappings(string pathToXml)
-        {
-            // Load ScriptMappings XML File
-            XmlSerializer xs = new XmlSerializer(typeof(List<ScriptMapping>));
-            try
-            {
-                using (FileStream fs = File.OpenRead(pathToXml))
-                {
-                    return (List<ScriptMapping>)xs.Deserialize(fs);
-                }
-            }
-            catch
-            {
-                return new List<ScriptMapping>();
-            }
+            ScriptClass = scriptClass;
+            LoadedAssembly = loadedAssembly;
         }
 
-        public static void SaveMappings(string pathToXml, List<ScriptMapping> resources)
+        public Type ScriptClass { get; set; }
+        public string ClassName => ScriptClass.ToString();
+
+        public Assembly? LoadedAssembly { get; set; }
+
+        public AGIScript CreateInstance(IServiceProvider? serviceProvider = null)
         {
-            // Save ScriptMappings XML File
-            XmlSerializer xs = new XmlSerializer(typeof(List<ScriptMapping>));
-            using (FileStream fs = File.Open(pathToXml, FileMode.Create, FileAccess.Write, FileShare.None))
+            if (serviceProvider != null)
             {
-                lock (resources)
-                {
-                    xs.Serialize(fs, resources);
-                }
+                using var scope = serviceProvider.CreateScope();
+                var service = scope.ServiceProvider.GetService(ScriptClass);
+                if (service != null && service is AGIScript script) return script;
             }
+
+            object? rtn;
+            if (LoadedAssembly != null)
+            {
+                rtn = LoadedAssembly.CreateInstance(ClassName);
+            }
+            else
+            {
+                var assembly = Assembly.GetEntryAssembly();
+                if (assembly == null) throw new Exception("null assembly on creating instance");
+
+                rtn = assembly.CreateInstance(ClassName);
+            }
+            
+            if(rtn == null)
+                throw new Exception("null object after create instance");
+
+            if (rtn is AGIScript assembled)
+                return assembled;
+            else 
+                throw new Exception("object is not an AGIScript");
         }
     }
 
@@ -89,20 +61,9 @@ namespace AsterNET.FastAGI.MappingStrategies
     /// </summary>
     public class GeneralMappingStrategy : IMappingStrategy
     {
-#if LOGGER
-        private Logger logger = Logger.Instance();
-#endif
+        private readonly IServiceProvider? provider;
         private List<ScriptMapping> mappings;
-        private Dictionary<string, MappingAssembly> mapAssemblies;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public GeneralMappingStrategy()
-        {
-            this.mappings = null;
-            this.mapAssemblies = null;
-        }
+        private Dictionary<string, MappingAssembly>? mapAssemblies;
 
         /// <summary>
         /// 
@@ -111,7 +72,12 @@ namespace AsterNET.FastAGI.MappingStrategies
         public GeneralMappingStrategy(List<ScriptMapping> resources)
         {
             this.mappings = resources;
-            this.mapAssemblies = null;
+        }
+
+        public GeneralMappingStrategy(IServiceProvider provider, List<ScriptMapping> resources)
+        {
+            this.provider = provider;
+            this.mappings = resources;
         }
 
         /// <summary>
@@ -121,18 +87,19 @@ namespace AsterNET.FastAGI.MappingStrategies
         public GeneralMappingStrategy(string xmlFilePath)
         {
             this.mappings = ScriptMapping.LoadMappings(xmlFilePath);
-            this.mapAssemblies = null;
         }
 
-        public AGIScript DetermineScript(AGIRequest request)
+        public AGIScript? DetermineScript(AGIRequest request)
         {
-            AGIScript script = null;
-            if (mapAssemblies != null && request.Script != null)
+            AGIScript? script = null;
+            if (mapAssemblies != null && !string.IsNullOrWhiteSpace(request.Script))
+            {
                 lock (mapAssemblies)
                 {
                     if (mapAssemblies.ContainsKey(request.Script))
-                        script = mapAssemblies[request.Script].CreateInstance();
+                        script = mapAssemblies[request.Script].CreateInstance(provider);
                 }
+            }
             return script;
         }
 
@@ -140,47 +107,49 @@ namespace AsterNET.FastAGI.MappingStrategies
         {
             if (mapAssemblies == null)
                 mapAssemblies = new Dictionary<string, MappingAssembly>();
+
             lock (mapAssemblies)
             {
                 mapAssemblies.Clear();
 
-                if (this.mappings == null || this.mappings.Count == 0)
+                if (mappings == null || !mappings.Any())
                     throw new AGIException("No mappings were added, before Load method called.");
 
-                foreach (var de in this.mappings)
+                foreach (var de in mappings)
                 {
+                    // secure check of null mappings
+                    if (de == null) continue;
+
                     MappingAssembly ma;
+                    if (de.ScriptClass != null)
+                    {
+                        ma = new MappingAssembly(de.ScriptClass, de.ScriptClass.Assembly);
+                        mapAssemblies.Add(de.ScriptName, ma);
+                        continue;
+                    }
 
                     if (mapAssemblies.ContainsKey(de.ScriptName))
-                        throw new AGIException(String.Format("Duplicate mapping name '{0}'", de.ScriptName));
-                    if (!string.IsNullOrEmpty(de.ScriptAssmebly))
+                        throw new AGIException(string.Format("Duplicate mapping name '{0}'", de.ScriptName));
+
+                    if (!string.IsNullOrWhiteSpace(de.ScriptAssemblyLocation))
                     {
                         try
                         {
-                            ma = new MappingAssembly()
-                            {
-                                ClassName = (string)de.ScriptClass,
-                                LoadedAssembly = Assembly.LoadFile(de.ScriptAssmebly)
-                            };
+                            var assembly = Assembly.LoadFile(de.ScriptAssemblyLocation);
+                            ma = new MappingAssembly(de.ScriptClass, assembly);
                         }
                         catch (FileNotFoundException fnfex)
                         {
-                            throw new AGIException(string.Format("Unable to load AGI Script {0}, file not found.", Path.Combine(Environment.CurrentDirectory, de.ScriptAssmebly)), fnfex);
+                            throw new AGIException(string.Format("Unable to load AGI Script {0}, file not found.", Path.Combine(Environment.CurrentDirectory, de.ScriptAssemblyLocation)), fnfex);
                         }
                     }
                     else
                     {
-                        ma = new MappingAssembly()
-                        {
-                            ClassName = (string)de.ScriptClass
-                        };
-                        if (de.PreLoadedAssembly != null)
-                            ma.LoadedAssembly = de.PreLoadedAssembly;
+                        ma = new MappingAssembly(de.ScriptClass, de.PreLoadedAssembly);
                     }
 
-                    mapAssemblies.Add(de.ScriptName, ma);
-                }
-                
+                    mapAssemblies.Add(de.ScriptName, ma);                    
+                }                
             }
         }
 

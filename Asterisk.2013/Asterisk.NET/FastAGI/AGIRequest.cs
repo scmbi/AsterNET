@@ -3,7 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.Text.RegularExpressions;
-using System.Web;
+using System.Linq;
+using Sufficit.Asterisk;
+using AsterNET.Helpers;
 
 namespace AsterNET.FastAGI
 {
@@ -35,11 +37,12 @@ namespace AsterNET.FastAGI
         ///     Creates a new AGIRequest.
         /// </summary>
         /// <param name="environment">the first lines as received from Asterisk containing the environment.</param>
-        public AGIRequest(List<string> environment)
+        public AGIRequest(string[] environment)
         {
-            if (environment == null)
-                throw new ArgumentException("Environment must not be null.");
-            request = buildMap(environment);
+            if (environment == null || environment.Length == 0)
+                throw new ArgumentException("must not be null either empty", nameof(environment));
+                        
+            request = buildMap(environment);            
         }
 
         #endregion
@@ -53,12 +56,6 @@ namespace AsterNET.FastAGI
 
         #endregion
 
-        /// <summary>
-        /// Proxy Header set by Amazon Web Services Elastic Load Balancer (ELB). See http://docs.aws.amazon.com/ElasticLoadBalancing/latest/DeveloperGuide/enable-proxy-protocol.html#enable-proxy-protocol-cli
-        /// Will be null if not present.
-        /// </summary>
-        public AwsElbProxyHeader AwsElbProxyHeader;
-
         #region RequestURL 
 
         /// <summary>
@@ -66,15 +63,7 @@ namespace AsterNET.FastAGI
         /// </summary>
         public string RequestURL
         {
-            get
-            {
-                string req;
-                if (request.TryGetValue("request", out req))
-                {
-                    return req;
-                }
-                return null;
-            }
+            get { return request["request"]; }
         }
 
         #endregion
@@ -97,7 +86,7 @@ namespace AsterNET.FastAGI
         /// <summary>
         ///     Returns the unqiue id of the channel.
         /// </summary>
-        /// <returns>the unqiue id of the channel.</returns>
+        /// <returns>the unique id of the channel.</returns>
         public string UniqueId
         {
             get { return request["uniqueid"]; }
@@ -147,6 +136,62 @@ namespace AsterNET.FastAGI
                 return callerId10();
             }
         }
+
+        #region Arguments
+
+        private IEnumerable<string> _arguments;
+        private object _lockArguments = new object();
+
+        /// <summary>
+        /// The main advantage to use the arguments is that you not have to escape url parameters 
+        /// </summary>
+        public IEnumerable<string> Arguments
+        {
+            get
+            {
+                lock (_lockArguments)
+                {
+                    if (_arguments == null)
+                    {
+                        var dic = new Dictionary<int, string>();
+                        foreach (string key in request.Keys)
+                        {
+                            if (key.StartsWith("arg_"))
+                            {
+                                dic.Add(int.Parse(key.Substring(4)), request[key]);
+                            }
+                        }
+
+                        if(dic.Any()) _arguments = dic.OrderBy(order => order.Key).Select(item => item.Value);                        
+                        else { _arguments = new List<string>(); }
+                    }
+                    return _arguments;
+                }
+            }
+        }
+
+        public string Argument(int position)
+        {
+            var args = Arguments;
+            int count = args.Count();
+            if (count > 0)
+            {               
+                if(position >= 0)
+                {
+                    if(count > position)
+                        return args.ElementAt(position);
+                }
+                else
+                {
+                    if(-count <= position)
+                        return args.ElementAt(count + position);
+                }
+            } 
+            
+            return null;
+        }
+
+        #endregion
 
         #endregion
 
@@ -232,31 +277,15 @@ namespace AsterNET.FastAGI
         #region Dnid 
 
         public string Dnid
-        {
-            get
-            {
-                string dnid = request["dnid"];
-                if (dnid == null || dnid.ToLower(Helper.CultureInfo) == "unknown")
-                    return null;
-                return dnid;
-            }
-        }
+            => request.TryGetValue("dnid", out string value) && value.ToLower(Helper.CultureInfo) != "unknown" ? value : null;
 
         #endregion
 
         #region Rdnis 
 
-        public string Rdnis
-        {
-            get
-            {
-                string rdnis = request["rdnis"];
-                if (rdnis == null || rdnis.ToLower(Helper.CultureInfo) == "unknown")
-                    return null;
-                return rdnis;
-            }
-        }
-
+        public string? Rdnis
+            => request.TryGetValue("rdnis", out string value) && value.ToLower(Helper.CultureInfo) != "unknown" ? value : null;
+        
         #endregion
 
         #region Context
@@ -289,16 +318,7 @@ namespace AsterNET.FastAGI
         ///     Returns the priority in the dial plan from which the AGI script was called.
         /// </summary>
         public string Priority
-        {
-            get
-            {
-                if (request["priority"] != null)
-                {
-                    return request["priority"];
-                }
-                return "";
-            }
-        }
+            => request.ContainsKey("priority") ? request["priority"] : string.Empty;
 
         #endregion
 
@@ -310,14 +330,7 @@ namespace AsterNET.FastAGI
         ///     true if this agi is passed audio, false otherwise.
         /// </summary>
         public bool Enhanced
-        {
-            get
-            {
-                if (request["enhanced"] != null && request["enhanced"] == "1.0")
-                    return true;
-                return false;
-            }
-        }
+            => request.ContainsKey("enhanced") && request["enhanced"] == "1.0";
 
         #endregion
 
@@ -326,10 +339,8 @@ namespace AsterNET.FastAGI
         /// <summary>
         ///     Returns the account code set for the call.
         /// </summary>
-        public string AccountCode
-        {
-            get { return request["accountCode"]; }
-        }
+        public string? AccountCode
+            => request.ContainsKey("accountcode") ? request["accountcode"] : null;
 
         #endregion
 
@@ -369,8 +380,7 @@ namespace AsterNET.FastAGI
                 if (script != null)
                     return script;
 
-                if (request.TryGetValue("network_script", out script))
-                {
+                if(request.TryGetValue("network_script", out script)) { 
                     Match scriptMatcher = Common.AGI_SCRIPT_PATTERN.Match(script);
                     if (scriptMatcher.Success)
                     {
@@ -470,25 +480,28 @@ namespace AsterNET.FastAGI
 
         #region Parameter(string name) 
 
-        public string Parameter(string name)
+        public string? Parameter(string name)
         {
-            List<string> values;
-            values = ParameterValues(name);
-            if (values == null || values.Count == 0)
-                return null;
-            return values[0];
+            var values = ParameterValues(name);
+            return values?.FirstOrDefault();
         }
 
         #endregion
 
         #region ParameterValues(string name) 
 
+        /// <summary>
+        /// Consulta a matrix de parametros (não gera excessão)
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
         public List<string> ParameterValues(string name)
         {
-            if (ParameterMap().Count == 0)
-                return null;
-
-            return parameterMap[name];
+            var result = new List<string>();
+            if (ParameterMap().Any())
+                if(!string.IsNullOrWhiteSpace(name) && parameterMap.ContainsKey(name.ToLowerInvariant()))
+                    result = parameterMap[name.ToLowerInvariant()];
+            return result;
         }
 
         #endregion
@@ -521,21 +534,17 @@ namespace AsterNET.FastAGI
         /// </summary>
         /// <param name="lines">the environment to transform.</param>
         /// <returns> a map with the variables set corresponding to the given environment.</returns>
-        private Dictionary<string, string> buildMap(List<string> lines)
+        private static Dictionary<string, string> buildMap(IEnumerable<string> lines)
         {
-            int colonPosition;
-            string key;
-            string value;
-
-            var map = new Dictionary<string, string>(lines.Count);
+            var map = new Dictionary<string, string>();
             foreach (var line in lines)
             {
-                colonPosition = line.IndexOf(':');
+                var colonPosition = line.IndexOf(':');
                 if (colonPosition < 0 || !line.StartsWith("agi_") || line.Length < colonPosition + 2)
                     continue;
 
-                key = line.Substring(4, colonPosition - 4).ToLower(Helper.CultureInfo);
-                value = line.Substring(colonPosition + 2);
+                var key = line.Substring(4, colonPosition - 4).ToLower(Helper.CultureInfo);
+                var value = line.Substring(colonPosition + 2);
                 if (value.Length != 0)
                     map.Add(key, value);
             }
@@ -551,7 +560,7 @@ namespace AsterNET.FastAGI
         /// </summary>
         /// <param name="s">the parameter string to parse</param>
         /// <returns> a Map made up of parameter names their values</returns>
-        private Dictionary<string, List<string>> parseParameters(string parameters)
+        private static Dictionary<string, List<string>> parseParameters(string parameters)
         {
             var result = new Dictionary<string, List<string>>();
             string name;
@@ -570,12 +579,12 @@ namespace AsterNET.FastAGI
                 int i = parameter.IndexOf('=');
                 if (i > 0)
                 {
-                    name = WebUtility.UrlDecode(parameter.Substring(0, i));
+                    name = WebUtility.UrlDecode(parameter.Substring(0, i)).ToLowerInvariant();
                     if (parameter.Length > i + 1)
                         val = WebUtility.UrlDecode(parameter.Substring(i + 1));
                 }
                 else if (i < 0)
-                    name = WebUtility.UrlDecode(parameter);
+                    name = WebUtility.UrlDecode(parameter).ToLowerInvariant();
                 else
                     continue;
 

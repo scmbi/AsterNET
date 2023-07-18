@@ -1,5 +1,9 @@
 using AsterNET.FastAGI.Command;
 using AsterNET.IO;
+using AsterNET.Manager;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Net.Sockets;
 
 namespace AsterNET.FastAGI
 {
@@ -8,44 +12,67 @@ namespace AsterNET.FastAGI
     /// </summary>
     public class AGIChannel
     {
+        #region HANGUP CONTROL
+
+        /// <summary>
+        ///  Indicates that hangup message is received
+        /// </summary>
+        public bool IsHangUp => Socket.IsHangUp;
+
+        #endregion
+
+        public ISocketConnection Socket { get; }
+
+        private readonly ILogger _logger;
         private readonly bool _SC511_CAUSES_EXCEPTION;
         private readonly bool _SCHANGUP_CAUSES_EXCEPTION;
-        private readonly AGIReader agiReader;
-        private readonly AGIWriter agiWriter;
 
-        public AGIChannel(SocketConnection socket, bool SC511_CAUSES_EXCEPTION, bool SCHANGUP_CAUSES_EXCEPTION)
+        public AGIChannel(ILogger<AGIChannel> logger, ISocketConnection socket, bool SC511_CAUSES_EXCEPTION, bool SCHANGUP_CAUSES_EXCEPTION)
         {
-            agiWriter = new AGIWriter(socket);
-            agiReader = new AGIReader(socket);
+            _logger = logger;
+            _logger.BeginScope(this);
+
+            Socket = socket;
+            _logger.LogDebug("agi channel id: {id}", socket.Handle);
 
             _SC511_CAUSES_EXCEPTION = SC511_CAUSES_EXCEPTION;
             _SCHANGUP_CAUSES_EXCEPTION = SCHANGUP_CAUSES_EXCEPTION;
         }
 
-        public AGIChannel(AGIWriter agiWriter, AGIReader agiReader, bool SC511_CAUSES_EXCEPTION,
-            bool SCHANGUP_CAUSES_EXCEPTION)
+        public AGIChannel(ISocketConnection socket, bool SC511_CAUSES_EXCEPTION, bool SCHANGUP_CAUSES_EXCEPTION)
+            : this(new LoggerFactory().CreateLogger<AGIChannel>(), socket, SC511_CAUSES_EXCEPTION, SCHANGUP_CAUSES_EXCEPTION)
         {
-            this.agiWriter = agiWriter;
-            this.agiReader = agiReader;
-
-            _SC511_CAUSES_EXCEPTION = SC511_CAUSES_EXCEPTION;
-            _SCHANGUP_CAUSES_EXCEPTION = SCHANGUP_CAUSES_EXCEPTION;
+            
         }
 
+        /// <summary>
+		/// Sends the given command to the channel attached to the current thread.
+		/// </summary>
+		/// <param name="command">the command to send to Asterisk</param>
+		/// <returns> the reply received from Asterisk</returns>
+		/// <throws>  AGIException if the command could not be processed properly </throws>
         public AGIReply SendCommand(AGICommand command)
         {
-            agiWriter.SendCommand(command);
-            AGIReply agiReply = agiReader.ReadReply();
+            Socket.SendCommand(command);
+            var agiReply = Socket.GetReply(command.ReadTimeOut);
             int status = agiReply.GetStatus();
             if (status == (int) AGIReplyStatuses.SC_INVALID_OR_UNKNOWN_COMMAND)
                 throw new InvalidOrUnknownCommandException(command.BuildCommand());
             if (status == (int) AGIReplyStatuses.SC_INVALID_COMMAND_SYNTAX)
                 throw new InvalidCommandSyntaxException(agiReply.GetSynopsis(), agiReply.GetUsage());
-            if (status == (int) AGIReplyStatuses.SC_DEAD_CHANNEL && _SC511_CAUSES_EXCEPTION)
-                throw new AGIHangupException();
-            if ((status == 0) && agiReply.FirstLine == "HANGUP" && _SCHANGUP_CAUSES_EXCEPTION)
-                throw new AGIHangupException();
+
+            if (_SC511_CAUSES_EXCEPTION)
+            {
+                if (IsHangUp || status == (int)AGIReplyStatuses.SC_DEAD_CHANNEL)
+                    throw new AGIHangupException();
+            }
             return agiReply;
         }
+
+        /// <summary>
+        /// Recover the underlaying log system to use on extensions
+        /// </summary>
+        /// <returns></returns>
+        public ILogger GetLogger() => _logger;
     }
 }

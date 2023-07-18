@@ -2,12 +2,15 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net.Sockets;
-using System.Runtime.CompilerServices;
 using System.Threading;
+using AsterNET.Helpers;
 using AsterNET.IO;
 using AsterNET.Manager.Action;
 using AsterNET.Manager.Event;
 using AsterNET.Manager.Response;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Sufficit.Asterisk.Manager.Events;
 
 namespace AsterNET.Manager
 {
@@ -16,12 +19,9 @@ namespace AsterNET.Manager
 	/// </summary>
 	public class ManagerReader
 	{
-#if LOGGER
-		private readonly Logger logger = Logger.Instance();
-#endif
-
+		private readonly ILogger _logger;
 		private readonly ManagerConnection mrConnector;
-		private SocketConnection mrSocket;
+		private ISocketConnection? mrSocket;
 
 		private bool die;
 		private bool is_logoff;
@@ -36,15 +36,16 @@ namespace AsterNET.Manager
 		private readonly Dictionary<string, string> packet;
 		private readonly List<string> commandList;
 
-		#region ManagerReader(dispatcher, asteriskServer) 
+        #region ManagerReader(dispatcher, asteriskServer) 
 
-		/// <summary>
-		///     Creates a new ManagerReader.
-		/// </summary>
-		/// <param name="dispatcher">the dispatcher to use for dispatching events and responses.</param>
-		public ManagerReader(ManagerConnection connection)
+        /// <summary>
+        ///     Creates a new ManagerReader.
+        /// </summary>
+        /// <param name="connection">the dispatcher to use for dispatching events and responses.</param>
+        public ManagerReader(ManagerConnection connection)
 		{
-			mrConnector = connection;
+            _logger = connection.Logger;
+            mrConnector = connection;
 			die = false;
 			lineQueue = new Queue<string>();
 			packet = new Dictionary<string, string>();
@@ -58,7 +59,7 @@ namespace AsterNET.Manager
 		/// <summary>
 		///     Sets the socket to use for reading from the asterisk server.
 		/// </summary>
-		internal SocketConnection Socket
+		internal ISocketConnection? Socket
 		{
 			set { mrSocket = value; }
 		}
@@ -89,32 +90,32 @@ namespace AsterNET.Manager
 
 		#endregion
 
-		#region mrReaderCallbback(IAsyncResult ar) 
+		#region mrReaderCallback(IAsyncResult ar) 
 
 		/// <summary>
 		/// Async Read callback
 		/// </summary>
 		/// <param name="ar">IAsyncResult</param>
-		private void mrReaderCallbback(IAsyncResult ar)
+		private static void mrReaderCallback(IAsyncResult ar)
 		{
 			// mreader = Mr.Reader
 			var mrReader = (ManagerReader) ar.AsyncState;
 			if (mrReader.die)
 				return;
 
-			SocketConnection mrSocket = mrReader.mrSocket;
-			if (mrSocket == null || mrSocket.TcpClient == null)
+			var mrSocket = mrReader.mrSocket;
+			if (mrSocket == null || !mrSocket.IsConnected())
 			{
-				// No socket - it's DISCONNECT !!!
-				disconnect = true;
+                // No socket - it's DISCONNECT !!!
+                mrReader.disconnect = true;
 				return;
 			}
 
-			NetworkStream nstream = mrSocket.NetworkStream;
+			var nstream = mrSocket.GetStream();
 			if (nstream == null)
 			{
-				// No network stream - it's DISCONNECT !!!
-				disconnect = true;
+                // No network stream - it's DISCONNECT !!!
+                mrReader.disconnect = true;
 				return;
 			}
 
@@ -124,37 +125,33 @@ namespace AsterNET.Manager
 				if (count == 0)
 				{
 					// No received data - it's may be DISCONNECT !!!
-					if (!is_logoff)
-						disconnect = true;
+					if (!mrReader.is_logoff)
+                        mrReader.disconnect = true;
 					return;
 				}
-				string line = mrSocket.Encoding.GetString(mrReader.lineBytes, 0, count);
+				string line = mrSocket.Options.Encoding.GetString(mrReader.lineBytes, 0, count);
 				mrReader.lineBuffer += line;
 				int idx;
 				// \n - because not all dev in Digium use \r\n
 				// .Trim() kill \r
-				lock (((ICollection) lineQueue).SyncRoot)
+				lock (((ICollection)mrReader.lineQueue).SyncRoot)
 					while (!string.IsNullOrEmpty(mrReader.lineBuffer) && (idx = mrReader.lineBuffer.IndexOf('\n')) >= 0)
 					{
 						line = idx > 0 ? mrReader.lineBuffer.Substring(0, idx).Trim() : string.Empty;
 						mrReader.lineBuffer = (idx + 1 < mrReader.lineBuffer.Length
 							? mrReader.lineBuffer.Substring(idx + 1)
 							: string.Empty);
-						lineQueue.Enqueue(line);
+                        mrReader.lineQueue.Enqueue(line);
 					}
 				// Give a next portion !!!
-				nstream.BeginRead(mrReader.lineBytes, 0, mrReader.lineBytes.Length, mrReaderCallbback, mrReader);
+				nstream.BeginRead(mrReader.lineBytes, 0, mrReader.lineBytes.Length, mrReaderCallback, mrReader);
 			}
-#if LOGGER
 			catch (Exception ex)
 			{
-				mrReader.logger.Error("Read data error", ex.Message);
-#else
-			catch
-			{
-#endif
-				// Any catch - disconncatch !
-				disconnect = true;
+				mrReader._logger.LogError(ex, "Read data error: {message}", ex.Message);
+			
+                // Any catch - disconncatch !
+                mrReader.disconnect = true;
 				if (mrReader.mrSocket != null)
 					mrReader.mrSocket.Close();
 				mrReader.mrSocket = null;
@@ -173,11 +170,11 @@ namespace AsterNET.Manager
 			packet.Clear();
 			commandList.Clear();
 			lineBuffer = string.Empty;
-			lineBytes = new byte[mrSocket.TcpClient.ReceiveBufferSize];
+			lineBytes = new byte[mrSocket.Options.BufferSize];
 			lastPacketTime = DateTime.Now;
 			wait4identiier = true;
 			processingCommandResult = false;
-			mrSocket.NetworkStream.BeginRead(lineBytes, 0, lineBytes.Length, mrReaderCallbback, this);
+			mrSocket.GetStream().BeginRead(lineBytes, 0, lineBytes.Length, mrReaderCallback, this);
 			lastPacketTime = DateTime.Now;
 		}
 
@@ -189,9 +186,7 @@ namespace AsterNET.Manager
 		/// Reads line by line from the asterisk server, sets the protocol identifier as soon as it is
 		/// received and dispatches the received events and responses via the associated dispatcher.
 		/// </summary>
-		/// <seealso cref="ManagerConnection.DispatchEvent(ManagerEvent)" />
 		/// <seealso cref="ManagerConnection.DispatchResponse(Response.ManagerResponse)" />
-		/// <seealso cref="ManagerConnection.setProtocolIdentifier(String)" />
 		internal void Run()
 		{
 			if (mrSocket == null)
@@ -216,7 +211,7 @@ namespace AsterNET.Manager
 							else if (disconnect)
 							{
 								disconnect = false;
-								mrConnector.DispatchEvent(new DisconnectEvent(mrConnector));
+								mrConnector.DispatchEvent(new DisconnectEvent());
 							}
 						}
 						if (lineQueue.Count == 0)
@@ -234,7 +229,7 @@ namespace AsterNET.Manager
 									{
 										// If one PingInterval from Ping without Pong then send Disconnect event
 										mrConnector.RemoveResponseHandler(pingHandler);
-										mrConnector.DispatchEvent(new DisconnectEvent(mrConnector));
+										mrConnector.DispatchEvent(new DisconnectEvent());
 									}
 									pingHandler.Free();
 									pingHandler = null;
@@ -265,9 +260,8 @@ namespace AsterNET.Manager
 						lastPacketTime = DateTime.Now;
 						lock (((ICollection) lineQueue).SyncRoot)
 							line = lineQueue.Dequeue().Trim();
-#if LOGGER
-						logger.Debug(line);
-#endif
+						
+						_logger.LogTrace(line);
 
 						#region processing Response: Follows
 
@@ -303,7 +297,7 @@ namespace AsterNET.Manager
 							if (wait4identiier && line.StartsWith("Asterisk Call Manager"))
 							{
 								wait4identiier = false;
-								var connectEvent = new ConnectEvent(mrConnector);
+								var connectEvent = new ConnectEvent();
 								connectEvent.ProtocolIdentifier = line;
 								mrConnector.DispatchEvent(connectEvent);
 								continue;
@@ -339,24 +333,16 @@ namespace AsterNET.Manager
 						mrSocket.Close();
 					break;
 				}
-#if LOGGER
 				catch (Exception ex)
 				{
-					logger.Info("Exception : {0}", ex.Message);
-#else
-				catch (Exception ex)
-				{
-#endif
-				    mrConnector.UnhandledExceptionThrown(this, ex);
+                    _logger.LogError(ex, "Exception : {0}", ex.Message);				
 				}
 
 				if (die)
 					break;
 
-#if LOGGER
-				logger.Info("No die, any error - send disconnect.");
-#endif
-				mrConnector.DispatchEvent(new DisconnectEvent(mrConnector));
+                _logger.LogTrace("No die, any error - send disconnect.");
+				mrConnector.DispatchEvent(new DisconnectEvent());
 			}
 		}
 

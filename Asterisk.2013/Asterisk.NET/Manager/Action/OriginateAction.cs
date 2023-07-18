@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using AsterNET.Manager.Event;
+using Sufficit.Asterisk.Manager.Events;
 
 namespace AsterNET.Manager.Action
 {
@@ -24,8 +26,6 @@ namespace AsterNET.Manager.Action
     /// <seealso cref="AsterNET.Manager.Event.OriginateFailureEvent" />
     public class OriginateAction : ManagerActionEvent, IActionVariable
     {
-        private Dictionary<string, string> variables;
-
         #region Action 
 
         /// <summary>
@@ -161,32 +161,14 @@ namespace AsterNET.Manager.Action
 
         #endregion
 
-        #region Variable 
-
-        /// <summary>
-        ///     Get/Set the variables to set on the originated call.<br />
-        ///     Variable assignments are of the form "VARNAME=VALUE". You can specify
-        ///     multiple variable assignments separated by the '|' character.<br />
-        ///     Example: "VAR1=abc|VAR2=def" sets the channel variables VAR1 to "abc" and VAR2 to "def".
-        /// </summary>
-        
-        [Obsolete("Use GetVariables and SetVariables instead.", true)]
-        public string Variable
-        {
-            get { return null; /* return Helper.JoinVariables(variables, Common.GET_VAR_DELIMITER(this.Server), "="); */ }
-            set { /* variables = Helper.ParseVariables(variables, value, Common.GET_VAR_DELIMITER(this.Server)); */ }
-        }
-
-        #endregion
-
         #region GetVariables() 
 
         /// <summary>
         ///     Get the variables dictionary to set on the originated call.
         /// </summary>
-        public Dictionary<string, string> GetVariables()
+        public NameValueCollection GetVariables()
         {
-            return variables;
+            return Variable ?? new NameValueCollection();
         }
 
         #endregion
@@ -196,9 +178,9 @@ namespace AsterNET.Manager.Action
         /// <summary>
         ///     Set the variables dictionary to set on the originated call.
         /// </summary>
-        public void SetVariables(Dictionary<string, string> vars)
+        public void SetVariables(NameValueCollection vars)
         {
-            variables = vars;
+            Variable = vars;
         }
 
         #endregion
@@ -210,9 +192,9 @@ namespace AsterNET.Manager.Action
         /// </summary>
         public string GetVariable(string key)
         {
-            if (variables == null)
+            if (Variable == null)
                 return string.Empty;
-            return variables[key];
+            return Variable[key];
         }
 
         #endregion
@@ -224,12 +206,8 @@ namespace AsterNET.Manager.Action
         /// </summary>
         public void SetVariable(string key, string value)
         {
-            if (variables == null)
-                variables = new Dictionary<string, string>();
-            if (variables.ContainsKey(key))
-                variables[key] = value;
-            else
-                variables.Add(key, value);
+            Variable ??= new NameValueCollection();
+            Variable.Set(key, value);
         }
 
         #endregion

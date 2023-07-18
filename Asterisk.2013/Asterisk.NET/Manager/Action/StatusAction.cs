@@ -1,5 +1,6 @@
 using System;
 using AsterNET.Manager.Event;
+using Sufficit.Asterisk.Manager.Events;
 
 namespace AsterNET.Manager.Action
 {
@@ -8,7 +9,7 @@ namespace AsterNET.Manager.Action
     ///     For each active channel a StatusEvent is generated. After the state of all
     ///     channels has been reported a StatusCompleteEvent is generated.
     /// </summary>
-    /// <seealso cref="Manager.Event.StatusEvent" />
+    /// <seealso cref="Sufficit.Asterisk.Manager.Events.StatusEvent" />
     /// <seealso cref="Manager.Event.StatusCompleteEvent" />
     public class StatusAction : ManagerActionEvent
     {

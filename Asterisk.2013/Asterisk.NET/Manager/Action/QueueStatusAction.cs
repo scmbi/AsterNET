@@ -1,6 +1,8 @@
 using System;
 using AsterNET.Manager.Event;
 
+using Sufficit.Asterisk.Manager.Events;
+
 namespace AsterNET.Manager.Action
 {
     /// <summary>
@@ -11,10 +13,10 @@ namespace AsterNET.Manager.Action
     ///     Since Asterisk 1.2 a QueueStatusCompleteEvent is sent to denote the end of the generated dump.<br />
     ///     This action is implemented in apps/app_queue.c
     /// </summary>
-    /// <seealso cref="Manager.Event.QueueParamsEvent" />
-    /// <seealso cref="Manager.Event.QueueMemberEvent" />
-    /// <seealso cref="Manager.Event.QueueEntryEvent" />
-    /// <seealso cref="Manager.Event.QueueStatusCompleteEvent" />
+    /// <seealso cref="QueueParamsEvent" />
+    /// <seealso cref="QueueMemberEvent" />
+    /// <seealso cref="QueueEntryEvent" />
+    /// <seealso cref="QueueStatusCompleteEvent" />
     public class QueueStatusAction : ManagerActionEvent
     {
         #region Action

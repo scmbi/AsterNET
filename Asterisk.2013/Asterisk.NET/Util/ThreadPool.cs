@@ -32,12 +32,15 @@ namespace AsterNET.Util
 			jobs = new List<AGIConnectionHandler>();
 			running = true;
 
+			// Create the token source.
+			CancellationTokenSource cts = new CancellationTokenSource();
+
 			// create and start the threads
 			for (int i = 0; i < this.numThreads; i++)
 			{
 				ThreadTask thread;
 				thread = new ThreadTask(this, this.name + "-TaskThread-" + i);
-				thread.Start();
+				thread.Start(cts.Token);
 			}
 #if LOGGER
 			logger.Debug("ThreadPool created with " + this.numThreads + " threads.");
@@ -51,9 +54,9 @@ namespace AsterNET.Util
 		/// blocked until one is added.
 		/// </summary>
 		/// <returns>the next job to service, null if the worker thread should be shut down.</returns>
-		internal AGIConnectionHandler obtainJob()
+		internal AGIConnectionHandler? obtainJob()
 		{
-			AGIConnectionHandler job = null;
+			AGIConnectionHandler? job = null;
 			lock (jobs)
 			{
 				while (job == null && running)

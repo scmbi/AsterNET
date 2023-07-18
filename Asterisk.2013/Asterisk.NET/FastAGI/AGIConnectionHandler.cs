@@ -1,8 +1,13 @@
 using System;
 using System.IO;
+using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 using AsterNET.FastAGI.Command;
 using AsterNET.IO;
+using AsterNET.Manager;
+using Microsoft.Extensions.Logging;
+using Sufficit.Asterisk;
 
 namespace AsterNET.FastAGI
 {
@@ -14,27 +19,12 @@ namespace AsterNET.FastAGI
     /// </summary>
     public class AGIConnectionHandler
     {
-#if LOGGER
-        private readonly Logger logger = Logger.Instance();
-#endif
-        private static readonly LocalDataStoreSlot _channel = Thread.AllocateDataSlot();
-        private readonly SocketConnection socket;
+        private readonly ILoggerFactory loggerFactory;
+        private readonly ILogger _logger;
+        private readonly ISocketConnection _socket;
         private readonly IMappingStrategy mappingStrategy;
         private readonly bool _SC511_CAUSES_EXCEPTION;
         private readonly bool _SCHANGUP_CAUSES_EXCEPTION;
-
-        #region Channel
-
-        /// <summary>
-        ///     Returns the AGIChannel associated with the current thread.
-        /// </summary>
-        /// <returns>the AGIChannel associated with the current thread or  null if none is associated.</returns>
-        internal static AGIChannel Channel
-        {
-            get { return (AGIChannel) Thread.GetData(_channel); }
-        }
-
-        #endregion
 
         #region AGIConnectionHandler(socket, mappingStrategy)
 
@@ -43,97 +33,95 @@ namespace AsterNET.FastAGI
         /// </summary>
         /// <param name="socket">the socket connection to handle.</param>
         /// <param name="mappingStrategy">the strategy to use to determine which script to run.</param>
-        public AGIConnectionHandler(SocketConnection socket, IMappingStrategy mappingStrategy,
-            bool SC511_CAUSES_EXCEPTION, bool SCHANGUP_CAUSES_EXCEPTION)
+        public AGIConnectionHandler(ILoggerFactory loggerFactory, ISocketConnection socket, IMappingStrategy mappingStrategy, bool SC511_CAUSES_EXCEPTION, bool SCHANGUP_CAUSES_EXCEPTION)
         {
-            this.socket = socket;
+            this.loggerFactory = loggerFactory;
+            _socket = socket;
             this.mappingStrategy = mappingStrategy;
             _SC511_CAUSES_EXCEPTION = SC511_CAUSES_EXCEPTION;
             _SCHANGUP_CAUSES_EXCEPTION = SCHANGUP_CAUSES_EXCEPTION;
+
+            _logger = loggerFactory.CreateLogger<AGIConnectionHandler>();            
         }
 
         #endregion
 
-        public void Run()
+        public async Task Run(CancellationToken cancellationToken)
         {
-            try
+            using (_logger.BeginScope<string>($"[HND:{new Random().Next()}]"))
             {
-                var reader = new AGIReader(socket);
-                var writer = new AGIWriter(socket);
-                AGIRequest request = reader.ReadRequest();
-
-                //Added check for when the request is empty
-                //eg. telnet to the service 
-                if (request.Request.Count > 0)
+                string? statusMessage = null;
+                try
                 {
-                    var channel = new AGIChannel(writer, reader, _SC511_CAUSES_EXCEPTION, _SCHANGUP_CAUSES_EXCEPTION);
-                    AGIScript script = mappingStrategy.DetermineScript(request);
-                    Thread.SetData(_channel, channel);
+                    var request = _socket.GetRequest(cancellationToken);
 
-                    if (script != null)
+                    // Added check for when the request is empty
+                    // eg. telnet to the service 
+                    if (request.Request.Count > 0)
                     {
-                        #if LOGGER
-                            logger.Info("Begin AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
-                        #endif
-                        script.Service(request, channel);
-                        #if LOGGER
-                            logger.Info("End AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
-                        #endif
+                        using (var script = mappingStrategy.DetermineScript(request))
+                        {
+                            if (script != null)
+                            {
+                                var loggerChannel = loggerFactory.CreateLogger<AGIChannel>();
+                                var channel = new AGIChannel(loggerChannel, _socket, _SC511_CAUSES_EXCEPTION, _SCHANGUP_CAUSES_EXCEPTION);
+
+                                _logger.LogTrace("Begin AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
+                                await script.ExecuteAsync(request, channel, cancellationToken);
+                                statusMessage = "SUCCESS";
+
+                                _logger.LogTrace("End AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
+                            }
+                            else
+                            {
+                                statusMessage = "No script configured for URL '" + request.RequestURL + "' (script '" + request.Script + "')";
+                                throw new FileNotFoundException(statusMessage);
+                            }
+                        }
                     }
                     else
                     {
-                        var error = "No script configured for URL '" + request.RequestURL + "' (script '" + request.Script +
-                                    "')";
-                        channel.SendCommand(new VerboseCommand(error, 1));
-                        #if LOGGER
-                            logger.Error(error);
-                        #endif
+                        statusMessage = "A connection was made with no requests";
+                        _logger.LogInformation(statusMessage);
                     }
                 }
-                else
+                catch (AGIHangupException ex)
                 {
-                    var error = "A connection was made with no requests";
-                    #if LOGGER
-                        logger.Error(error);
-                    #endif
+                    statusMessage = ex.Message;
+                    _logger.LogError(ex, $"IDX00004(AGIHangup): {statusMessage}");
                 }
-            }
-            catch (AGIHangupException)
-            {
-            }
-            catch (IOException)
-            {
-            }
-            catch (AGIException ex)
-            {
-                #if LOGGER
-                    logger.Error("AGIException while handling request", ex);
-                #else
-				    throw ex;
-                #endif
-            }
-            catch (Exception ex)
-            {
-                #if LOGGER
-                    logger.Error("Unexpected Exception while handling request", ex);
-                #else
-				    throw ex;
-                #endif
-            }
-
-            Thread.SetData(_channel, null);
-            try
-            {
-                socket.Close();
-            }
-            #if LOGGER
                 catch (IOException ex)
                 {
-                    logger.Error("Error on close socket", ex);
+                    statusMessage = ex.Message;
+                    _logger.LogError(ex, $"IDX00003(IO): {statusMessage}");
                 }
-            #else
-			    catch { }
-            #endif
+                catch (AGIException ex)
+                {
+                    statusMessage = ex.Message;
+                    _logger.LogError(ex, $"IDX00002(AGI): {statusMessage}");
+                }
+                catch (Exception ex) // exception at script level
+                {
+                    statusMessage = ex.Message;
+                    _logger.LogError(ex, $"IDX00001(Unexpected): {statusMessage}");
+                }
+
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(statusMessage))
+                    {
+                        var command = new SetVariableCommand(Common.AGI_DEFAULT_RETURN_STATUS, statusMessage);
+                        _socket.SendCommand(command);
+                    }
+
+                    _socket.Close();
+                }
+                catch (IOException ex)
+                {
+                    _logger.LogError(ex, $"IDX00000(IOClosing): {ex.Message}");
+                }
+                catch (Exception ex) { _logger.LogError(ex, $"IDX00005(Unknown): {ex.Message}"); }
+            }
         }
     }
 }

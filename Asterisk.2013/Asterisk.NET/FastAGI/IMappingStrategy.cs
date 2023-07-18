@@ -1,8 +1,11 @@
+using System;
+
 namespace AsterNET.FastAGI
 {
     public interface IMappingStrategy
     {
-        AGIScript DetermineScript(AGIRequest request);
+        AGIScript? DetermineScript(AGIRequest request);
+
         void Load();
     }
 }

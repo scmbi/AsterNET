@@ -1,4 +1,6 @@
+using Sufficit.Asterisk;
 using System.Collections.Generic;
+using AsterNET.Helpers;
 
 namespace AsterNET.Manager.Response
 {
@@ -12,8 +14,8 @@ namespace AsterNET.Manager.Response
     /// </summary>
     public class GetConfigResponse : ManagerResponse
     {
-        private Dictionary<int, string> categories;
-        private Dictionary<int, Dictionary<int, string>> lines;
+        private Dictionary<int, string>? categories;
+        private Dictionary<int, Dictionary<int, string>>? lines;
 
         /// <summary>
         ///     Get the map of category numbers to category names.
@@ -26,8 +28,8 @@ namespace AsterNET.Manager.Response
                 {
                     categories = new Dictionary<int, string>();
                     lines = new Dictionary<int, Dictionary<int, string>>();
-                    if (attributes != null)
-                        foreach (string key in attributes.Keys)
+                    if (Attributes != null)
+                        foreach (string key in Attributes.Keys)
                         {
                             string keyLower = key.ToLower(Helper.CultureInfo);
                             if (keyLower.StartsWith("category-"))
@@ -39,7 +41,7 @@ namespace AsterNET.Manager.Response
                                 int categoryNumber;
                                 if (!int.TryParse(parts[1], out categoryNumber))
                                     continue;
-                                categories.Add(categoryNumber, attributes[key]);
+                                categories.Add(categoryNumber, Attributes[key]);
                                 continue;
                             }
                             if (keyLower.StartsWith("line-"))
@@ -59,9 +61,9 @@ namespace AsterNET.Manager.Response
                                     lines.Add(categoryNumber, new Dictionary<int, string>());
 
                                 if (lines[categoryNumber].ContainsKey(lineNumber))
-                                    lines[categoryNumber][lineNumber] = attributes[key];
+                                    lines[categoryNumber][lineNumber] = Attributes[key];
                                 else
-                                    lines[categoryNumber].Add(lineNumber, attributes[key]);
+                                    lines[categoryNumber].Add(lineNumber, Attributes[key]);
                             }
                         }
                 }
@@ -72,15 +74,15 @@ namespace AsterNET.Manager.Response
         /// <summary>
         ///     Returns the map of line number to line value for a given category.
         /// </summary>
-        /// <param name="categoryNumber">a valid category number from getCategories.</param>
+        /// <param name="category">a valid category number from getCategories.</param>
         /// <returns></returns>
         public Dictionary<int, string> Lines(int category)
         {
             if (lines == null)
             {
                 lines = new Dictionary<int, Dictionary<int, string>>();
-                if (attributes != null)
-                    foreach (string key in attributes.Keys)
+                if (Attributes != null)
+                    foreach (string key in Attributes.Keys)
                         if (key.ToLower(Helper.CultureInfo).StartsWith("line-"))
                         {
                             string[] parts = key.Split(Common.MINUS_SEPARATOR);
@@ -98,9 +100,9 @@ namespace AsterNET.Manager.Response
                                 lines.Add(categoryNumber, new Dictionary<int, string>());
 
                             if (lines[categoryNumber].ContainsKey(lineNumber))
-                                lines[categoryNumber][lineNumber] = attributes[key];
+                                lines[categoryNumber][lineNumber] = Attributes[key];
                             else
-                                lines[categoryNumber].Add(lineNumber, attributes[key]);
+                                lines[categoryNumber].Add(lineNumber, Attributes[key]);
                         }
             }
             if (lines.ContainsKey(category))

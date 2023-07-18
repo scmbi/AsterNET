@@ -1,18 +1,23 @@
 using System.Text;
+using AsterNET.Helpers;
 
 namespace AsterNET.FastAGI.Command
 {
 	public abstract class AGICommand
 	{
+		/// <summary>
+		/// Change the default timeout for wait a valid response
+		/// </summary>
+		public uint? ReadTimeOut { get; set; }
+
 		public abstract string BuildCommand();
 
-		protected internal string EscapeAndQuote(string s)
+		protected internal string EscapeAndQuote(string? s)
 		{
-			string tmp;
-			if (s == null)
+			if (string.IsNullOrWhiteSpace(s))
 				return "\"\"";
 
-			tmp = s;
+			string tmp = s!;
 			tmp = tmp.Replace("\\\"", "\\\\\"");		// escape quotes
 			tmp = tmp.Replace("\\\n", "");				// filter newline
 			return "\"" + tmp + "\"";					// add quotes

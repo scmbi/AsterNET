@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using AsterNET.Manager.Event;
 using AsterNET.Manager.Response;
+using Sufficit.Asterisk.Manager.Events;
 
 namespace AsterNET.Manager
 {
@@ -10,14 +11,14 @@ namespace AsterNET.Manager
     /// </summary>
     public class ResponseEvents
     {
-        private readonly List<ResponseEvent> events;
+        private readonly List<IResponseEvent> events;
 
         /// <summary>
         ///     Creates a new <see cref="ResponseEvents"/>.
         /// </summary>
         public ResponseEvents()
         {
-            events = new List<ResponseEvent>();
+            events = new List<IResponseEvent>();
             Complete = false;
         }
 
@@ -29,7 +30,7 @@ namespace AsterNET.Manager
         /// <summary>
         ///     Gets the list of events.
         /// </summary>
-        public List<ResponseEvent> Events
+        public List<IResponseEvent> Events
         {
             get { return events; }
         }
@@ -42,8 +43,8 @@ namespace AsterNET.Manager
         /// <summary>
         ///     Adds a ResponseEvent that has been received.
         /// </summary>
-        /// <param name="e"><see cref="ResponseEvent"/></param>
-        public void AddEvent(ResponseEvent e)
+        /// <param name="e"><see cref="IResponseEvent"/></param>
+        public void AddEvent(IResponseEvent e)
         {
             lock (((IList) events).SyncRoot)
             {

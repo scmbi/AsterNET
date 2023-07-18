@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using AsterNET.FastAGI;
 
 namespace AsterNET.Util
@@ -18,27 +19,32 @@ namespace AsterNET.Util
 		#endregion
 
 		#region ThreadTask(ThreadPool enclosingInstance, string name)
-		public ThreadTask(ThreadPool enclosingInstance, string name)
-			: base(name)
+		public ThreadTask(ThreadPool enclosingInstance, string name) : base(name)
 		{
 			this.threadPool = enclosingInstance;
 		}
 		#endregion
 
 		#region Run()
+
 		/// <summary>
 		/// Get a job from the pool, run it, repeat. If the obtained job is null, we exit the loop and the thread.
 		/// </summary>
-		public override void Run()
+		public override async void Run(object? obj)
 		{
-			while (true)
+			CancellationTokenSource cts = obj is CancellationToken cancellationToken 
+				? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken) : new CancellationTokenSource();
+
+			while (!cts.IsCancellationRequested)
 			{
 				AGIConnectionHandler job = ThreadPool.obtainJob();
 				if (job == null)
 					break;
-				job.Run();
+
+				await job.Run(cts.Token);
 			}
 		}
-		#endregion
-	}
+
+        #endregion
+    }
 }

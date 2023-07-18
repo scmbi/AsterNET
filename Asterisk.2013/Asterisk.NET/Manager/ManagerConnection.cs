@@ -7,147 +7,66 @@ using AsterNET.Manager.Response;
 using System.Text.RegularExpressions;
 using System.Text;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using AsterNET.IO;
-<<<<<<< HEAD
-using AsterNET.Util;
-using UnhandledExceptionEventArgs = AsterNET.Manager.Event.UnhandledExceptionEventArgs;
-
-namespace AsterNET.Manager
-{
-	#region Event delegate
-
-	public delegate void ManagerEventHandler(object sender, ManagerEvent e);
-	public delegate void AgentCallbackLoginEventHandler(object sender, Event.AgentCallbackLoginEvent e);
-	public delegate void AgentCallbackLogoffEventHandler(object sender, Event.AgentCallbackLogoffEvent e);
-	public delegate void AgentCalledEventHandler(object sender, Event.AgentCalledEvent e);
-	public delegate void AgentCompleteEventHandler(object sender, Event.AgentCompleteEvent e);
-	public delegate void AgentConnectEventHandler(object sender, Event.AgentConnectEvent e);
-	public delegate void AgentDumpEventHandler(object sender, Event.AgentDumpEvent e);
-	public delegate void AgentLoginEventHandler(object sender, Event.AgentLoginEvent e);
-	public delegate void AgentLogoffEventHandler(object sender, Event.AgentLogoffEvent e);
-	public delegate void AgentsCompleteEventHandler(object sender, Event.AgentsCompleteEvent e);
-	public delegate void AgentsEventHandler(object sender, Event.AgentsEvent e);
-	public delegate void AlarmClearEventHandler(object sender, Event.AlarmClearEvent e);
-	public delegate void AlarmEventHandler(object sender, Event.AlarmEvent e);
-	public delegate void BridgeEventHandler(object sender, Event.BridgeEvent e);
-	public delegate void CdrEventHandler(object sender, Event.CdrEvent e);
-	public delegate void DBGetResponseEventHandler(object sender, Event.DBGetResponseEvent e);
-	public delegate void DialEventHandler(object sender, Event.DialEvent e);
-	public delegate void DTMFEventHandler(object sender, Event.DTMFEvent e);
-	public delegate void DNDStateEventHandler(object sender, Event.DNDStateEvent e);
-	public delegate void ExtensionStatusEventHandler(object sender, Event.ExtensionStatusEvent e);
-	public delegate void HangupEventHandler(object sender, Event.HangupEvent e);
-	public delegate void HoldedCallEventHandler(object sender, Event.HoldedCallEvent e);
-	public delegate void HoldEventHandler(object sender, Event.HoldEvent e);
-	public delegate void JoinEventHandler(object sender, Event.JoinEvent e);
-	public delegate void LeaveEventHandler(object sender, Event.LeaveEvent e);
-	public delegate void LinkEventHandler(object sender, Event.LinkEvent e);
-	public delegate void LogChannelEventHandler(object sender, Event.LogChannelEvent e);
-	public delegate void MeetMeJoinEventHandler(object sender, Event.MeetmeJoinEvent e);
-	public delegate void MeetMeLeaveEventHandler(object sender, Event.MeetmeLeaveEvent e);
-	public delegate void MeetMeTalkingEventHandler(object sender, Event.MeetmeTalkingEvent e);
-	public delegate void MessageWaitingEventHandler(object sender, Event.MessageWaitingEvent e);
-	public delegate void NewCallerIdEventHandler(object sender, Event.NewCallerIdEvent e);
-	public delegate void NewChannelEventHandler(object sender, Event.NewChannelEvent e);
-	public delegate void NewExtenEventHandler(object sender, Event.NewExtenEvent e);
-	public delegate void NewStateEventHandler(object sender, Event.NewStateEvent e);
-	public delegate void OriginateResponseEventHandler(object sender, Event.OriginateResponseEvent e);
-	public delegate void ParkedCallEventHandler(object sender, Event.ParkedCallEvent e);
-	public delegate void ParkedCallGiveUpEventHandler(object sender, Event.ParkedCallGiveUpEvent e);
-	public delegate void ParkedCallsCompleteEventHandler(object sender, Event.ParkedCallsCompleteEvent e);
-	public delegate void ParkedCallTimeOutEventHandler(object sender, Event.ParkedCallTimeOutEvent e);
-	public delegate void PeerEntryEventHandler(object sender, Event.PeerEntryEvent e);
-	public delegate void PeerlistCompleteEventHandler(object sender, Event.PeerlistCompleteEvent e);
-	public delegate void PeerStatusEventHandler(object sender, Event.PeerStatusEvent e);
-	public delegate void QueueEntryEventHandler(object sender, Event.QueueEntryEvent e);
-	public delegate void QueueMemberAddedEventHandler(object sender, Event.QueueMemberAddedEvent e);
-	public delegate void QueueMemberEventHandler(object sender, Event.QueueMemberEvent e);
-	public delegate void QueueMemberPausedEventHandler(object sender, Event.QueueMemberPausedEvent e);
-	public delegate void QueueMemberRemovedEventHandler(object sender, Event.QueueMemberRemovedEvent e);
-	public delegate void QueueMemberStatusEventHandler(object sender, Event.QueueMemberStatusEvent e);
-	public delegate void QueueParamsEventHandler(object sender, Event.QueueParamsEvent e);
-	public delegate void QueueStatusCompleteEventHandler(object sender, Event.QueueStatusCompleteEvent e);
-	public delegate void RegistryEventHandler(object sender, Event.RegistryEvent e);
-	public delegate void RenameEventHandler(object sender, Event.RenameEvent e);
-	public delegate void TransferEventHandler(object sender, Event.TransferEvent e);
-	public delegate void StatusCompleteEventHandler(object sender, Event.StatusCompleteEvent e);
-	public delegate void StatusEventHandler(object sender, Event.StatusEvent e);
-	public delegate void UnholdEventHandler(object sender, Event.UnholdEvent e);
-	public delegate void UnlinkEventHandler(object sender, Event.UnlinkEvent e);
-	public delegate void UnparkedCallEventHandler(object sender, Event.UnparkedCallEvent e);
-	public delegate void UserEventHandler(object sender, Event.UserEvent e);
-	public delegate void QueueCallerAbandonEventHandler(object sender, Event.QueueCallerAbandonEvent e);
-	public delegate void ZapShowChannelsCompleteEventHandler(object sender, Event.ZapShowChannelsCompleteEvent e);
-	public delegate void ZapShowChannelsEventHandler(object sender, Event.ZapShowChannelsEvent e);
-	public delegate void ConnectionStateEventHandler(object sender, Event.ConnectionStateEvent e);
-	public delegate void VarSetEventHandler(object sender, Event.VarSetEvent e);
-	public delegate void AGIExecHandler(object sender, Event.AGIExecEvent e);
-	public delegate void ConfbridgeStartEventHandler(object sender, Event.ConfbridgeStartEvent e);
-	public delegate void ConfbridgeJoinEventHandler(object sender, Event.ConfbridgeJoinEvent e);
-	public delegate void ConfbridgeLeaveEventHandler(object sender, Event.ConfbridgeLeaveEvent e);
-	public delegate void ConfbridgeEndEventHandler(object sender, Event.ConfbridgeEndEvent e);
-	public delegate void ConfbridgeTalkingEventHandler(object sender, Event.ConfbridgeTalkingEvent e);
-    public delegate void FailedACLEventHandler(object sender, Event.FailedACLEvent e);
-    public delegate void AttendedTransferEventHandler(object sender, Event.AttendedTransferEvent e);
-    public delegate void BlindTransferEventHandler(object sender, Event.BlindTransferEvent e);
-    public delegate void BridgeCreateEventHandler(object sender, Event.BridgeCreateEvent e);
-    public delegate void BridgeDestroyEventHandler(object sender, Event.BridgeDestroyEvent e);
-    public delegate void BridgeEnterEventHandler(object sender, Event.BridgeEnterEvent e);
-    public delegate void BridgeLeaveEventHandler(object sender, Event.BridgeLeaveEvent e);
-    public delegate void DialBeginEventHandler(object sender, Event.DialBeginEvent e);
-    public delegate void DialEndEventHandler(object sender, Event.DialEndEvent e);
-    public delegate void NewAccountCodeEventHandler(object sender, Event.NewAccountCodeEvent e);
-    public delegate void MonitorStopEventHandler(object sender, Event.MonitorStopEvent e);
-
-    public delegate void AsyncAGIEndEventHandler(object sender, AsyncAGIEndEvent e);
-    public delegate void AsyncAGIExecEventHandler(object sender, AsyncAGIExecEvent e);
-    public delegate void AsyncAGIStartEventHandler(object sender, AsyncAGIStartEvent e);
-
-    public delegate void CoreShoweChannelEventHandler(object sender, CoreShowChannelEvent e);
-    public delegate void CoreShowChannelsCompleteEventHandler(object sender, CoreShowChannelsCompleteEvent e);
-
-    public delegate void UnhandledExceptionEventHandler(object sender, Event.UnhandledExceptionEventArgs e);
-    public delegate void DTMFBeginEventHandler(object sender, Event.DTMFBeginEvent e);
-    public delegate void DTMFEndEventHandler(object sender, Event.DTMFEndEvent e);
-
-	#endregion
-
-	/// <summary>
-	/// Default implemention of the ManagerConnection interface.
-	/// </summary>
-	public class ManagerConnection
-	{
-		#region Variables
-=======
 using System.Threading.Tasks;
+using Sufficit.Asterisk.Manager;
+using Sufficit.Asterisk;
+using Sufficit.Asterisk.Manager.Events;
+using Microsoft.Extensions.Logging;
+using AsterNET.Helpers;
+using System.Linq;
+using Sufficit.Manager.Events;
+using System.Net.Sockets;
+using Sufficit.Asterisk.IO;
 
 namespace AsterNET.Manager
 {
     /// <summary>
     /// Default implementation of the ManagerConnection interface.
     /// </summary>
-    public class ManagerConnection
+    public partial class ManagerConnection : IManagerConnection
     {
-        #region Variables
->>>>>>> c4df9d8ecb578460d6442f7cd673b9b11763fadd
+        private ISocketConnection? mrSocket;
+        protected void SocketDisposing(object? sender, EventArgs args)
+        {
+            _logger.LogDebug("internal socket is disposing");
+            if (mrSocket != null)
+            {
+                mrSocket.OnDisposing -= SocketDisposing;
+                mrSocket = null;
+            }
 
-#if LOGGER
-        private Logger logger = Logger.Instance();
-#endif
+            // what to do ?
+        }
+
+        protected void SocketDisconnected(object? sender, string? cause)
+        {
+            _logger.LogDebug("internal socket was disconnected, cause: {cause}", cause);
+            if (mrSocket != null && !keepAlive)
+            {
+                mrSocket.OnDisconnected -= SocketDisconnected;
+                mrSocket = null;
+            }
+
+            // what to do ?
+        }
+
+
+        public char[] VAR_DELIMITER = { '|' };
+
+        private readonly ILogger _logger;
         private long actionIdCount = 0;
         private string hostname;
         private int port;
         private string username;
         private string password;
 
-        private SocketConnection mrSocket;
         private Thread mrReaderThread;
-        private ManagerReader mrReader;
+        private ManagerReader? mrReader;
 
-        private int defaultResponseTimeout = 2000;
-        private int defaultEventTimeout = 5000;
+        private uint defaultResponseTimeout = 2000;
+        private uint defaultEventTimeout = 5000;
         private int sleepTime = 50;
         private bool keepAlive = true;
         private bool keepAliveAfterAuthenticationFailure = false;
@@ -170,8 +89,8 @@ namespace AsterNET.Manager
         private int reconnectCount;
 
         private Dictionary<int, ConstructorInfo> registeredEventClasses;
-        private Dictionary<int, Func<ManagerEvent, bool>> registeredEventHandlers;
-        private event EventHandler<ManagerEvent> internalEvent;
+        private Dictionary<int, Func<IManagerEvent, bool>> registeredEventHandlers;
+        private event EventHandler<IManagerEvent> internalEvent;
         private bool fireAllEvents = false;
         private Thread callerThread;
 
@@ -184,15 +103,6 @@ namespace AsterNET.Manager
         /// <summary> Default Slow Reconnect interval in milliseconds.</summary>
         private int reconnectIntervalMax = 10000;
 
-<<<<<<< HEAD
-	    private EventQueueDispatcher _eventQueueDispatcher;
-
-		#endregion
-=======
-		public char[] VAR_DELIMITER = { '|' };
-
-        #endregion
->>>>>>> c4df9d8ecb578460d6442f7cd673b9b11763fadd
 
         /// <summary>
         /// Allows you to specifiy how events are fired. If false (default) then
@@ -201,529 +111,17 @@ namespace AsterNET.Manager
         /// </summary>
         public bool UseASyncEvents = false;
 
-        #region Events
+        /// <summary>
+        /// Permit extensions to log using this object as state
+        /// </summary>
+        public ILogger Logger => _logger;
 
-        /// <summary>
-        /// An UnhandledEvent is triggered on unknown event.
-        /// </summary>
-        public event EventHandler<ManagerEvent> UnhandledEvent;
-        /// <summary>
-        /// An AgentCallbackLogin is triggered when an agent is successfully logged in.
-        /// </summary>
-        public event EventHandler<AgentCallbackLoginEvent> AgentCallbackLogin;
-        /// <summary>
-        /// An AgentCallbackLogoff is triggered when an agent that previously logged in is logged of.<br/>
-        /// </summary>
-        public event EventHandler<AgentCallbackLogoffEvent> AgentCallbackLogoff;
-        /// <summary>
-        /// An AgentCalled is triggered when an agent is ring.<br/>
-        /// To enable AgentCalled you have to set eventwhencalled = yes in queues.conf.<br/>
-        /// </summary>
-        public event EventHandler<AgentCalledEvent> AgentCalled;
-        /// <summary>
-        /// An AgentCompleteEvent is triggered when at the end of a call if the caller was connected to an agent.
-        /// </summary>
-        public event EventHandler<AgentCompleteEvent> AgentComplete;
-        /// <summary>
-        /// An AgentConnectEvent is triggered when a caller is connected to an agent.
-        /// </summary>
-        public event EventHandler<AgentConnectEvent> AgentConnect;
-        /// <summary>
-        /// An AgentDumpEvent is triggered when an agent dumps the caller while listening to the queue announcement.
-        /// </summary>
-        public event EventHandler<AgentDumpEvent> AgentDump;
-        /// <summary>
-        /// An AgentLoginEvent is triggered when an agent is successfully logged in using AgentLogin.
-        /// </summary>
-        public event EventHandler<AgentLoginEvent> AgentLogin;
-        /// <summary>
-        /// An AgentCallbackLogoffEvent is triggered when an agent that previously logged in using AgentLogin is logged of.
-        /// </summary>
-        public event EventHandler<AgentLogoffEvent> AgentLogoff;
-        /// <summary>
-        /// An AgentRingNoAnswer is triggered when an agent was rang and did not answer.<br/>
-        /// To enable AgentRingNoAnswer you have to set eventwhencalled = yes in queues.conf.
-        /// </summary>
-        public event EventHandler<AgentRingNoAnswerEvent> AgentRingNoAnswer;
-        /// <summary>
-        /// An AgentsCompleteEvent is triggered after the state of all agents has been reported in response to an AgentsAction.
-        /// </summary>
-        public event EventHandler<AgentsCompleteEvent> AgentsComplete;
-        /// <summary>
-        /// An AgentsEvent is triggered for each agent in response to an AgentsAction.
-        /// </summary>
-        public event EventHandler<AgentsEvent> Agents;
-        /// <summary>
-        /// An AlarmEvent is triggered when a Zap channel leaves alarm state.
-        /// </summary>
-        public event EventHandler<AlarmClearEvent> AlarmClear;
-        /// <summary>
-        /// 
-        /// </summary>
-        public event EventHandler<BridgeEvent> Bridge;
-        /// <summary>
-        /// An AlarmEvent is triggered when a Zap channel enters or changes alarm state.
-        /// </summary>
-        public event EventHandler<AlarmEvent> Alarm;
-        /// <summary>
-        /// A CdrEvent is triggered when a call detail record is generated, usually at the end of a call.
-        /// </summary>
-        public event EventHandler<CdrEvent> Cdr;
-        public event EventHandler<DBGetResponseEvent> DBGetResponse;
-        /// <summary>
-        /// A Dial is triggered whenever a phone attempts to dial someone.<br/>
-        /// </summary>
-        public event EventHandler<DialEvent> Dial;
-        public event EventHandler<DTMFEvent> DTMF;
-        /// <summary>
-        /// An DTMFBeginEvent is triggered when a DTMF digit has started on a channel.
-        /// </summary>
-        public event EventHandler<DTMFBeginEvent> DTMFBegin;
-        /// <summary>
-        /// An DTMFEndEvent is triggered when a DTMF digit has ended on a channel.
-        /// </summary>
-        public event EventHandler<DTMFEndEvent> DTMFEnd;
-        /// <summary>
-        /// A DNDStateEvent is triggered by the Zap channel driver when a channel enters or leaves DND (do not disturb) state.
-        /// </summary>
-        public event EventHandler<DNDStateEvent> DNDState;
-        /// <summary>
-        /// An ExtensionStatus is triggered when the state of an extension changes.<br/>
-        /// </summary>
-        public event EventHandler<ExtensionStatusEvent> ExtensionStatus;
-        /// <summary>
-        /// A Hangup is triggered when a channel is hung up.<br/>
-        /// </summary>
-        public event EventHandler<HangupEvent> Hangup;
-        /// <summary>
-        /// A HangupRequestEvent is raised when a channel is hang up.<br/>
-        /// </summary>
-        public event EventHandler<HangupRequestEvent> HangupRequest;
-        /// <summary>
-        /// A HoldedCall is triggered when a channel is put on hold.<br/>
-        /// </summary>
-        public event EventHandler<HoldedCallEvent> HoldedCall;
-        /// <summary>
-        /// A Hold is triggered by the SIP channel driver when a channel is put on hold.<br/>
-        /// </summary>
-        public event EventHandler<HoldEvent> Hold;
-        /// <summary>
-        /// A Join is triggered when a channel joines a queue.<br/>
-        /// </summary>
-        public event EventHandler<JoinEvent> Join;
-        /// <summary>
-        /// A Leave is triggered when a channel leaves a queue.<br/>
-        /// </summary>
-        public event EventHandler<LeaveEvent> Leave;
-        /// <summary>
-        /// A Link is triggered when two voice channels are linked together and voice data exchange commences.<br/>
-        /// Several Link events may be seen for a single call. This can occur when Asterisk fails to setup a
-        /// native bridge for the call.This is when Asterisk must sit between two telephones and perform
-        /// CODEC conversion on their behalf.
-        /// </summary>
-        public event EventHandler<LinkEvent> Link;
-        /// <summary>
-        /// A LogChannel is triggered when logging is turned on or off.<br/>
-        /// </summary>
-        public event EventHandler<LogChannelEvent> LogChannel;
-        /// <summary>
-        /// A MeetMeJoin is triggered if a channel joins a meet me conference.<br/>
-        /// </summary>
-        public event EventHandler<MeetmeJoinEvent> MeetMeJoin;
-        /// <summary>
-        /// A MeetMeLeave is triggered if a channel leaves a meet me conference.<br/>
-        /// </summary>
-        public event EventHandler<MeetmeLeaveEvent> MeetMeLeave;
-        // public event EventHandler<MeetMeStopTalkingEvent> MeetMeStopTalking;
-        /// <summary>
-        /// A MeetMeTalkingEvent is triggered when a user starts talking in a meet me conference.<br/>
-        /// To enable talker detection you must pass the option 'T' to the MeetMe application.
-        /// </summary>
-        public event EventHandler<MeetmeTalkingEvent> MeetMeTalking;
-        /// <summary>
-        /// A MessageWaiting is triggered when someone leaves voicemail.<br/>
-        /// </summary>
-        public event EventHandler<MessageWaitingEvent> MessageWaiting;
-        /// <summary>
-        /// A NewCallerId is triggered when the caller id of a channel changes.<br/>
-        /// </summary>
-        public event EventHandler<NewCallerIdEvent> NewCallerId;
-        /// <summary>
-        /// A NewChannel is triggered when a new channel is created.<br/>
-        /// </summary>
-        public event EventHandler<NewChannelEvent> NewChannel;
-        /// <summary>
-        /// A NewExten is triggered when a channel is connected to a new extension.<br/>
-        /// </summary>
-        public event EventHandler<NewExtenEvent> NewExten;
-        /// <summary>
-        /// A NewState is triggered when the state of a channel has changed.<br/>
-        /// </summary>
-        public event EventHandler<NewStateEvent> NewState;
-        // public event EventHandler<OriginateEvent> Originate;
-        /// <summary>
-        /// An OriginateFailure is triggered when the execution of an OriginateAction failed.
-        /// </summary>
-        // public event EventHandler<OriginateFailureEvent> OriginateFailure;
-        /// <summary>
-        /// An OriginateSuccess is triggered when the execution of an OriginateAction succeeded.
-        /// </summary>
-        // public event EventHandler<OriginateSuccessEvent> OriginateSuccess;
-        /// <summary>
-        /// An OriginateResponse is triggered when the execution of an Originate.
-        /// </summary>
-        public event EventHandler<OriginateResponseEvent> OriginateResponse;
-        /// <summary>
-        /// A ParkedCall is triggered when a channel is parked (in this case no
-        /// action id is set) and in response to a ParkedCallsAction.<br/>
-        /// </summary>
-        public event EventHandler<ParkedCallEvent> ParkedCall;
-        /// <summary>
-        /// A ParkedCallGiveUp is triggered when a channel that has been parked is hung up.<br/>
-        /// </summary>
-        public event EventHandler<ParkedCallGiveUpEvent> ParkedCallGiveUp;
-        /// <summary>
-        /// A ParkedCallsComplete is triggered after all parked calls have been reported in response to a ParkedCallsAction.
-        /// </summary>
-        public event EventHandler<ParkedCallsCompleteEvent> ParkedCallsComplete;
-        /// <summary>
-        /// A ParkedCallTimeOut is triggered when call parking times out for a given channel.<br/>
-        /// </summary>
-        public event EventHandler<ParkedCallTimeOutEvent> ParkedCallTimeOut;
-        /// <summary>
-        /// A PeerEntry is triggered in response to a SIPPeersAction or SIPShowPeerAction and contains information about a peer.<br/>
-        /// </summary>
-        public event EventHandler<PeerEntryEvent> PeerEntry;
-        /// <summary>
-        /// A PeerlistComplete is triggered after the details of all peers has been reported in response to an SIPPeersAction or SIPShowPeerAction.<br/>
-        /// </summary>
-        public event EventHandler<PeerlistCompleteEvent> PeerlistComplete;
-        /// <summary>
-        /// A PeerStatus is triggered when a SIP or IAX client attempts to registrer at this asterisk server.<br/>
-        /// </summary>
-        public event EventHandler<PeerStatusEvent> PeerStatus;
-        /// <summary>
-        /// A QueueEntryEvent is triggered in response to a QueueStatusAction and contains information about an entry in a queue.
-        /// </summary>
-        public event EventHandler<QueueCallerAbandonEvent> QueueCallerAbandon;
-        /// <summary>
-        /// A QueueEntryEvent is triggered in response to a QueueStatusAction and contains information about an entry in a queue.
-        /// </summary>
-        public event EventHandler<QueueEntryEvent> QueueEntry;
-        /// <summary>
-        /// A QueueMemberAddedEvent is triggered when a queue member is added to a queue.
-        /// </summary>
-        public event EventHandler<QueueMemberAddedEvent> QueueMemberAdded;
-        /// <summary>
-        /// A QueueMemberEvent is triggered in response to a QueueStatusAction and contains information about a member of a queue.
-        /// </summary>
-        public event EventHandler<QueueMemberEvent> QueueMember;
-        /// <summary>
-        /// A QueueMemberPausedEvent is triggered when a queue member is paused or unpaused.
-        /// <b>Replaced by : </b> <see cref="QueueMemberPauseEvent"/> since <see href="https://wiki.asterisk.org/wiki/display/AST/Asterisk+12+Documentation" target="_blank" alt="Asterisk 12 wiki docs">Asterisk 12</see>.<br/>
-        /// <b>Removed since : </b> <see href="https://wiki.asterisk.org/wiki/display/AST/Asterisk+13+Documentation" target="_blank" alt="Asterisk 13 wiki docs">Asterisk 13</see>.<br/>
-        /// </summary>
-        public event EventHandler<QueueMemberPausedEvent> QueueMemberPaused;
-        /// <summary>
-        /// A QueueMemberRemovedEvent is triggered when a queue member is removed from a queue.
-        /// </summary>
-        public event EventHandler<QueueMemberRemovedEvent> QueueMemberRemoved;
-        /// <summary>
-        /// A QueueMemberStatusEvent shows the status of a QueueMemberEvent.
-        /// </summary>
-        public event EventHandler<QueueMemberStatusEvent> QueueMemberStatus;
-        /// <summary>
-        /// A QueueParamsEvent is triggered in response to a QueueStatusAction and contains the parameters of a queue.
-        /// </summary>
-        public event EventHandler<QueueParamsEvent> QueueParams;
-        /// <summary>
-        /// A QueueStatusCompleteEvent is triggered after the state of all queues has been reported in response to a QueueStatusAction.
-        /// </summary>
-        public event EventHandler<QueueStatusCompleteEvent> QueueStatusComplete;
-        /// <summary>
-        /// A Registry is triggered when this asterisk server attempts to register
-        /// as a client at another SIP or IAX server.<br/>
-        /// </summary>
-        public event EventHandler<RegistryEvent> Registry;
-        /// <summary>
-        /// A RenameEvent is triggered when the name of a channel is changed.
-        /// </summary>
-        public event EventHandler<RenameEvent> Rename;
-        /// <summary>
-        /// A StatusCompleteEvent is triggered after the state of all channels has been reported in response to a StatusAction.
-        /// </summary>
-        public event EventHandler<StatusCompleteEvent> StatusComplete;
-        /// <summary>
-        /// A StatusEvent is triggered for each active channel in response to a StatusAction.
-        /// </summary>
-        public event EventHandler<StatusEvent> Status;
-        /// <summary>
-        /// 
-        /// </summary>
-        public event EventHandler<TransferEvent> Transfer;
-        /// <summary>
-        /// An UnholdEvent is triggered by the SIP channel driver when a channel is no longer put on hold.
-        /// </summary>
-        public event EventHandler<UnholdEvent> Unhold;
-        /// <summary>
-        /// An UnlinkEvent is triggered when a link between two voice channels is discontinued, for example, just before call completion.
-        /// </summary>
-        public event EventHandler<UnlinkEvent> Unlink;
-        /// <summary>
-        /// A UnparkedCallEvent is triggered when a channel that has been parked is resumed.
-        /// </summary>
-        public event EventHandler<UnparkedCallEvent> UnparkedCall;
-        /// <summary>
-        /// A ZapShowChannelsEvent is triggered on UserEvent in dialplan.
-        /// </summary>
-        public event EventHandler<UserEvent> UserEvents;
-        /// <summary>
-        /// A ZapShowChannelsCompleteEvent is triggered after the state of all zap channels has been reported in response to a ZapShowChannelsAction.
-        /// </summary>
-        public event EventHandler<ZapShowChannelsCompleteEvent> ZapShowChannelsComplete;
-        /// <summary>
-        /// A ZapShowChannelsEvent is triggered in response to a ZapShowChannelsAction and shows the state of a zap channel.
-        /// </summary>
-        public event EventHandler<ZapShowChannelsEvent> ZapShowChannels;
-        /// <summary>
-        /// A ConnectionState is triggered after Connect/Disconnect/Shutdown events.
-        /// </summary>
-        public event EventHandler<ConnectionStateEvent> ConnectionState;
-
-        /// <summary>
-        /// A Reload is triggered after Reload events.
-        /// </summary>
-        public event EventHandler<ReloadEvent> Reload;
-
-        /// <summary>
-        /// When a variable is set
-        /// </summary>
-        public event EventHandler<VarSetEvent> VarSet;
-
-        /// <summary>
-        /// AgiExec is execute
-        /// </summary>
-        public event EventHandler<AGIExecEvent> AGIExec;
-
-        /// <summary>
-        /// This event is sent when the first user requests a conference and it is instantiated
-        /// </summary>
-        public event EventHandler<ConfbridgeStartEvent> ConfbridgeStart;
-
-        /// <summary>
-        /// This event is sent when a user joins a conference - either one already in progress or as the first user to join a newly instantiated bridge.
-        /// </summary>
-        public event EventHandler<ConfbridgeJoinEvent> ConfbridgeJoin;
-
-        /// <summary>
-        /// This event is sent when a user leaves a conference.
-        /// </summary>
-        public event EventHandler<ConfbridgeLeaveEvent> ConfbridgeLeave;
-
-        /// <summary>
-        /// This event is sent when the last user leaves a conference and it is torn down.
-        /// </summary>
-        public event EventHandler<ConfbridgeEndEvent> ConfbridgeEnd;
-
-        /// <summary>
-        /// This event is sent when the conference detects that a user has either begin or stopped talking.
-        /// </summary>
-        public event EventHandler<ConfbridgeTalkingEvent> ConfbridgeTalking;
-
-        /// <summary>
-        /// This event is sent when a Confbridge participant mutes.
-        /// </summary>
-        public event EventHandler<ConfbridgeMuteEvent> ConfbridgeMute;
-
-        /// <summary>
-        /// This event is sent when a Confbridge participant unmutes.
-        /// </summary>
-        public event EventHandler<ConfbridgeUnmuteEvent> ConfbridgeUnmute;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public event EventHandler<FailedACLEvent> FailedACL;
-
-<<<<<<< HEAD
-        /// <summary>
-        /// Triggered when an attended transfer is performed.
-        /// </summary>
-	    public event AttendedTransferEventHandler AttendedTransfer;
-
-        /// <summary>
-        /// Triggered when a blind transfer is performed.
-        /// </summary>
-        public event BlindTransferEventHandler BlindTransfer;
-
-        /// <summary>
-        /// Triggered when a bridge is created
-        /// </summary>
-        public event BridgeCreateEventHandler BridgeCreate;
-
-        /// <summary>
-        /// Triggered when a bridge is destroyed
-        /// </summary>
-        public event BridgeDestroyEventHandler BridgeDestroy;
-
-        /// <summary>
-        /// Triggered when a channel is connected to a bridge
-        /// </summary>
-        public event BridgeEnterEventHandler BridgeEnter;
-
-        /// <summary>
-        /// Triggered when a channel is disconected from a bridge.
-        /// </summary>
-        public event BridgeLeaveEventHandler BridgeLeave;
-
-        /// <summary>
-        /// Triggered when the Dial-application is invoked in a dial plan.
-        /// </summary>
-	    public event DialBeginEventHandler DialBegin;
-
-        /// <summary>
-        /// Triggered when the Dial-application ends. The event data contains information about the applications success or failure to dial the recipient.
-        /// </summary>
-	    public event DialEndEventHandler DialEnd;
-
-        /// <summary>
-        /// Dispatched when a new accountcode is assigned to a channel
-        /// </summary>
-	    public event NewAccountCodeEventHandler NewAccountCode;
-
-        /// <summary>
-        /// Dispatched when a monitor stops on a channel
-        /// </summary>
-        public event MonitorStopEventHandler MonitorStop;
-
-        public event AsyncAGIEndEventHandler AsyncAGIEnd;
-        public event AsyncAGIExecEventHandler AsyncAGIExec;
-        public event AsyncAGIStartEventHandler AsyncAGIStart;
-
-        /// <summary>
-        /// Dispatched when an unhandled exception is thrown inside an eventhandler.
-        /// </summary>
-	    public event UnhandledExceptionEventHandler UnhandledException;
-
-	    public event CoreShoweChannelEventHandler CoreShowChannel;
-	    public event CoreShowChannelsCompleteEventHandler CoreShowChannelsComplete;
-
-	    public event DTMFBeginEventHandler DTMFBegin;
-        public event DTMFEndEventHandler DTMFEnd;
-		#endregion
-=======
-        public event EventHandler<AttendedTransferEvent> AttendedTransfer;
-        public event EventHandler<BlindTransferEvent> BlindTransfer;
-
-        public event EventHandler<BridgeCreateEvent> BridgeCreate;
-        public event EventHandler<BridgeDestroyEvent> BridgeDestroy;
-        public event EventHandler<BridgeEnterEvent> BridgeEnter;
-        public event EventHandler<BridgeLeaveEvent> BridgeLeave;
-
-        /// <summary>
-        /// Raised when a dial action has started.<br/>
-        /// </summary>
-        public event EventHandler<DialBeginEvent> DialBegin;
->>>>>>> c4df9d8ecb578460d6442f7cd673b9b11763fadd
-
-        /// <summary>
-        /// Raised when a dial action has completed.<br/>
-        /// </summary>
-        public event EventHandler<DialEndEvent> DialEnd;
-
-        /// <summary>
-        /// Raised when a caller joins a Queue.<br/>
-        /// </summary>
-        public event EventHandler<QueueCallerJoinEvent> QueueCallerJoin;
-
-        /// <summary>
-        /// Raised when a caller leaves a Queue.<br/>
-        /// </summary>
-        public event EventHandler<QueueCallerLeaveEvent> QueueCallerLeave;
-
-        /// <summary>
-        /// A QueueMemberPauseEvent is triggered when a queue member is paused or unpaused.<br />
-        /// <b>Available since : </b> <see href="https://wiki.asterisk.org/wiki/display/AST/Asterisk+12+Documentation" target="_blank" alt="Asterisk 12 wiki docs">Asterisk 12</see>.
-        /// </summary>
-        public event EventHandler<QueueMemberPauseEvent> QueueMemberPause;
-
-        /// <summary>
-        ///    Raised when music on hold has started/stopped on a channel.<br />
-        ///    <b>Available since : </b> Asterisk 1.6.
-        /// </summary>
-        public event EventHandler<MusicOnHoldEvent> MusicOnHold;
-
-        /// <summary>
-        ///    Raised when music on hold has started on a channel.<br />
-        ///    <b>Available since : </b> <see href="https://wiki.asterisk.org/wiki/display/AST/Asterisk+12+Documentation" target="_blank" alt="Asterisk 12 wiki docs">Asterisk 12</see>.
-        /// </summary>
-        public event EventHandler<MusicOnHoldStartEvent> MusicOnHoldStart;
-
-        /// <summary>
-        ///    Raised when music on hold has stopped on a channel.<br />
-        ///    <b>Available since : </b> <see href="https://wiki.asterisk.org/wiki/display/AST/Asterisk+12+Documentation" target="_blank" alt="Asterisk 12 wiki docs">Asterisk 12</see>.
-        /// </summary>
-        public event EventHandler<MusicOnHoldStopEvent> MusicOnHoldStop;
-
-        /// <summary>
-        /// A ChallengeResponseFailed is triggered when a request's attempt to authenticate has been challenged, and the request failed the authentication challenge.
-        /// </summary>
-        public event EventHandler<ChallengeResponseFailedEvent> ChallengeResponseFailed;
-
-        /// <summary>
-        /// A InvalidAccountID is triggered when a request fails an authentication check due to an invalid account ID.
-        /// </summary>
-        public event EventHandler<InvalidAccountIDEvent> InvalidAccountID;
-
-        /// <summary>
-        /// A DeviceStateChanged is triggered when a device state changes.
-        /// </summary>
-        public event EventHandler<DeviceStateChangeEvent> DeviceStateChanged;
-
-        /// <summary>
-        /// A ChallengeSent is triggered when an Asterisk service sends an authentication challenge to a request..
-        /// </summary>
-        public event EventHandler<ChallengeSentEvent> ChallengeSent;
-
-        /// <summary>
-        /// A SuccessfulAuth is triggered when a request successfully authenticates with a service.
-        /// </summary>
-        public event EventHandler<SuccessfulAuthEvent> SuccessfulAuth;
-
-        /// <summary>
-        /// Raised when call queue summary
-        /// </summary>
-        public event EventHandler<QueueSummaryEvent> QueueSummary;
-
-        #endregion
-
-<<<<<<< HEAD
-            Helper.RegisterEventHandler(registeredEventHandlers, 87, typeof(AttendedTransferEvent));
-            Helper.RegisterEventHandler(registeredEventHandlers, 88, typeof(BridgeCreateEvent));
-            Helper.RegisterEventHandler(registeredEventHandlers, 89, typeof(BridgeDestroyEvent));
-            Helper.RegisterEventHandler(registeredEventHandlers, 90, typeof(BridgeEnterEvent));
-            Helper.RegisterEventHandler(registeredEventHandlers, 91, typeof(BridgeLeaveEvent));
-            Helper.RegisterEventHandler(registeredEventHandlers, 92, typeof(BlindTransferEvent));
-
-            Helper.RegisterEventHandler(registeredEventHandlers, 93, typeof(DialBeginEvent));
-            Helper.RegisterEventHandler(registeredEventHandlers, 94, typeof(DialEndEvent));
-
-            Helper.RegisterEventHandler(registeredEventHandlers, 95, typeof(NewAccountCodeEvent));
-            Helper.RegisterEventHandler(registeredEventHandlers, 96, typeof(MonitorStopEvent));
-            Helper.RegisterEventHandler(registeredEventHandlers, 97, typeof(AsyncAGIEndEvent));
-            Helper.RegisterEventHandler(registeredEventHandlers, 98, typeof(AsyncAGIExecEvent));
-            Helper.RegisterEventHandler(registeredEventHandlers, 99, typeof(AsyncAGIStartEvent));
-
-            Helper.RegisterEventHandler(registeredEventHandlers, 100, typeof(CoreShowChannelEvent));
-            Helper.RegisterEventHandler(registeredEventHandlers, 101, typeof(CoreShowChannelsCompleteEvent));
-            Helper.RegisterEventHandler(registeredEventHandlers, 120, typeof(DTMFBeginEvent));
-            Helper.RegisterEventHandler(registeredEventHandlers, 121, typeof(DTMFEndEvent));
-
-=======
         #region Constructor - ManagerConnection()
         /// <summary> Creates a new instance.</summary>
-        public ManagerConnection()
+        public ManagerConnection(ILogger<ManagerConnection> logger)
         {
+            _logger = logger;
+
             callerThread = Thread.CurrentThread;
 
             socketEncoding = Encoding.ASCII;
@@ -733,9 +131,10 @@ namespace AsterNET.Manager
             responseEventHandlers = new Dictionary<int, IResponseHandler>();
             registeredEventClasses = new Dictionary<int, ConstructorInfo>();
 
+            Helper.Log(logger);
             Helper.RegisterBuiltinEventClasses(registeredEventClasses);
 
-            registeredEventHandlers = new Dictionary<int, Func<ManagerEvent, bool>>();
+            registeredEventHandlers = new Dictionary<int, Func<IManagerEvent, bool>>();
 
             #region Event mapping table
             Helper.RegisterEventHandler(registeredEventHandlers, typeof(AgentCallbackLoginEvent), arg => fireEvent(AgentCallbackLogin, arg));
@@ -784,7 +183,9 @@ namespace AsterNET.Manager
             Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueEntryEvent), arg => fireEvent(QueueEntry, arg));
             Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueMemberAddedEvent), arg => fireEvent(QueueMemberAdded, arg));
             Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueMemberEvent), arg => fireEvent(QueueMember, arg));
+            Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueMemberRinginuseEvent), arg => fireEvent(QueueMemberRinginuse, arg)); 
             Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueMemberPausedEvent), arg => fireEvent(QueueMemberPaused, arg));
+            Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueMemberPenaltyEvent), arg => fireEvent(QueueMemberPenalty, arg));
             Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueMemberRemovedEvent), arg => fireEvent(QueueMemberRemoved, arg));
             Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueMemberStatusEvent), arg => fireEvent(QueueMemberStatus, arg));
             Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueParamsEvent), arg => fireEvent(QueueParams, arg));
@@ -826,6 +227,11 @@ namespace AsterNET.Manager
 
             Helper.RegisterEventHandler(registeredEventHandlers, typeof(FailedACLEvent), arg => fireEvent(FailedACL, arg));
 
+            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ChannelUpdateEvent), arg => fireEvent(ChannelUpdate, arg));
+
+            Helper.RegisterEventHandler(registeredEventHandlers, typeof(CoreShowChannelEvent), arg => fireEvent(CoreShowChannel, arg));
+            Helper.RegisterEventHandler(registeredEventHandlers, typeof(CoreShowChannelsCompleteEvent), arg => fireEvent(CoreShowChannelsComplete, arg));
+
             Helper.RegisterEventHandler(registeredEventHandlers, typeof(AttendedTransferEvent), arg => fireEvent(AttendedTransfer, arg));
             Helper.RegisterEventHandler(registeredEventHandlers, typeof(BridgeCreateEvent), arg => fireEvent(BridgeCreate, arg));
             Helper.RegisterEventHandler(registeredEventHandlers, typeof(BridgeDestroyEvent), arg => fireEvent(BridgeDestroy, arg));
@@ -846,67 +252,14 @@ namespace AsterNET.Manager
             Helper.RegisterEventHandler(registeredEventHandlers, typeof(ChallengeSentEvent), arg => fireEvent(ChallengeSent, arg));
             Helper.RegisterEventHandler(registeredEventHandlers, typeof(SuccessfulAuthEvent), arg => fireEvent(SuccessfulAuth, arg));
             Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueSummaryEvent), arg => fireEvent(QueueSummary, arg));
-            
-            #endregion
->>>>>>> c4df9d8ecb578460d6442f7cd673b9b11763fadd
+            Helper.RegisterEventHandler(registeredEventHandlers, typeof(InvalidPasswordEvent), arg => fireEvent(InvalidPassword, arg));
 
-            this.internalEvent += new EventHandler<ManagerEvent>(internalEventHandler);
+            #endregion
+
+            this.internalEvent += new EventHandler<IManagerEvent>(internalEventHandler);
         }
         #endregion
 
-<<<<<<< HEAD
-			this.internalEvent += new ManagerEventHandler(internalEventHandler);
-		    _eventQueueDispatcher = new EventQueueDispatcher(e =>
-		    {
-		        if (enableEvents && internalEvent != null)
-		        {
-		            try
-		            {
-		                internalEvent.Invoke(this, e);
-		            }
-		            catch (Exception exception)
-		            {
-		                if (UnhandledException == null)
-		                {
-		                    throw;
-		                }
-		                UnhandledException(this, new UnhandledExceptionEventArgs
-		                {
-		                    ManagerEvent = e,
-		                    ThrownException = exception
-		                });
-		            }
-		        }
-		    });
-		}
-		#endregion
-
-	    public void UnhandledExceptionThrown(object source, Exception exception)
-	    {
-	        if (UnhandledException != null)
-	        {
-	            UnhandledException(source, new UnhandledExceptionEventArgs() { ManagerEvent = null, ThrownException = exception });
-	        }
-	    }
-
-		#region Constructor - ManagerConnection(hostname, port, username, password)
-		/// <summary>
-		/// Creates a new instance with the given connection parameters.
-		/// </summary>
-		/// <param name="hostname">the hosname of the Asterisk server to connect to.</param>
-		/// <param name="port">the port where Asterisk listens for incoming Manager API connections, usually 5038.</param>
-		/// <param name="username">the username to use for login</param>
-		/// <param name="password">the password to use for login</param>
-		public ManagerConnection(string hostname, int port, string username, string password)
-			: this()
-		{
-			this.hostname = hostname;
-			this.port = port;
-			this.username = username;
-			this.password = password;
-		}
-		#endregion
-=======
         #region Constructor - ManagerConnection(hostname, port, username, password)
         /// <summary>
         /// Creates a new instance with the given connection parameters.
@@ -915,8 +268,8 @@ namespace AsterNET.Manager
         /// <param name="port">the port where Asterisk listens for incoming Manager API connections, usually 5038.</param>
         /// <param name="username">the username to use for login</param>
         /// <param name="password">the password to use for login</param>
-        public ManagerConnection(string hostname, int port, string username, string password)
-            : this()
+        public ManagerConnection(string hostname, int port, string username, string password) 
+           : this(new LoggerFactory().CreateLogger<ManagerConnection>())
         {
             this.hostname = hostname;
             this.port = port;
@@ -924,6 +277,15 @@ namespace AsterNET.Manager
             this.password = password;
         }
         #endregion
+
+        public ManagerConnection(ILogger<ManagerConnection> logger, string hostname, int port, string username, string password) 
+            : this(logger)
+        {
+            this.hostname = hostname;
+            this.port = port;
+            this.username = username;
+            this.password = password;
+        }
 
         #region Constructor - ManagerConnection(hostname, port, username, password, Encoding socketEncoding)
         /// <summary>
@@ -934,8 +296,8 @@ namespace AsterNET.Manager
         /// <param name="username">the username to use for login</param>
         /// <param name="password">the password to use for login</param>
         /// <param name="socketEncoding">text encoding to asterisk input/output stream</param>
-        public ManagerConnection(string hostname, int port, string username, string password, Encoding socketEncoding)
-            : this()
+        public ManagerConnection(string hostname, int port, string username, string password, Encoding socketEncoding) 
+            : this(new LoggerFactory().CreateLogger<ManagerConnection>())
         {
             this.hostname = hostname;
             this.port = port;
@@ -944,7 +306,6 @@ namespace AsterNET.Manager
             this.socketEncoding = socketEncoding;
         }
         #endregion
->>>>>>> c4df9d8ecb578460d6442f7cd673b9b11763fadd
 
         /// <summary>
         /// Default Fast Reconnect retry counter.
@@ -980,8 +341,8 @@ namespace AsterNET.Manager
         }
         #endregion
 
-        #region internalEventHandler(object sender, ManagerEvent e)
-        private void internalEventHandler(object sender, ManagerEvent e)
+        #region internalEventHandler(object sender, IManagerEvent e)
+        private void internalEventHandler(object sender, IManagerEvent e)
         {
             int eventHash = e.GetType().Name.GetHashCode();
             int userEventHash = typeof(UserEvent).Name.GetHashCode();
@@ -1001,193 +362,6 @@ namespace AsterNET.Manager
         }
         #endregion
 
-<<<<<<< HEAD
-					case 62:
-						if (ConnectionState != null)
-						{
-							ConnectionState(this, (ConnectionStateEvent)e);
-							return;
-						}
-						break;
-					case 63:
-						if (Bridge != null)
-						{
-							Bridge(this, (BridgeEvent)e);
-						}
-						break;
-					case 64:
-						if (Transfer != null)
-						{
-							Transfer(this, (TransferEvent)e);
-						}
-						break;
-					case 65:
-						if (DTMF != null)
-						{
-							DTMF(this, (DTMFEvent)e);
-						}
-						break;
-					case 70:
-						if (VarSet != null)
-						{
-							VarSet(this, (VarSetEvent)e);
-						}
-						break;
-					case 80:
-						if (AGIExec != null)
-						{
-							AGIExec(this, (AGIExecEvent)e);
-						}
-						break;
-					case 81:
-						if (ConfbridgeStart != null)
-						{
-							ConfbridgeStart(this, (ConfbridgeStartEvent)e);
-						}
-						break;
-					case 82:
-						if (ConfbridgeJoin != null)
-						{
-							ConfbridgeJoin(this, (ConfbridgeJoinEvent)e);
-						}
-						break;
-					case 83:
-						if (ConfbridgeLeave != null)
-						{
-							ConfbridgeLeave(this, (ConfbridgeLeaveEvent)e);
-						}
-						break;
-					case 84:
-						if (ConfbridgeEnd != null)
-						{
-							ConfbridgeEnd(this, (ConfbridgeEndEvent)e);
-						}
-						break;
-					case 85:
-						if (ConfbridgeTalking != null)
-						{
-							ConfbridgeTalking(this, (ConfbridgeTalkingEvent)e);
-						}
-						break;
-                    case 86:
-                        if (FailedACL != null)
-                        {
-                            FailedACL(this, (FailedACLEvent)e);
-                        }
-                        break;
-                    case 87:
-				        if (AttendedTransfer != null)
-				        {
-				            AttendedTransfer(this, (AttendedTransferEvent) e);
-				        }
-				        break;
-                    case 88:
-				        if (BridgeCreate != null)
-				        {
-				            BridgeCreate(this, (BridgeCreateEvent) e);
-				        }
-				        break;
-                    case 89:
-                        if (BridgeDestroy != null)
-                        {
-                            BridgeDestroy(this, (BridgeDestroyEvent)e);
-                        }
-                        break;
-                    case 90:
-                        if (BridgeEnter != null)
-                        {
-                            BridgeEnter(this, (BridgeEnterEvent)e);
-                        }
-                        break;
-                    case 91:
-                        if (BridgeLeave != null)
-                        {
-                            BridgeLeave(this, (BridgeLeaveEvent)e);
-                        }
-                        break;
-                    case 92:
-                        if (BlindTransfer != null)
-                        {
-                            BlindTransfer(this, (BlindTransferEvent)e);
-                        }
-                        break;
-                    case 93:
-                        if (DialBegin != null)
-                        {
-                            DialBegin(this, (DialBeginEvent)e);
-                        }
-                        break;
-                    case 94:
-                        if (DialEnd != null)
-                        {
-                            DialEnd(this, (DialEndEvent)e);
-                        }
-                        break;
-                    case 95:
-				        if (NewAccountCode != null)
-				        {
-				            NewAccountCode(this, (NewAccountCodeEvent) e);
-				        }
-				        break;
-                    case 96:
-                        if (MonitorStop != null)
-                        {
-                            MonitorStop(this, (MonitorStopEvent)e);
-                        }
-                        break;
-                    case 97:
-                        if (AsyncAGIEnd != null)
-                        {
-                            AsyncAGIEnd(this, (AsyncAGIEndEvent)e);
-                        }
-                        break;
-                    case 98:
-                        if (AsyncAGIExec != null)
-                        {
-                            AsyncAGIExec(this, (AsyncAGIExecEvent)e);
-                        }
-                        break;
-                    case 99:
-                        if (AsyncAGIStart != null)
-                        {
-                            AsyncAGIStart(this, (AsyncAGIStartEvent)e);
-                        }
-                        break;
-                    case 100:
-                        if (CoreShowChannel != null)
-                        {
-                            CoreShowChannel(this, (CoreShowChannelEvent)e);
-                        }
-                        break;
-                    case 101:
-                        if (CoreShowChannelsComplete != null)
-                        {
-                            CoreShowChannelsComplete(this, (CoreShowChannelsCompleteEvent)e);
-                        }
-                        break;
-                    case 120:
-                        if (DTMFBegin != null)
-                        {
-                            DTMFBegin(this, (DTMFBeginEvent)e);
-                        }
-                        break;
-                    case 121:
-                        if (DTMFEnd != null)
-                        {
-                            DTMFEnd(this, (DTMFEndEvent)e);
-                        }
-                        break;
-                    default:
-						if (UnhandledEvent != null)
-							UnhandledEvent(this, e);
-						return;
-				}
-			}
-			if (fireAllEvents && UnhandledEvent != null)
-				UnhandledEvent(this, e);
-		}
-		#endregion
-=======
         #region FireAllEvents
         /// <summary>
         /// If this property set to <b>true</b> then ManagerConnection send all unassigned events to UnhandledEvent handler,<br/>
@@ -1200,7 +374,6 @@ namespace AsterNET.Manager
             set { this.fireAllEvents = value; }
         }
         #endregion
->>>>>>> c4df9d8ecb578460d6442f7cd673b9b11763fadd
 
         #region PingInterval
         /// <summary>
@@ -1266,7 +439,7 @@ namespace AsterNET.Manager
         /// will wait for a response before throwing a TimeoutException.<br/>
         /// Default is 2000.
         /// </summary>
-        public int DefaultResponseTimeout
+        public uint DefaultResponseTimeout
         {
             get { return defaultResponseTimeout; }
             set { defaultResponseTimeout = value; }
@@ -1278,7 +451,7 @@ namespace AsterNET.Manager
         /// will wait for a response and the last response event before throwing a TimeoutException.<br/>
         /// Default is 5000.
         /// </summary>
-        public int DefaultEventTimeout
+        public uint DefaultEventTimeout
         {
             get { return defaultEventTimeout; }
             set { defaultEventTimeout = value; }
@@ -1373,38 +546,45 @@ namespace AsterNET.Manager
         #endregion
 
         #region login(timeout)
-        /// <summary>
-        /// Does the real login, following the steps outlined below.<br/>
-        /// Connects to the asterisk server by calling connect() if not already connected<br/>
-        /// Waits until the protocol identifier is received. This is checked every sleepTime ms but not longer than timeout ms in total.<br/>
-        /// Sends a ChallengeAction requesting a challenge for authType MD5.<br/>
-        /// When the ChallengeResponse is received a LoginAction is sent using the calculated key (MD5 hash of the password appended to the received challenge).<br/>
-        /// </summary>
-        /// <param name="timeout">the maximum time to wait for the protocol identifier (in ms)</param>
-        /// <throws>
-        /// AuthenticationFailedException if username or password are incorrect and the login action returns an error or if the MD5
-        /// hash cannot be computed. The connection is closed in this case.
-        /// </throws>
-        /// <throws>
-        /// TimeoutException if a timeout occurs either while waiting for the
-        /// protocol identifier or when sending the challenge or login
-        /// action. The connection is closed in this case.
-        /// </throws>
-        private void login(int timeout)
+
+        public Task Login(uint? timeout = null)
         {
+            var cts = new CancellationTokenSource((int)(timeout ?? defaultResponseTimeout));
+            return Login(cts.Token);
+        }
+
+
+        /// <summary>
+        /// Logs in to the Asterisk manager using asterisk's MD5 based
+        /// challenge/response protocol. The login is delayed until the protocol
+        /// identifier has been received by the reader.
+        /// </summary>
+        /// <throws>  AuthenticationFailedException if the username and/or password are incorrect</throws>
+        /// <throws>  TimeoutException if no response is received within the specified timeout period</throws>
+        /// <seealso cref="Action.ChallengeAction"/>
+        /// <seealso cref="Action.LoginAction"/>
+        public async Task Login(CancellationToken cancellationToken)
+        {
+            
             enableEvents = false;
             if (reconnected)
             {
-#if LOGGER
-                logger.Error("Login during reconnect state.");
-#endif
-                throw new AuthenticationFailedException("Unable login during reconnect state.");
+                string description = "Unable login during reconnect state.";
+                var ex = new AuthenticationFailedException(description);
+                _logger.LogError(ex, description);
+                throw ex;
             }
 
             reconnectEnable = false;
             DateTime start = DateTime.Now;
-            do
+            while (string.IsNullOrEmpty(protocolIdentifier))
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    disconnect(true);
+                    throw new TimeoutException("Timeout waiting for protocol identifier");
+                }
+
                 if (connect())
                 {
                     // Increase delay after connection up to 500 ms
@@ -1416,13 +596,7 @@ namespace AsterNET.Manager
                 }
                 catch
                 { }
-
-                if (string.IsNullOrEmpty(protocolIdentifier) && timeout > 0 && Helper.GetMillisecondsFrom(start) > timeout)
-                {
-                    disconnect(true);
-                    throw new TimeoutException("Timeout waiting for protocol identifier");
-                }
-            } while (string.IsNullOrEmpty(protocolIdentifier));
+            };
 
             ChallengeAction challengeAction = new ChallengeAction();
             Response.ManagerResponse response = SendAction(challengeAction, defaultResponseTimeout * 2);
@@ -1442,14 +616,15 @@ namespace AsterNET.Manager
                 catch (Exception ex)
                 {
                     disconnect(true);
-#if LOGGER
-                    logger.Error("Unable to create login key using MD5 Message Digest.", ex);
-#endif
-                    throw new AuthenticationFailedException("Unable to create login key using MD5 Message Digest.", ex);
+
+                    string description = "Unable to create login key using MD5 Message Digest.";
+                    var newException = new AuthenticationFailedException(description, ex);
+                    _logger.LogError(newException, description);
+                    throw newException;
                 }
 
-                Action.LoginAction loginAction = new Action.LoginAction(username, "MD5", key);
-                Response.ManagerResponse loginResponse = SendAction(loginAction);
+                var loginAction = new LoginAction(username, "MD5", key);
+                ManagerResponse loginResponse = SendAction(loginAction);
                 if (loginResponse is Response.ManagerError)
                 {
                     disconnect(true);
@@ -1459,15 +634,14 @@ namespace AsterNET.Manager
                 // successfully logged in so assure that we keep trying to reconnect when disconnected
                 reconnectEnable = keepAlive;
 
-#if LOGGER
-                logger.Info("Successfully logged in");
-#endif
+                _logger.LogInformation($"Successfully LoggedIn: { loginResponse.ToJson() }");
+
                 asteriskVersion = determineVersion();
-#if LOGGER
-                logger.Info("Determined Asterisk version: " + asteriskVersion);
-#endif
+
+                _logger.LogInformation("Determined Asterisk version: " + asteriskVersion);
+
 				enableEvents = true;
-				ConnectEvent ce = new ConnectEvent(this);
+				ConnectEvent ce = new ConnectEvent();
 				ce.ProtocolIdentifier = this.protocolIdentifier;
 				DispatchEvent(ce);
 			}
@@ -1475,107 +649,155 @@ namespace AsterNET.Manager
 				throw new ManagerException("Unable login to Asterisk - " + response.Message);
 			else
 				throw new ManagerException("Unknown response during login to Asterisk - " + response.GetType().Name + " with message " + response.Message);
-
 		}
+
 		#endregion
 
 		#region determineVersion()
-		protected internal AsteriskVersion determineVersion()
-		{
-			Response.ManagerResponse response;
-			response = SendAction(new Action.CommandAction("core show version"), defaultResponseTimeout * 2);
-			if (response is Response.CommandResponse)
-			{
-				foreach (string line in ((Response.CommandResponse)response).Result)
-				{
-					foreach (Match m in Common.ASTERISK_VERSION.Matches(line))
-					{
-						if (m.Groups.Count >= 2)
-						{
-							version = m.Groups[1].Value;
-							if (version.StartsWith("1.4."))
-							{
-								VAR_DELIMITER = new char[] { '|' };
-								return AsteriskVersion.ASTERISK_1_4;
-							}
-							else if (version.StartsWith("1.6."))
-							{
-								VAR_DELIMITER = new char[] { '|' };
-								return Manager.AsteriskVersion.ASTERISK_1_6;
-							}
-							else if (version.StartsWith("1.8."))
-							{
-								VAR_DELIMITER = new char[] { '|' };
-								return Manager.AsteriskVersion.ASTERISK_1_8;
-							}
-							else if (version.StartsWith("10."))
-							{
-								VAR_DELIMITER = new char[] { '|' };
-								return Manager.AsteriskVersion.ASTERISK_10;
-							}
-							else if (version.StartsWith("11."))
-							{
-								VAR_DELIMITER = new char[] { ',' };
-								return Manager.AsteriskVersion.ASTERISK_11;
-							}
-							else if (version.StartsWith("12."))
-							{
-								VAR_DELIMITER = new char[] { ',' };
-								return Manager.AsteriskVersion.ASTERISK_12;
-							}
-							else if (version.StartsWith("13."))
-							{
-								VAR_DELIMITER = new char[] { ',' };
-								return Manager.AsteriskVersion.ASTERISK_13;
-							}
-							else if (version.StartsWith("14."))
-							{
-								VAR_DELIMITER = new char[] { ',' };
-								return Manager.AsteriskVersion.ASTERISK_14;
-							}
-							else if (version.StartsWith("15."))
-							{
-								VAR_DELIMITER = new char[] { ',' };
-								return Manager.AsteriskVersion.ASTERISK_15;
-							}
-							else if (version.StartsWith("16."))
-							{
-								VAR_DELIMITER = new char[] { ',' };
-								return Manager.AsteriskVersion.ASTERISK_16;
-							}
-							else if (version.StartsWith("17."))
-							{
-								VAR_DELIMITER = new char[] { ',' };
-								return Manager.AsteriskVersion.ASTERISK_17;
-							}
-							else if (version.IndexOf('.') >= 2)
-							{
-								VAR_DELIMITER = new char[] { ',' };
-								return Manager.AsteriskVersion.ASTERISK_Newer;
-							}
-							else
-								throw new ManagerException("Unknown Asterisk version " + version);
-						}
-					}
-				}
-			}
 
-			Response.ManagerResponse showVersionFilesResponse = SendAction(new Action.CommandAction("show version files"), defaultResponseTimeout * 2);
-			if (showVersionFilesResponse is Response.CommandResponse)
-			{
-				IList showVersionFilesResult = ((Response.CommandResponse)showVersionFilesResponse).Result;
-				if (showVersionFilesResult != null && showVersionFilesResult.Count > 0)
-				{
-					string line1;
-					line1 = (string)showVersionFilesResult[0];
-					if (line1 != null && line1.StartsWith("File"))
-					{
-						VAR_DELIMITER = new char[] { '|' };
-						return AsteriskVersion.ASTERISK_1_2;
-					}
-				}
-			}
-			return AsteriskVersion.ASTERISK_1_0;
+        protected internal bool TryVersionByCoreShowVersion(out AsteriskVersion astversion, out string version)
+        {
+            var command = new CommandAction("core show version");
+            var actionResponse = SendAction(command, defaultResponseTimeout * 2);
+            if (actionResponse is ManagerError error)
+            {
+                _logger.LogWarning("'core show version' error: {message}", error.Message);
+            }
+            else if (actionResponse is CommandResponse response) 
+            {
+                foreach (string line in response.Result)
+                {
+                    foreach (Match m in Common.ASTERISK_VERSION.Matches(line))
+                    {
+                        if (m.Groups.Count >= 2)
+                        {
+                            version = m.Groups[1].Value;
+                            if (version.StartsWith("1.4."))
+                            {
+                                VAR_DELIMITER = new char[] { '|' };
+                                astversion = AsteriskVersion.ASTERISK_1_4;
+                                return true;
+                            }
+                            else if (version.StartsWith("1.6."))
+                            {
+                                VAR_DELIMITER = new char[] { '|' };
+                                astversion = AsteriskVersion.ASTERISK_1_6;
+                                return true;
+                            }
+                            else if (version.StartsWith("1.8."))
+                            {
+                                VAR_DELIMITER = new char[] { '|' };
+                                astversion = AsteriskVersion.ASTERISK_1_8;
+                                return true;
+                            }
+                            else if (version.StartsWith("10."))
+                            {
+                                VAR_DELIMITER = new char[] { '|' };
+                                astversion = AsteriskVersion.ASTERISK_10;
+                                return true;
+                            }
+                            else if (version.StartsWith("11."))
+                            {
+                                VAR_DELIMITER = new char[] { ',' };
+                                astversion = AsteriskVersion.ASTERISK_11;
+                                return true;
+                            }
+                            else if (version.StartsWith("12."))
+                            {
+                                VAR_DELIMITER = new char[] { ',' };
+                                astversion = AsteriskVersion.ASTERISK_12;
+                                return true;
+                            }
+                            else if (version.StartsWith("13."))
+                            {
+                                VAR_DELIMITER = new char[] { ',' };
+                                astversion = AsteriskVersion.ASTERISK_13;
+                                return true;
+                            }
+                            else if (version.StartsWith("14."))
+                            {
+                                VAR_DELIMITER = new char[] { ',' };
+                                astversion = AsteriskVersion.ASTERISK_14;
+                                return true;
+                            }
+                            else if (version.StartsWith("15."))
+                            {
+                                VAR_DELIMITER = new char[] { ',' };
+                                astversion = AsteriskVersion.ASTERISK_15;
+                                return true;
+                            }
+                            else if (version.StartsWith("16."))
+                            {
+                                VAR_DELIMITER = new char[] { ',' };
+                                astversion = AsteriskVersion.ASTERISK_16;
+                                return true;
+                            }
+                            else if (version.StartsWith("17."))
+                            {
+                                VAR_DELIMITER = new char[] { ',' };
+                                astversion = AsteriskVersion.ASTERISK_17;
+                                return true;
+                            }
+                            else if (version.IndexOf('.') >= 2)
+                            {
+                                VAR_DELIMITER = new char[] { ',' };
+                                astversion = AsteriskVersion.ASTERISK_Newer;
+                                return true;
+                            }
+                            else
+                                throw new ManagerException("Unknown Asterisk version " + version);
+                        }
+                    }
+                }                
+            }
+            else
+            {
+                _logger.LogWarning("'core show version' unknown type response: {message}, {type}", actionResponse.Message, actionResponse.GetType());
+            }
+
+            astversion = default;
+            version = default;
+            return false;
+        }
+
+        protected internal bool TryVersionByShowVersionFiles(out AsteriskVersion astversion)
+        {
+            var command = new CommandAction("show version files");
+            var actionResponse = SendAction(command, defaultResponseTimeout * 2);
+            if (actionResponse is ManagerError error)
+            {
+                _logger.LogWarning("'show version files' error: {message}", error.Message);
+            }
+            else if (actionResponse is CommandResponse response)
+            {
+                IList showVersionFilesResult = response.Result;
+                if (showVersionFilesResult != null && showVersionFilesResult.Count > 0)
+                {
+                    var line1 = (string)showVersionFilesResult[0];
+                    if (line1 != null && line1.StartsWith("File"))
+                    {
+                        VAR_DELIMITER = new char[] { '|' };
+                        astversion = AsteriskVersion.ASTERISK_1_2;
+                        return true;
+                    }
+                }                
+            }
+            else
+            {
+                _logger.LogWarning("'show version files' unknown type response: {message}, {type}", actionResponse.Message, actionResponse.GetType());
+            }
+
+            astversion = AsteriskVersion.Unknown;
+            return false;
+        }
+
+        protected internal AsteriskVersion determineVersion()
+		{
+            if (!TryVersionByCoreShowVersion(out AsteriskVersion asteriskVersion, out string version))
+                TryVersionByShowVersionFiles(out asteriskVersion);
+            
+            this.version = version;
+            return asteriskVersion;
 		}
 
 		#endregion
@@ -1590,41 +812,40 @@ namespace AsterNET.Manager
 			{
 				if (mrSocket == null)
 				{
-#if LOGGER
-                    logger.Info("Connecting to {0}:{1}", hostname, port);
-#endif
+                    _logger.LogInformation("Connecting to {0}:{1}", hostname, port);
                     try
                     {
-                        if (SocketReceiveBufferSize>0)
-                            mrSocket = new SocketConnection(hostname, port, SocketReceiveBufferSize, socketEncoding);
-                        else
-                            mrSocket = new SocketConnection(hostname, port, socketEncoding);
-                        result = mrSocket.IsConnected;
+                        SocketReceiveBufferSize = 100000;
+                        var options = new AGISocketExtendedOptions()
+                        {
+                            Start = false,
+                            BufferSize = (uint)SocketReceiveBufferSize,
+                            Encoding = socketEncoding,
+                        };                        
+                        var client = new TcpClient(hostname, port);
+                        mrSocket = new SocketConnection(_logger, options, client.Client);
+                        mrSocket.OnDisposing += SocketDisposing;
+                        mrSocket.OnDisconnected += SocketDisconnected;
+
+                        result = mrSocket.IsConnected();
                     }
-#if LOGGER
                     catch (Exception ex)
                     {
-                        logger.Info("Connect - Exception  : {0}", ex.Message);
-#else
-                    catch
-                    {
-#endif
+                        _logger.LogInformation("Connect - Exception  : {0}", ex.Message);
                         result = false;
                     }
+
                     if (result)
                     {
                         if (mrReader == null)
                         {
                             mrReader = new ManagerReader(this);
-                            mrReaderThread = new Thread(mrReader.Run) { IsBackground = true, Name = "ManagerReader-" + DateTime.Now.Second };
-                            mrReader.Socket = mrSocket;
                             startReader = true;
-                        }
-                        else
-                        {
-                            mrReader.Socket = mrSocket;
-                        }
 
+                            mrReaderThread = new Thread(mrReader.Run) { IsBackground = true, Name = "ManagerReader-" + DateTime.Now.Second };                            
+                        }
+                       
+                        mrReader.Socket = mrSocket;   
                         mrReader.Reinitialize();
                     }
                     else
@@ -1692,9 +913,8 @@ namespace AsterNET.Manager
         /// </summary>
         private void reconnect(bool init)
         {
-#if LOGGER
-            logger.Warning("reconnect (init: {0}), reconnectCount:{1}", init, reconnectCount);
-#endif
+
+            _logger.LogWarning("reconnect (init: {0}), reconnectCount:{1}", init, reconnectCount);
             if (init)
                 reconnectCount = 0;
             else if (reconnectCount++ > reconnectRetryMax)
@@ -1702,9 +922,7 @@ namespace AsterNET.Manager
 
             if (reconnectEnable)
             {
-#if LOGGER
-                logger.Warning("Try reconnect.");
-#endif
+                _logger.LogWarning("Try reconnect.");
                 enableEvents = false;
                 reconnected = true;
                 disconnect(false);
@@ -1722,17 +940,13 @@ namespace AsterNET.Manager
                             {
                                 // Try to reconnect quite fast for the first times
                                 // this succeeds if the server has just been restarted
-#if LOGGER
-                                logger.Info("Reconnect delay : {0}, retry : {1}", reconnectIntervalFast, retryCount);
-#endif
+                                _logger.LogInformation("Reconnect delay : {0}, retry : {1}", reconnectIntervalFast, retryCount);
                                 Thread.Sleep(reconnectIntervalFast);
                             }
                             else
                             {
                                 // slow down after unsuccessful attempts assuming a shutdown of the server
-#if LOGGER
-                                logger.Info("Reconnect delay : {0}, retry : {1}", reconnectIntervalMax, retryCount);
-#endif
+                                _logger.LogInformation("Reconnect delay : {0}, retry : {1}", reconnectIntervalMax, retryCount);
                                 Thread.Sleep(reconnectIntervalMax);
                             }
                         }
@@ -1740,33 +954,21 @@ namespace AsterNET.Manager
                         {
                             continue;
                         }
-#if LOGGER
                         catch (Exception ex)
                         {
-                            logger.Info("Reconnect delay exception : ", ex.Message);
-#else
-						catch
-						{
-#endif
+                            _logger.LogInformation("Reconnect delay exception : ", ex.Message);
                             continue;
                         }
 
                         try
                         {
-#if LOGGER
-                            logger.Info("Try connect.");
-#endif
+                            _logger.LogInformation("Try connect.");
                             if (connect())
                                 break;
                         }
-#if LOGGER
                         catch (Exception ex)
                         {
-                            logger.Info("Connect exception : ", ex.Message);
-#else
-						catch
-						{
-#endif
+                            _logger.LogInformation("Connect exception : ", ex.Message);
                         }
                         retryCount++;
                     }
@@ -1775,13 +977,11 @@ namespace AsterNET.Manager
 
             if (!reconnectEnable)
             {
-#if LOGGER
-                logger.Info("Can't reconnect.");
-#endif
+                _logger.LogInformation("Can't reconnect.");
                 enableEvents = true;
                 reconnected = false;
                 disconnect(true);
-                fireEvent(new DisconnectEvent(this));
+                fireEvent(new DisconnectEvent());
             }
         }
         #endregion
@@ -1796,33 +996,8 @@ namespace AsterNET.Manager
         }
         #endregion
 
-        #region Login()
-        /// <summary>
-        /// Logs in to the Asterisk manager using asterisk's MD5 based
-        /// challenge/response protocol. The login is delayed until the protocol
-        /// identifier has been received by the reader.
-        /// </summary>
-        /// <throws>  AuthenticationFailedException if the username and/or password are incorrect</throws>
-        /// <throws>  TimeoutException if no response is received within the specified timeout period</throws>
-        /// <seealso cref="Action.ChallengeAction"/>
-        /// <seealso cref="Action.LoginAction"/>
-        public void Login()
-        {
-            login(defaultResponseTimeout);
-        }
-        /// <summary>
-        /// Log in to the Asterisk manager using asterisk's MD5 based
-        /// challenge/response protocol. The login is delayed until the protocol
-        /// identifier has been received by the reader.
-        /// </summary>
-        /// <param name="timeout">Timeout in milliseconds to login.</param>
-        public void Login(int timeout)
-        {
-            login(timeout);
-        }
-        #endregion
-
         #region IsConnected()
+
         /// <summary> Returns true if there is a socket connection to the
         /// asterisk server, false otherwise.
         /// 
@@ -1831,47 +1006,55 @@ namespace AsterNET.Manager
         /// asterisk server, false otherwise.
         /// </returns>
         public bool IsConnected()
-        {
-            bool result = false;
-            lock (lockSocket)
-                result = mrSocket != null && mrSocket.IsConnected;
-            return result;
-        }
+            => mrSocket?.IsConnected() ?? false;
+
         #endregion
 
         #region Logoff()
         /// <summary>
         /// Sends a LogoffAction and disconnects from the server.
         /// </summary>
-        public void Logoff()
+        public async Task LogOff(CancellationToken cancellationToken = default)
         {
             lock (lockSocket)
             {
                 // stop reconnecting when we got disconnected
                 reconnectEnable = false;
                 if (mrReader != null && mrSocket != null)
+                {
                     try
                     {
                         mrReader.IsLogoff = true;
-                        SendAction(new Action.LogoffAction());
+                        var response = SendAction<LogOffAction>();
+                        if (response != null && !response.IsSuccess())
+                            throw new Exception(response.Message);
                     }
-                    catch
-                    { }
+                    catch(Exception ex)
+                    {
+                        _logger.LogError(ex, "error on logoff");
+                    }
+                }
             }
             disconnect(true);
+            await Task.CompletedTask;
         }
         #endregion
 
         #region SendAction(action)
+
+        public ManagerResponse SendAction<T>() where T : ManagerAction, new()
+            => SendAction(new T(), defaultResponseTimeout);
+
         /// <summary>
         /// Send Action with default timeout.
         /// </summary>
         /// <param name="action"></param>
         /// <returns></returns>
-        public Response.ManagerResponse SendAction(Action.ManagerAction action)
+        public ManagerResponse SendAction(ManagerAction action)
         {
             return SendAction(action, defaultResponseTimeout);
         }
+
         #endregion
 
         #region SendAction(action, timeout)
@@ -1881,13 +1064,13 @@ namespace AsterNET.Manager
         /// <param name="action">action to send</param>
         /// <param name="timeout">timeout in milliseconds</param>
         /// <returns></returns>
-        public Response.ManagerResponse SendAction(ManagerAction action, int timeout)
+        public ManagerResponse SendAction(ManagerAction action, uint timeout)
         {
             AutoResetEvent autoEvent = new AutoResetEvent(false);
             ResponseHandler handler = new ResponseHandler(action, autoEvent);
 
-            int hash = SendAction(action, handler);
-            bool result = autoEvent.WaitOne(timeout <= 0 ? -1 : timeout, true);
+            _ = SendAction(action, handler);
+            bool result = autoEvent.WaitOne(timeout <= 0 ? -1 : (int)timeout, true);
 
             RemoveResponseHandler(handler);
 
@@ -1927,34 +1110,23 @@ namespace AsterNET.Manager
         }
         #endregion
 
-
-
-        #region SendActionAsync(action)
-        /// <summary>
-        /// Asynchronously send Action async with default timeout.
-        /// </summary>
-        /// <param name="action">action to send</param>
-        public Task<ManagerResponse> SendActionAsync(ManagerAction action)
-        {
-          return SendActionAsync(action, null);
-        }
-        #endregion
-
         #region SendActionAsync(action, timeout)
+
+        public Task<ManagerResponse> SendActionAsync<T>(CancellationToken cancellationToken = default) where T : ManagerAction, new()
+            => SendActionAsync(new T(), cancellationToken);
+
         /// <summary>
         /// Asynchronously send Action async.
         /// </summary>
         /// <param name="action">action to send</param>
         /// <param name="cancellationToken">cancellation Token</param>
-        public Task<ManagerResponse> SendActionAsync(ManagerAction action, CancellationTokenSource cancellationToken)
+        public Task<ManagerResponse> SendActionAsync(ManagerAction action, CancellationToken cancellationToken = default)
         {
           var handler = new TaskResponseHandler(action);
           var source = handler.TaskCompletionSource;
 
           SendAction(action, handler);
-
-          if (cancellationToken != null)
-            cancellationToken.Token.Register(() => { source.TrySetCanceled(); });
+          cancellationToken.Register(() => { source.TrySetCanceled(); });
 
           return source.Task.ContinueWith(x =>
           {
@@ -1962,6 +1134,7 @@ namespace AsterNET.Manager
             return x.Result;
           });
         }
+
         #endregion
         #region SendEventGeneratingAction(action)
         public ResponseEvents SendEventGeneratingAction(ManagerActionEvent action)
@@ -1977,13 +1150,13 @@ namespace AsterNET.Manager
         /// <param name="action"></param>
         /// <param name="timeout">wait timeout in milliseconds</param>
         /// <returns></returns>
-        public ResponseEvents SendEventGeneratingAction(ManagerActionEvent action, int timeout)
+        public ResponseEvents SendEventGeneratingAction(ManagerActionEvent action, uint timeout)
         {
             if (action == null)
                 throw new ArgumentException("Unable to send action: action is null.");
             else if (action.ActionCompleteEventClass() == null)
                 throw new ArgumentException("Unable to send action: ActionCompleteEventClass is null.");
-            else if (!typeof(ResponseEvent).IsAssignableFrom(action.ActionCompleteEventClass()))
+            else if (!typeof(IResponseEvent).IsAssignableFrom(action.ActionCompleteEventClass()))
                 throw new ArgumentException("Unable to send action: ActionCompleteEventClass is not a ResponseEvent.");
 
             if (mrSocket == null)
@@ -1999,7 +1172,7 @@ namespace AsterNET.Manager
 
             SendToAsterisk(action, internalActionId);
 
-            bool result = autoEvent.WaitOne(timeout <= 0 ? -1 : timeout, true);
+            bool result = autoEvent.WaitOne(timeout <= 0 ? -1 : (int)timeout, true);
 
             RemoveResponseHandler(handler);
             RemoveResponseEventHandler(handler);
@@ -2101,23 +1274,30 @@ namespace AsterNET.Manager
 
         internal void SendToAsterisk(ManagerAction action, string internalActionId)
         {
-            if (mrSocket == null)
-                throw new SystemException("Unable to send action: socket is null");
-
             string buffer = BuildAction(action, internalActionId);
-#if LOGGER
-            logger.Debug("Sent action : '{0}' : {1}", internalActionId, action);
-#endif
+
+            _logger.LogDebug("Sent action : '{0}' : {1}", internalActionId, action);
+
             if (sa == null)
                 sa = new SendToAsteriskDelegate(sendToAsterisk);
+
             sa.Invoke(buffer);
         }
 
         private delegate void SendToAsteriskDelegate(string buffer);
-        private SendToAsteriskDelegate sa = null;
+        private SendToAsteriskDelegate? sa = null;
 
         private void sendToAsterisk(string buffer)
         {
+            if (mrSocket == null)
+                throw new SystemException("Unable to send action: socket is null");
+
+            if (!mrSocket.IsConnected())
+            {
+                mrSocket = null; // setting null to force a reconnect on next time
+                throw new SystemException("Unable to send action: tcpclient or network stream null or disposed");
+            }
+
             lock (lockSocketWrite)
             {
                 mrSocket.Write(buffer);
@@ -2134,6 +1314,9 @@ namespace AsterNET.Manager
         #endregion
 
         #region BuildAction(action, internalActionId)
+
+        private static string[] IgnoreKeys = { "class", "action", "actionid", "variable", "dictionary" };
+
         public string BuildAction(ManagerAction action, string internalActionId)
         {
             MethodInfo getter;
@@ -2153,13 +1336,26 @@ namespace AsterNET.Manager
 
             if (!string.IsNullOrEmpty(valueAsString))
                 sb.Append(string.Concat("ActionID: ", valueAsString, Common.LINE_SEPARATOR));
+                       
+            if (action.Dictionary != null)
+            {
+                foreach (DictionaryEntry entry in action.Dictionary)
+                {
+                    string concatItemsValue = Helper.JoinVariables(action.Dictionary, Common.LINE_SEPARATOR, ": ");
+                    if (concatItemsValue.Length == 0)
+                        continue;
 
-            Dictionary<string, MethodInfo> getters = Helper.GetGetters(action.GetType());
+                    sb.Append(concatItemsValue);
+                    sb.Append(Common.LINE_SEPARATOR);
+                    continue;
+                }
+            }            
 
+            var getters = Helper.GetGetters(action.GetType());
             foreach (string name in getters.Keys)
             {
                 string nameLower = name.ToLower(Helper.CultureInfo);
-                if (nameLower == "class" || nameLower == "action" || nameLower == "actionid")
+                if (IgnoreKeys.Contains(nameLower))
                     continue;
 
                 getter = getters[name];
@@ -2181,21 +1377,11 @@ namespace AsterNET.Manager
                 }
                 catch (UnauthorizedAccessException ex)
                 {
-#if LOGGER
-                    logger.Error("Unable to retrieve property '" + name + "' of " + action.GetType(), ex);
-                    continue;
-#else
 					throw new ManagerException("Unable to retrieve property '" + name + "' of " + action.GetType(), ex);
-#endif
                 }
                 catch (TargetInvocationException ex)
                 {
-#if LOGGER
-                    logger.Error("Unable to retrieve property '" + name + "' of " + action.GetType(), ex);
-                    continue;
-#else
 					throw new ManagerException("Unable to retrieve property '" + name + "' of " + action.GetType(), ex);
-#endif
                 }
 
                 if (value == null)
@@ -2210,9 +1396,9 @@ namespace AsterNET.Manager
                     valueAsString = ((bool)value ? "true" : "false");
                 else if (value is DateTime)
                     valueAsString = value.ToString();
-                else if (value is IDictionary)
+                else if (value is IDictionary dictionary)
                 {
-                    valueAsString = Helper.JoinVariables((IDictionary)value, Common.LINE_SEPARATOR, ": ");
+                    valueAsString = Helper.JoinVariables(dictionary, Common.LINE_SEPARATOR, ": ");
                     if (valueAsString.Length == 0)
                         continue;
                     sb.Append(valueAsString);
@@ -2221,21 +1407,19 @@ namespace AsterNET.Manager
                 }
                 else
                     valueAsString = value.ToString();
-
+                
                 sb.Append(string.Concat(name, ": ", valueAsString, Common.LINE_SEPARATOR));
             }
 
-            IActionVariable actionVar = action as IActionVariable;
-            if (actionVar != null)
+            if (action.Variable != null && action.Variable.Count > 0)
             {
-                var variables = actionVar.GetVariables();
-                if (variables != null && variables.Count > 0)
-                {
-                    sb.Append(string.Concat("Variable: ", Helper.JoinVariables(actionVar.GetVariables(), VAR_DELIMITER, "="), Common.LINE_SEPARATOR));
-                }
-            }
+                string concatItemsValue = Helper.JoinVariables(action.Variable, VAR_DELIMITER, "=");
+                string concatValue = string.Concat("Variable: ", concatItemsValue);
+                sb.Append(concatValue); 
+                sb.Append(Common.LINE_SEPARATOR);
+            }            
 
-            sb.Append(Common.LINE_SEPARATOR);
+            sb.Append(Common.LINE_SEPARATOR);  
             return sb.ToString();
         }
         #endregion
@@ -2261,31 +1445,27 @@ namespace AsterNET.Manager
         #region DispatchResponse(response)
         /// <summary>
         /// This method is called by the reader whenever a ManagerResponse is
-        /// received. The response is dispatched to the associated <see cref="IManagerResponseHandler"/>ManagerResponseHandler.
+        /// received. The response is dispatched to the associated <see cref="IResponseHandler"/>ManagerResponseHandler.
         /// </summary>
-        /// <param name="response">the response received by the reader</param>
+        /// <param name="buffer">the response received by the reader</param>
         /// <seealso cref="ManagerReader" />
         internal void DispatchResponse(Dictionary<string, string> buffer)
         {
-#if LOGGER
-            logger.Debug("Dispatch response packet : {0}", Helper.JoinVariables(buffer, ", ", ": "));
-#endif
+            _logger.LogDebug("Dispatch response packet : {0}", Helper.JoinVariables(buffer, ", ", ": "));
             DispatchResponse(buffer, null);
         }
 
         internal void DispatchResponse(ManagerResponse response)
         {
-#if LOGGER
-            logger.Debug("Dispatch response : {0}", response);
-#endif
+            _logger.LogTrace("Dispatch response : {0}", response);
             DispatchResponse(null, response);
         }
 
-        internal void DispatchResponse(Dictionary<string, string> buffer, ManagerResponse response)
+        internal void DispatchResponse(Dictionary<string, string>? buffer, ManagerResponse? response)
         {
             string responseActionId = string.Empty;
             string actionId = string.Empty;
-            IResponseHandler responseHandler = null;
+            IResponseHandler? responseHandler = null;
 
             if (buffer != null)
             {
@@ -2310,7 +1490,7 @@ namespace AsterNET.Manager
                 {
                     if (response == null)
                     {
-                        ManagerActionResponse action = responseHandler.Action as ManagerActionResponse;
+                        ManagerActionResponse? action = responseHandler.Action as ManagerActionResponse;
                         if (action == null || (response = action.ActionCompleteResponseClass() as ManagerResponse) == null)
                             response = Helper.BuildResponse(buffer);
                         else
@@ -2324,16 +1504,13 @@ namespace AsterNET.Manager
                     }
                     catch (Exception ex)
                     {
-#if LOGGER
-                        logger.Error("Unexpected exception in responseHandler {0}\n{1}", response, ex);
-#else
+                        _logger.LogError(ex, "Unexpected exception in responseHandler {0}\n{1}", response);
 						throw new ManagerException("Unexpected exception in responseHandler " + responseHandler.GetType().FullName, ex);
-#endif
                     }
                 }
             }
 
-            if (response == null && buffer.ContainsKey("ping") && buffer["ping"] == "Pong")
+            if (response == null && buffer.ContainsKey("ping") && buffer["ping"].ToLower() == "pong")
             {
                 response = Helper.BuildResponse(buffer);
                 foreach (ResponseHandler pingHandler in pingHandlers.Values)
@@ -2349,9 +1526,7 @@ namespace AsterNET.Manager
                 response = Helper.BuildResponse(buffer);
                 response.ActionId = responseActionId;
             }
-#if LOGGER
-            logger.Info("Reconnected - DispatchEvent : " + response);
-#endif
+            _logger.LogInformation("Reconnected - DispatchEvent : " + response);
             #region Support background reconnect
             if (response is ChallengeResponse)
             {
@@ -2369,14 +1544,9 @@ namespace AsterNET.Manager
                             md.Update(UTF8Encoding.UTF8.GetBytes(password));
                         key = Helper.ToHexString(md.DigestData);
                     }
-#if LOGGER
                     catch (Exception ex)
                     {
-                        logger.Error("Unable to create login key using MD5 Message Digest", ex);
-#else
-					catch
-					{
-#endif
+                        _logger.LogError(ex, "Unable to create login key using MD5 Message Digest");
                         key = null;
                     }
                 }
@@ -2409,7 +1579,7 @@ namespace AsterNET.Manager
                     reconnected = false;
                     enableEvents = true;
                     reconnectEnable = keepAlive;
-                    ConnectEvent ce = new ConnectEvent(this);
+                    ConnectEvent ce = new ConnectEvent();
                     ce.Reconnect = true;
                     ce.ProtocolIdentifier = protocolIdentifier;
                     fireEvent(ce);
@@ -2425,26 +1595,27 @@ namespace AsterNET.Manager
 
         #region DispatchEvent(...)
         /// <summary>
-        /// This method is called by the reader whenever a ManagerEvent is received.
-        /// The event is dispatched to all registered ManagerEventHandlers.
+        /// This method is called by the reader whenever a IManagerEvent is received.
+        /// The event is dispatched to all registered IManagerEventHandlers.
         /// </summary>
-        /// <param name="e">the event received by the reader</param>
         /// <seealso cref="ManagerReader"/>
         internal void DispatchEvent(Dictionary<string, string> buffer)
         {
-            ManagerEvent e = Helper.BuildEvent(registeredEventClasses, this, buffer);
-            DispatchEvent(e);
+            var e = this.BuildEvent(registeredEventClasses, buffer);
+            DispatchEvent(e.Event);
         }
 
-        internal void DispatchEvent(ManagerEvent e)
+        /// <summary>
+        /// Must be identified event before that
+        /// </summary>
+        /// <param name="e"></param>
+        internal void DispatchEvent(IManagerEvent e)
         {
-#if LOGGER
-            logger.Debug("Dispatching event: {0}", e);
-#endif
-
-            if (e is ResponseEvent)
+            if (e is IResponseEvent responseEvent)
             {
-                ResponseEvent responseEvent = (ResponseEvent)e;
+                if (e is IActionListComplete complete)
+                    _logger.LogDebug("Action({actionid}) completed: {eventlist}, items: {items}", responseEvent.ActionId, complete.EventList, complete.ListItems);
+
                 if (!string.IsNullOrEmpty(responseEvent.ActionId) && !string.IsNullOrEmpty(responseEvent.InternalActionId))
                 {
                     ResponseEventHandler eventHandler = (ResponseEventHandler)GetResponseEventHandler(responseEvent.InternalActionId.GetHashCode());
@@ -2455,11 +1626,8 @@ namespace AsterNET.Manager
                         }
                         catch (SystemException ex)
                         {
-#if LOGGER
-                            logger.Error("Unexpected exception", ex);
-#else
+                            _logger.LogError(ex, "Unexpected exception");
 							throw ex;
-#endif
                         }
                 }
             }
@@ -2468,9 +1636,8 @@ namespace AsterNET.Manager
             if (e is ConnectEvent)
             {
                 string protocol = ((ConnectEvent)e).ProtocolIdentifier;
-#if LOGGER
-                logger.Info("Connected via {0}", protocol);
-#endif
+                _logger.LogInformation("Connected via {0}", protocol);
+
                 if (!string.IsNullOrEmpty(protocol) && protocol.StartsWith("Asterisk Call Manager"))
                 {
                     this.protocolIdentifier = protocol;
@@ -2478,28 +1645,19 @@ namespace AsterNET.Manager
                 else
                 {
                     this.protocolIdentifier = (string.IsNullOrEmpty(protocol) ? "Empty" : protocol);
-#if LOGGER
-                    logger.Warning("Unsupported protocol version '{0}'. Use at your own risk.", protocol);
-#endif
+                    _logger.LogWarning("Unsupported protocol version '{0}'. Use at your own risk.", protocol);
                 }
                 if (reconnected)
                 {
-#if LOGGER
-                    logger.Info("Send Challenge action.");
-#endif
+                    _logger.LogInformation("Send Challenge action.");
                     ChallengeAction challengeAction = new ChallengeAction();
                     try
                     {
                         SendAction(challengeAction, null);
                     }
-#if LOGGER
                     catch (Exception ex)
                     {
-                        logger.Info("Send Challenge fail : ", ex.Message);
-#else
-					catch
-					{
-#endif
+                        _logger.LogInformation("Send Challenge fail : ", ex.Message);
                         disconnect(true);
                     }
                     return;
@@ -2520,49 +1678,16 @@ namespace AsterNET.Manager
                 reconnect(true);
             }
             else
+            {
                 fireEvent(e);
+            }
         }
 
-<<<<<<< HEAD
-
-	    private void fireEvent(ManagerEvent e)
-	    {
-	        if (UseASyncEvents)
-	        {
-	            internalEvent.BeginInvoke(this, e, state =>
-	            {
-	                try
-	                {
-	                    internalEvent.EndInvoke(state);
-	                }
-	                catch (Exception exception)
-	                {
-	                    if (UnhandledException == null)
-	                    {
-	                        throw;
-	                    }
-	                    UnhandledException(this, new UnhandledExceptionEventArgs
-	                    {
-	                        ManagerEvent = e,
-	                        ThrownException = exception
-	                    });
-	                }
-	            }, null);
-	        }
-	        else
-	        {
-                _eventQueueDispatcher.QueueEvent(e);
-	        }
-	    }
-		#endregion
-	}
-}
-=======
         private void eventComplete(IAsyncResult result)
         {
         }
 
-        private void fireEvent(ManagerEvent e)
+        private void fireEvent(IManagerEvent e)
         {
             if (enableEvents && internalEvent != null)
                 if (UseASyncEvents)
@@ -2577,7 +1702,7 @@ namespace AsterNET.Manager
         /// <typeparam name="T">EventHandler argument</typeparam>
         /// <param name="asterEvent">Event delegate</param>
         /// <param name="arg">ManagerEvent or inherited class. Argument of eventHandler.</param>
-        private bool fireEvent<T>(EventHandler<T> asterEvent, ManagerEvent arg) where T : ManagerEvent
+        private bool fireEvent<T>(EventHandler<T> asterEvent, IManagerEvent arg) where T : IManagerEvent
         {
             if (asterEvent != null)
             {
@@ -2587,7 +1712,7 @@ namespace AsterNET.Manager
 
             return false;
         }
+
         #endregion
     }
 }
->>>>>>> c4df9d8ecb578460d6442f7cd673b9b11763fadd
