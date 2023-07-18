@@ -171,6 +171,7 @@ namespace AsterNET
         ///     Obtains an array containing all the elements of the collection.
         /// </summary>
         /// <param name="objects">The array into which the elements of the collection will be stored.</param>
+        /// <param name="c"></param>
         /// <returns>The array containing all the elements of the collection.</returns>
         internal static object[] ToArray(ICollection c, object[] objects)
         {
@@ -242,6 +243,7 @@ namespace AsterNET
         /// </summary>
         /// <param name="dictionary"></param>
         /// <param name="delim"></param>
+        /// <param name="delimKeyValue"></param>
         /// <returns></returns>
         internal static string JoinVariables(IDictionary dictionary, char[] delim, string delimKeyValue)
         {
@@ -645,7 +647,9 @@ namespace AsterNET
             {
                 string name = line.Substring(0, delimiterIndex).ToLower(CultureInfo).Trim();
                 string val = line.Substring(delimiterIndex + 1).Trim();
-                if (val == "<null>")
+                if (list.Contains(name))
+                    list[name] += Environment.NewLine + val;
+                else if (val == "<null>")
                     list[name] = null;
                 else
                     list[name] = val;
@@ -743,6 +747,7 @@ namespace AsterNET
         ///     Builds the event based on the given map of attributes and the registered event classes.
         /// </summary>
         /// <param name="source">source attribute for the event</param>
+        /// <param name="list"></param>
         /// <param name="attributes">map containing event attributes</param>
         /// <returns>a concrete instance of ManagerEvent or null if no event class was registered for the event type.</returns>
         internal static ManagerEvent BuildEvent(IDictionary<int, ConstructorInfo> list, ManagerConnection source,
@@ -871,12 +876,13 @@ namespace AsterNET
 
         #region RegisterEventHandler(Dictionary<int, int> list, int index, Type eventType) 
 
-        internal static void RegisterEventHandler(Dictionary<int, int> list, int index, Type eventType)
+        internal static void RegisterEventHandler(Dictionary<int, Func<ManagerEvent, bool>> list, Type eventType, Func<ManagerEvent, bool> action)
         {
-            int eventHash = eventType.Name.GetHashCode();
+            var eventTypeName = eventType.Name;
+            int eventHash = eventTypeName.GetHashCode();
             if (list.ContainsKey(eventHash))
-                throw new ArgumentException("Event class already registered : " + eventType.Name);
-            list.Add(eventHash, index);
+                throw new ArgumentException("Event class already registered : " + eventTypeName);
+            list.Add(eventHash, action);
         }
 
         #endregion

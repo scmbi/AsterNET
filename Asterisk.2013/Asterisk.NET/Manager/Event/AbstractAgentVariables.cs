@@ -5,7 +5,7 @@ using System.Collections;
 
 namespace AsterNET.Manager.Event
 {
-	public abstract class AbstractAgentVariables : ManagerEvent
+	public abstract class AbstractAgentVariables : ManagerEvent, IActionVariable
 	{
 		private Dictionary<string, string> variables;
 
@@ -18,10 +18,11 @@ namespace AsterNET.Manager.Event
 		/// Get/Set the variables to set on the queue call in native asterisk format.<br/>
 		/// Example: "VAR1=abc|VAR2=def".
 		/// </summary>
+		[Obsolete("Use GetVariables and SetVariables instead.", true)]
 		public string Variable
 		{
-			get { return Helper.JoinVariables(variables, Common.VAR_DELIMITER, "="); }
-			set { variables = Helper.ParseVariables(variables, value, Common.VAR_DELIMITER); }
+			get { return null; /* return Helper.JoinVariables(variables, Common.GET_VAR_DELIMITER(this.Server), "="); */ }
+			set { /* variables = Helper.ParseVariables(variables, value, Common.GET_VAR_DELIMITER(this.Server)); */ }
 		}
 		#endregion
 
@@ -29,13 +30,13 @@ namespace AsterNET.Manager.Event
 		/// <summary>
 		/// Get the variables dictionary to set on the originated call.
 		/// </summary>
-		public IDictionary GetVariables()
+		public Dictionary<string, string> GetVariables()
 		{
 			return variables;
 		}
 		#endregion
 
-		#region SetVariables(IDictionary vars)
+		#region SetVariables(Dictionary<string, string> vars)
 		/// <summary>
 		/// Set the variables dictionary to set on the originated call.
 		/// </summary>

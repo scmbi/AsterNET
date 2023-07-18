@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -17,15 +18,15 @@ namespace AsterNET
         /// <summary>Line separator</summary>
         public const string LINE_SEPARATOR = "\r\n";
 
-        public static Regex ASTERISK_VERSION = new Regex("^Asterisk\\s+\\D*([0-9]+.[0-9]+.[0-9]+|[1-9][0-9]-r[0-9]+).*$", 
-                    RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        public static Regex ASTERISK_VERSION = new Regex("^(?:Output: ){0,1}Asterisk\\s+\\D*([0-9]+\\.[0-9]+\\.[0-9]+|[1-9][0-9]-r[0-9]+|[0-9]+\\.[0-9]+-cert[0-9]).*$",
+                          RegexOptions.Compiled | RegexOptions.IgnoreCase );
 
         public static Regex SHOW_VERSION_FILES_PATTERN = new Regex("^([\\S]+)\\s+Revision: ([0-9\\.]+)");
         public static char[] RESPONSE_KEY_VALUE_SEPARATOR = {':'};
         public static char[] MINUS_SEPARATOR = {'-'};
         public static char INTERNAL_ACTION_ID_DELIMITER = '#';
 
-        /// <summary> Variables delimiter </summary>
+        [Obsolete("VAR_DELIMITER moved to ManagerConnection", true)]
         public static char[] VAR_DELIMITER = {'|'};
 
         public static IFormatProvider CultureInfoEn = new CultureInfo("en-US", false);

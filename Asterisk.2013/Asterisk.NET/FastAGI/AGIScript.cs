@@ -43,7 +43,7 @@ namespace AsterNET.FastAGI
 		#region SetCallerId
 		/// <summary>
 		/// Sets the caller id on the current channel.<br/>
-		/// The raw caller id to set, for example "John Doe<1234>".
+		/// The raw caller id to set, for example "John Doe&lt;1234&gt;".
 		/// </summary>
 		protected internal void SetCallerId(string callerId)
 		{
@@ -65,7 +65,7 @@ namespace AsterNET.FastAGI
 		/// <summary>
 		/// Plays music on hold from the given music on hold class.
 		/// </summary>
-		/// <param name="musicOnHoldClass">the music on hold class to play music from as configures in Asterisk's <musiconhold.conf/code>.</param>
+		/// <param name="musicOnHoldClass">the music on hold class to play music from as configures in Asterisk's &lt;musiconhold.conf/code$gt;.</param>
 		protected internal void PlayMusicOnHold(string musicOnHoldClass)
 		{
 			this.Channel.SendCommand(new Command.SetMusicOnCommand(musicOnHoldClass));
@@ -87,24 +87,23 @@ namespace AsterNET.FastAGI
 		/// Returns the status of the channel.<br/>
 		/// Return values:
 		/// <ul>
-		/// <li>0 Channel is down and available
-		/// <li>1 Channel is down, but reserved
-		/// <li>2 Channel is off hook
-		/// <li>3 Digits (or equivalent) have been dialed
-		/// <li>4 Line is ringing
-		/// <li>5 Remote end is ringing
-		/// <li>6 Line is up
-		/// <li>7 Line is busy
+		/// <li>0 Channel is down and available</li>
+		/// <li>1 Channel is down, but reserved</li>
+		/// <li>2 Channel is off hook</li>
+		/// <li>3 Digits (or equivalent) have been dialed</li>
+		/// <li>4 Line is ringing</li>
+		/// <li>5 Remote end is ringing</li>
+		/// <li>6 Line is up</li>
+		/// <li>7 Line is busy</li>
 		/// </ul>
-		/// 
 		/// </summary>
 		/// <returns> the status of the channel.
 		/// </returns>
 		protected internal int GetChannelStatus()
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.ChannelStatusCommand());
-			return channel.LastReply.ResultCode;
+			AGIReply lastReply = channel.SendCommand(new Command.ChannelStatusCommand());
+			return lastReply.ResultCode;
 		}
 		#endregion
 
@@ -119,8 +118,8 @@ namespace AsterNET.FastAGI
 		protected internal string GetData(string file)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.GetDataCommand(file));
-			return channel.LastReply.GetResult();
+			AGIReply lastReply = channel.SendCommand(new Command.GetDataCommand(file));
+			return lastReply.GetResult();
 		}
 		#endregion
 
@@ -138,8 +137,8 @@ namespace AsterNET.FastAGI
 		protected internal string GetData(string file, long timeout)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.GetDataCommand(file, timeout));
-			return channel.LastReply.GetResult();
+			AGIReply lastReply = channel.SendCommand(new Command.GetDataCommand(file, timeout));
+			return lastReply.GetResult();
 		}
 		#endregion
 
@@ -159,8 +158,8 @@ namespace AsterNET.FastAGI
 		protected internal string GetData(string file, long timeout, int maxDigits)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.GetDataCommand(file, timeout, maxDigits));
-			return channel.LastReply.GetResult();
+			AGIReply lastReply = channel.SendCommand(new Command.GetDataCommand(file, timeout, maxDigits));
+			return lastReply.GetResult();
 		}
 		#endregion
 
@@ -178,8 +177,8 @@ namespace AsterNET.FastAGI
 		protected internal char GetOption(string file, string escapeDigits)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.GetOptionCommand(file, escapeDigits));
-			return channel.LastReply.ResultCodeAsChar;
+			AGIReply lastReply = channel.SendCommand(new Command.GetOptionCommand(file, escapeDigits));
+			return lastReply.ResultCodeAsChar;
 		}
 		#endregion
 
@@ -197,8 +196,8 @@ namespace AsterNET.FastAGI
 		protected internal char GetOption(string file, string escapeDigits, int timeout)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.GetOptionCommand(file, escapeDigits, timeout));
-			return channel.LastReply.ResultCodeAsChar;
+			AGIReply lastReply = channel.SendCommand(new Command.GetOptionCommand(file, escapeDigits, timeout));
+			return lastReply.ResultCodeAsChar;
 		}
 		#endregion
 
@@ -211,8 +210,8 @@ namespace AsterNET.FastAGI
 		protected internal int Exec(string application)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.ExecCommand(application));
-			return channel.LastReply.ResultCode;
+			AGIReply lastReply = channel.SendCommand(new Command.ExecCommand(application));
+			return lastReply.ResultCode;
 		}
 		#endregion
 
@@ -226,8 +225,8 @@ namespace AsterNET.FastAGI
 		protected internal int Exec(string application, string options)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.ExecCommand(application, options));
-			return channel.LastReply.ResultCode;
+			AGIReply lastReply = channel.SendCommand(new Command.ExecCommand(application, options));
+			return lastReply.ResultCode;
 		}
 		#endregion
 
@@ -292,8 +291,8 @@ namespace AsterNET.FastAGI
 		protected internal char StreamFile(string file, string escapeDigits)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.StreamFileCommand(file, escapeDigits));
-			return channel.LastReply.ResultCodeAsChar;
+			AGIReply lastReply = channel.SendCommand(new Command.StreamFileCommand(file, escapeDigits));
+			return lastReply.ResultCodeAsChar;
 		}
 		#endregion
 
@@ -319,8 +318,8 @@ namespace AsterNET.FastAGI
 		protected internal char SayDigits(string digits, string escapeDigits)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.SayDigitsCommand(digits, escapeDigits));
-			return channel.LastReply.ResultCodeAsChar;
+			AGIReply lastReply = channel.SendCommand(new Command.SayDigitsCommand(digits, escapeDigits));
+			return lastReply.ResultCodeAsChar;
 		}
 		#endregion
 
@@ -346,8 +345,8 @@ namespace AsterNET.FastAGI
 		protected internal char SayNumber(string number, string escapeDigits)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.SayNumberCommand(number, escapeDigits));
-			return channel.LastReply.ResultCodeAsChar;
+			AGIReply lastReply = channel.SendCommand(new Command.SayNumberCommand(number, escapeDigits));
+			return lastReply.ResultCodeAsChar;
 		}
 		#endregion
 
@@ -373,8 +372,8 @@ namespace AsterNET.FastAGI
 		protected internal char SayPhonetic(string text, string escapeDigits)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.SayPhoneticCommand(text, escapeDigits));
-			return channel.LastReply.ResultCodeAsChar;
+			AGIReply lastReply = channel.SendCommand(new Command.SayPhoneticCommand(text, escapeDigits));
+			return lastReply.ResultCodeAsChar;
 		}
 		#endregion
 
@@ -400,8 +399,8 @@ namespace AsterNET.FastAGI
 		protected internal char SayAlpha(string text, string escapeDigits)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.SayAlphaCommand(text, escapeDigits));
-			return channel.LastReply.ResultCodeAsChar;
+			AGIReply lastReply = channel.SendCommand(new Command.SayAlphaCommand(text, escapeDigits));
+			return lastReply.ResultCodeAsChar;
 		}
 		#endregion
 
@@ -427,8 +426,8 @@ namespace AsterNET.FastAGI
 		protected internal char SayTime(long time, string escapeDigits)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.SayTimeCommand(time, escapeDigits));
-			return channel.LastReply.ResultCodeAsChar;
+			AGIReply lastReply = channel.SendCommand(new Command.SayTimeCommand(time, escapeDigits));
+			return lastReply.ResultCodeAsChar;
 		}
 		#endregion
 
@@ -441,10 +440,10 @@ namespace AsterNET.FastAGI
 		protected internal string GetVariable(string name)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.GetVariableCommand(name));
-			if (channel.LastReply.ResultCode != 1)
+			AGIReply lastReply = channel.SendCommand(new Command.GetVariableCommand(name));
+			if (lastReply.ResultCode != 1)
 				return null;
-			return channel.LastReply.Extra;
+			return lastReply.Extra;
 		}
 		#endregion
 
@@ -469,8 +468,8 @@ namespace AsterNET.FastAGI
 		protected internal char WaitForDigit(int timeout)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.WaitForDigitCommand(timeout));
-			return channel.LastReply.ResultCodeAsChar;
+			AGIReply lastReply = channel.SendCommand(new Command.WaitForDigitCommand(timeout));
+			return lastReply.ResultCodeAsChar;
 		}
 		#endregion
 
@@ -485,10 +484,10 @@ namespace AsterNET.FastAGI
 		protected internal string GetFullVariable(string name)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.GetFullVariableCommand(name));
-			if (channel.LastReply.ResultCode != 1)
+			AGIReply lastReply = channel.SendCommand(new Command.GetFullVariableCommand(name));
+			if (lastReply.ResultCode != 1)
 				return null;
-			return channel.LastReply.Extra;
+			return lastReply.Extra;
 		}
 		#endregion
 
@@ -503,10 +502,10 @@ namespace AsterNET.FastAGI
 		protected internal string GetFullVariable(string name, string channelName)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.GetFullVariableCommand(name, channelName));
-			if (channel.LastReply.ResultCode != 1)
+			AGIReply lastReply = channel.SendCommand(new Command.GetFullVariableCommand(name, channelName));
+			if (lastReply.ResultCode != 1)
 				return null;
-			return channel.LastReply.Extra;
+			return lastReply.Extra;
 		}
 		#endregion
 
@@ -531,8 +530,8 @@ namespace AsterNET.FastAGI
 		protected internal char SayDateTime(long time, string escapeDigits)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.SayDateTimeCommand(time, escapeDigits));
-			return channel.LastReply.ResultCodeAsChar;
+			AGIReply lastReply = channel.SendCommand(new Command.SayDateTimeCommand(time, escapeDigits));
+			return lastReply.ResultCodeAsChar;
 		}
 
 		/// <summary>
@@ -546,8 +545,8 @@ namespace AsterNET.FastAGI
 		protected internal char SayDateTime(long time, string escapeDigits, string format)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.SayDateTimeCommand(time, escapeDigits, format));
-			return channel.LastReply.ResultCodeAsChar;
+			AGIReply lastReply = channel.SendCommand(new Command.SayDateTimeCommand(time, escapeDigits, format));
+			return lastReply.ResultCodeAsChar;
 		}
 
 		/// <summary>
@@ -562,8 +561,8 @@ namespace AsterNET.FastAGI
 		protected internal char SayDateTime(long time, string escapeDigits, string format, string timezone)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.SayDateTimeCommand(time, escapeDigits, format, timezone));
-			return channel.LastReply.ResultCodeAsChar;
+			AGIReply lastReply = channel.SendCommand(new Command.SayDateTimeCommand(time, escapeDigits, format, timezone));
+			return lastReply.ResultCodeAsChar;
 		}
 		#endregion
 
@@ -577,10 +576,10 @@ namespace AsterNET.FastAGI
 		protected internal string DatabaseGet(string family, string key)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.DatabaseGetCommand(family, key));
-			if (channel.LastReply.ResultCode != 1)
+			AGIReply lastReply = channel.SendCommand(new Command.DatabaseGetCommand(family, key));
+			if (lastReply.ResultCode != 1)
 				return null;
-			return channel.LastReply.Extra;
+			return lastReply.Extra;
 		}
 		#endregion
 
@@ -663,8 +662,8 @@ namespace AsterNET.FastAGI
 		protected internal int RecordFile(string file, string format, string escapeDigits, int timeout)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.RecordFileCommand(file, format, escapeDigits, timeout));
-			return channel.LastReply.ResultCode;
+			AGIReply lastReply = channel.SendCommand(new Command.RecordFileCommand(file, format, escapeDigits, timeout));
+			return lastReply.ResultCode;
 		}
 
 		/// <summary>
@@ -688,8 +687,8 @@ namespace AsterNET.FastAGI
 		protected internal int RecordFile(string file, string format, string escapeDigits, int timeout, int offset, bool beep, int maxSilence)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.RecordFileCommand(file, format, escapeDigits, timeout, offset, beep, maxSilence));
-			return channel.LastReply.ResultCode;
+			AGIReply lastReply = channel.SendCommand(new Command.RecordFileCommand(file, format, escapeDigits, timeout, offset, beep, maxSilence));
+			return lastReply.ResultCode;
 		}
 		#endregion
 
@@ -711,8 +710,8 @@ namespace AsterNET.FastAGI
 		protected internal int ControlStreamFile(string file)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.ControlStreamFileCommand(file));
-			return channel.LastReply.ResultCode;
+			AGIReply lastReply = channel.SendCommand(new Command.ControlStreamFileCommand(file));
+			return lastReply.ResultCode;
 		}
 		/// <summary>
 		/// Plays the given file, allowing playback to be interrupted by the given
@@ -732,8 +731,8 @@ namespace AsterNET.FastAGI
 		protected internal int ControlStreamFile(string file, string escapeDigits)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.ControlStreamFileCommand(file, escapeDigits));
-			return channel.LastReply.ResultCode;
+			AGIReply lastReply = channel.SendCommand(new Command.ControlStreamFileCommand(file, escapeDigits));
+			return lastReply.ResultCode;
 		}
 		/// <summary>
 		/// Plays the given file, allowing playback to be interrupted by the given
@@ -754,8 +753,8 @@ namespace AsterNET.FastAGI
 		protected internal int ControlStreamFile(string file, string escapeDigits, int offset)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.ControlStreamFileCommand(file, escapeDigits, offset));
-			return channel.LastReply.ResultCode;
+			AGIReply lastReply = channel.SendCommand(new Command.ControlStreamFileCommand(file, escapeDigits, offset));
+			return lastReply.ResultCode;
 		}
 		/// <summary>
 		/// Plays the given file, allowing playback to be interrupted by the given
@@ -779,8 +778,8 @@ namespace AsterNET.FastAGI
 		protected internal int ControlStreamFile(string file, string escapeDigits, int offset, string forwardDigit, string rewindDigit, string pauseDigit)
 		{
 			AGIChannel channel = this.Channel;
-			channel.SendCommand(new Command.ControlStreamFileCommand(file, escapeDigits, offset, forwardDigit, rewindDigit, pauseDigit));
-			return channel.LastReply.ResultCode;
+			AGIReply lastReply = channel.SendCommand(new Command.ControlStreamFileCommand(file, escapeDigits, offset, forwardDigit, rewindDigit, pauseDigit));
+			return lastReply.ResultCode;
 		}
 		#endregion
 

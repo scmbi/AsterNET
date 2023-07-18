@@ -91,7 +91,7 @@ namespace AsterNET.Manager
 
 		#region mrReaderCallbback(IAsyncResult ar) 
 
-		//// <summary>
+		/// <summary>
 		/// Async Read callback
 		/// </summary>
 		/// <param name="ar">IAsyncResult</param>
@@ -134,7 +134,7 @@ namespace AsterNET.Manager
 				// \n - because not all dev in Digium use \r\n
 				// .Trim() kill \r
 				lock (((ICollection) lineQueue).SyncRoot)
-					while (!string.IsNullOrEmpty(mrReader.lineBuffer) && (idx = mrReader.lineBuffer.IndexOf("\n")) >= 0)
+					while (!string.IsNullOrEmpty(mrReader.lineBuffer) && (idx = mrReader.lineBuffer.IndexOf('\n')) >= 0)
 					{
 						line = idx > 0 ? mrReader.lineBuffer.Substring(0, idx).Trim() : string.Empty;
 						mrReader.lineBuffer = (idx + 1 < mrReader.lineBuffer.Length
@@ -185,7 +185,7 @@ namespace AsterNET.Manager
 
 		#region Run()
 
-		//// <summary>
+		/// <summary>
 		/// Reads line by line from the asterisk server, sets the protocol identifier as soon as it is
 		/// received and dispatches the received events and responses via the associated dispatcher.
 		/// </summary>
@@ -273,7 +273,8 @@ namespace AsterNET.Manager
 
 						if (processingCommandResult)
 						{
-							if (line == "--END COMMAND--")
+							string lineLower = line.ToLower(Helper.CultureInfo);
+							if (lineLower == "--end command--" || lineLower == "")
 							{
 								var commandResponse = new CommandResponse();
 								Helper.SetAttributes(commandResponse, packet);
@@ -282,8 +283,7 @@ namespace AsterNET.Manager
 								packet.Clear();
 								mrConnector.DispatchResponse(commandResponse);
 							}
-							string lineLower = line.ToLower(Helper.CultureInfo);
-							if (lineLower.StartsWith("privilege: ")
+							else if (lineLower.StartsWith("privilege: ")
 								|| lineLower.StartsWith("actionid: ")
 								|| lineLower.StartsWith("timestamp: ")
 								|| lineLower.StartsWith("server: ")
@@ -308,11 +308,11 @@ namespace AsterNET.Manager
 								mrConnector.DispatchEvent(connectEvent);
 								continue;
 							}
-							if (line.Trim().ToLower(Helper.CultureInfo) == "response: follows")
+							if (line.Trim().ToLower(Helper.CultureInfo) == "response: follows"
+								|| line.Trim().ToLower(Helper.CultureInfo).EndsWith("command output follows"))
 							{
-								// Switch to wait "--END COMMAND--" mode
+								// Switch to wait "--END COMMAND--"/"" mode
 								processingCommandResult = true;
-								packet.Clear();
 								commandList.Clear();
 								Helper.AddKeyValue(packet, line);
 								continue;
