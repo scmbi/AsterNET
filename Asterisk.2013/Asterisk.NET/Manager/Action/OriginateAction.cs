@@ -22,7 +22,7 @@ namespace AsterNET.Manager.Action
     /// </summary>
     /// <seealso cref="AsterNET.Manager.Event.OriginateSuccessEvent" />
     /// <seealso cref="AsterNET.Manager.Event.OriginateFailureEvent" />
-    public class OriginateAction : ManagerActionEvent
+    public class OriginateAction : ManagerActionEvent, IActionVariable
     {
         private Dictionary<string, string> variables;
 
@@ -66,6 +66,15 @@ namespace AsterNET.Manager.Action
         ///     This property is required.
         /// </summary>
         public string Channel { get; set; }
+
+        #endregion
+
+        #region ChannelId
+
+        /// <summary>
+        ///     Get/Set originated channel id
+        /// </summary>
+        public string ChannelId { get; set; }
 
         #endregion
 
@@ -143,7 +152,7 @@ namespace AsterNET.Manager.Action
         #region Timeout 
 
         /// <summary>
-        ///     Get/Set the timeout for the origination in seconds.<br />
+        ///     Get/Set the timeout for the origination in milliseconds.<br />
         ///     The channel must be answered within this time, otherwise the origination
         ///     is considered to have failed and an OriginateFailureEvent is generated.<br />
         ///     If not set, Asterisk assumes a default value of 30000 meaning 30 seconds.
@@ -160,10 +169,12 @@ namespace AsterNET.Manager.Action
         ///     multiple variable assignments separated by the '|' character.<br />
         ///     Example: "VAR1=abc|VAR2=def" sets the channel variables VAR1 to "abc" and VAR2 to "def".
         /// </summary>
+        
+        [Obsolete("Use GetVariables and SetVariables instead.", true)]
         public string Variable
         {
-            get { return Helper.JoinVariables(variables, Common.VAR_DELIMITER, "="); }
-            set { variables = Helper.ParseVariables(variables, value, Common.VAR_DELIMITER); }
+            get { return null; /* return Helper.JoinVariables(variables, Common.GET_VAR_DELIMITER(this.Server), "="); */ }
+            set { /* variables = Helper.ParseVariables(variables, value, Common.GET_VAR_DELIMITER(this.Server)); */ }
         }
 
         #endregion

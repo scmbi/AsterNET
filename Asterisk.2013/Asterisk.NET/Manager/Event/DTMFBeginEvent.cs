@@ -1,27 +1,28 @@
 namespace AsterNET.Manager.Event
 {
+    /// <summary>
+    ///     Raised when a DTMF digit has started on a channel.<br/>
+    ///     See <see target="_blank"  href="https://wiki.asterisk.org/wiki/display/AST/Asterisk+12+ManagerEvent_DTMFBegin">https://wiki.asterisk.org/wiki/display/AST/Asterisk+12+ManagerEvent_DTMFBegin</see>
+    /// </summary>
     public class DTMFBeginEvent : ManagerEvent
     {
         /// <summary>
-        ///     Creates a new DialEvent.
+        ///     Creates a new <see cref="DTMFBeginEvent"/> using the given <see cref="ManagerConnection"/>.
         /// </summary>
-        public DTMFBeginEvent(ManagerConnection source) : base(source)
+        /// <param name="source"></param>
+        public DTMFBeginEvent(ManagerConnection source)
+            : base(source)
         {
         }
 
-        public string ChannelState { get; set; }
-        public string ChannelStateDesc { get; set; }
-        public string CallerIDNum { get; set; }
-        public string CallerIDName { get; set; }
-        public string ConnectedLineNum { get; set; }
-        public string ConnectedLineName { get; set; }
-        public string AccountCode { get; set; }
-        public string Context { get; set; }
-        public string Exten { get; set; }
-        public string Priority { get; set; }
-        public string Linkedid { get; set; }
-        public string Digit { get; set; }
+        /// <summary>
+        /// Gets or sets the direction.
+        /// </summary>
         public string Direction { get; set; }
 
+        /// <summary>
+        /// Gets or sets the digit.
+        /// </summary>
+        public string Digit { get; set; }
     }
 }

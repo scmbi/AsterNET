@@ -6,12 +6,15 @@ using System;
 
 namespace AsterNET.IO
 {
+	/// <summary>
+	/// Socket connection to asterisk.
+	/// </summary>
 	public class SocketConnection
 	{
 		private TcpClient tcpClient;
 		private NetworkStream networkStream;
 		private StreamReader reader;
-		private StreamWriter writer;
+		private BinaryWriter writer;
 		private Encoding encoding;
 		private bool initial;
 
@@ -23,22 +26,29 @@ namespace AsterNET.IO
 		/// <param name="port">client port</param>
 		/// <param name="encoding">encoding</param>
 		public SocketConnection(string host, int port, Encoding encoding)
+			:this(new TcpClient(host, port), encoding)
 		{
-			initial = true;
-			this.encoding = encoding;
-			this.tcpClient = new TcpClient(host, port);
-			this.networkStream = this.tcpClient.GetStream();
-			this.reader = new StreamReader(this.networkStream, encoding);
-			this.writer = new StreamWriter(this.networkStream, encoding);
-			this.writer.AutoFlush = true;
 		}
+
+		/// <summary>
+		/// Consructor
+		/// </summary>
+		/// <param name="host">client host</param>
+		/// <param name="port">client port</param>
+		/// <param name="encoding">encoding</param>
+		/// <param name="receiveBufferSize">size of the receive buffer.</param>
+		public SocketConnection(string host, int port,int receiveBufferSize, Encoding encoding)
+			: this (new TcpClient(host, port) {ReceiveBufferSize = receiveBufferSize }, encoding)
+		{
+		}
+
 		#endregion
 
 		#region Constructor - SocketConnection(socket) 
 		/// <summary>
 		/// Constructor
 		/// </summary>
-		/// <param name="socket">TCP client from Listener</param>
+		/// <param name="tcpClient">TCP client from Listener</param>
 		/// <param name="encoding">encoding</param>
 		internal SocketConnection(TcpClient tcpClient, Encoding encoding)
 		{
@@ -47,8 +57,7 @@ namespace AsterNET.IO
 			this.tcpClient = tcpClient;
 			this.networkStream = this.tcpClient.GetStream();
 			this.reader = new StreamReader(this.networkStream, encoding);
-			this.writer = new StreamWriter(this.networkStream, encoding);
-			this.writer.AutoFlush = true;
+			this.writer = new BinaryWriter(this.networkStream, encoding);
 		}
 		#endregion
 
@@ -156,7 +165,8 @@ namespace AsterNET.IO
 		/// <summary>connection has already been closed.</summary>
 		public void Write(string s)
 		{
-			writer.Write(s);
+			writer.Write(encoding.GetBytes(s));
+			writer.Flush();
 		}
 		#endregion
 

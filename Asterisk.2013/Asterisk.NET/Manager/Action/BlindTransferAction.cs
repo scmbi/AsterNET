@@ -1,32 +1,38 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
 namespace AsterNET.Manager.Action
 {
     /// <summary>
-    ///     Redirects a given channel (and an optional additional channel) to a new extension.
+    ///     Redirect all channels currently bridged to the specified channel to the specified destination.<br />
+    ///     See <see target="_blank"  href="https://wiki.asterisk.org/wiki/display/AST/Asterisk+16+ManagerAction_BlindTransfer">https://wiki.asterisk.org/wiki/display/AST/Asterisk+16+ManagerAction_BlindTransfer</see>
     /// </summary>
-    public class BlindTransferAction : ManagerAction
+    class BlindTransferAction : ManagerAction
     {
         /// <summary>
-        ///     Creates a new empty RedirectAction.
+        ///     Creates a new empty <see cref="BlindTransferAction"/>.
         /// </summary>
         public BlindTransferAction()
         {
         }
 
         /// <summary>
-        ///     Creates a new RedirectAction that redirects the given channel to the given context, extension, priority triple.
+        ///     Creates a new <see cref="BlindTransferAction"/>.
         /// </summary>
-        /// <param name="channel">the name of the channel to redirect</param>
-        /// <param name="context">the destination context</param>
-        /// <param name="exten">the destination extension</param>
-        public BlindTransferAction(string channel, string context, string exten)
+        /// <param name="channel"></param>
+        /// <param name="context"></param>
+        /// <param name="extension"></param>
+        public BlindTransferAction(string channel, string context, string extension)
         {
-            this.Channel = channel;
-            this.Context = context;
-            this.Exten = exten;
+            Channel = channel;
+            Context = context;
+            Exten = extension;
         }
 
         /// <summary>
-        ///     Get the name of this action, i.e. "Redirect".
+        ///     Get the name of this action, i.e. "BlindTransfer".
         /// </summary>
         public override string Action
         {
@@ -34,17 +40,17 @@ namespace AsterNET.Manager.Action
         }
 
         /// <summary>
-        ///     Get/Set name of the channel to redirect.
+        ///     Gets or sets the channel.
         /// </summary>
         public string Channel { get; set; }
 
         /// <summary>
-        ///     Get/Set the destination context.
+        ///     Gets or sets the context.
         /// </summary>
         public string Context { get; set; }
 
         /// <summary>
-        ///     Get/Set the destination extension.
+        ///     Gets or sets the extension.
         /// </summary>
         public string Exten { get; set; }
     }
