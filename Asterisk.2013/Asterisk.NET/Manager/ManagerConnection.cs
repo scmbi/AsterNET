@@ -1513,7 +1513,7 @@ namespace AsterNET.Manager
             if (response == null && buffer.ContainsKey("ping") && buffer["ping"].ToLower() == "pong")
             {
                 response = Helper.BuildResponse(buffer);
-                foreach (ResponseHandler pingHandler in pingHandlers.Values)
+                foreach (IResponseHandler pingHandler in pingHandlers.Values)
                     pingHandler.HandleResponse(response);
                 pingHandlers.Clear();
             }
