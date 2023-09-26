@@ -21,10 +21,11 @@ namespace AsterNET.FastAGI
     {
         private readonly ILoggerFactory loggerFactory;
         private readonly ILogger _logger;
-        private readonly ISocketConnection _socket;
         private readonly IMappingStrategy mappingStrategy;
         private readonly bool _SC511_CAUSES_EXCEPTION;
         private readonly bool _SCHANGUP_CAUSES_EXCEPTION;
+
+        private ISocketConnection? _socket;
 
         #region AGIConnectionHandler(socket, mappingStrategy)
 
@@ -36,7 +37,10 @@ namespace AsterNET.FastAGI
         public AGIConnectionHandler(ILoggerFactory loggerFactory, ISocketConnection socket, IMappingStrategy mappingStrategy, bool SC511_CAUSES_EXCEPTION, bool SCHANGUP_CAUSES_EXCEPTION)
         {
             this.loggerFactory = loggerFactory;
+            
             _socket = socket;
+            _socket.OnDisposing += (_, __) => _socket = null;
+
             this.mappingStrategy = mappingStrategy;
             _SC511_CAUSES_EXCEPTION = SC511_CAUSES_EXCEPTION;
             _SCHANGUP_CAUSES_EXCEPTION = SCHANGUP_CAUSES_EXCEPTION;
@@ -53,6 +57,12 @@ namespace AsterNET.FastAGI
                 string? statusMessage = null;
                 try
                 {
+                    if (_socket == null)
+                    {
+                        _logger.LogWarning("trying to run with null or disposed socket");
+                        return;
+                    }
+
                     var request = _socket.GetRequest(cancellationToken);
 
                     // Added check for when the request is empty
@@ -85,6 +95,17 @@ namespace AsterNET.FastAGI
                         _logger.LogInformation(statusMessage);
                     }
                 }
+                catch (SocketException ex)
+                {
+                    statusMessage = ex.Message;
+
+                    // cleanup socket if aborted
+                    if (ex.ErrorCode == 103) _socket = null;
+
+                    // just log if not 103 => connection aborted
+                    else _logger.LogError(ex, $"IDX00006(SOCKET): {statusMessage}");
+                        
+                }
                 catch (AGIHangupException ex)
                 {
                     statusMessage = ex.Message;
@@ -106,21 +127,25 @@ namespace AsterNET.FastAGI
                     _logger.LogError(ex, $"IDX00001(Unexpected): {statusMessage}");
                 }
 
-                try
+                // testing if connection was aborted, before sending back status msgs
+                if (_socket != null)
                 {
-                    if (!string.IsNullOrWhiteSpace(statusMessage))
+                    try
                     {
-                        var command = new SetVariableCommand(Common.AGI_DEFAULT_RETURN_STATUS, statusMessage);
-                        _socket.SendCommand(command);
-                    }
+                        if (!string.IsNullOrWhiteSpace(statusMessage))
+                        {
+                            var command = new SetVariableCommand(Common.AGI_DEFAULT_RETURN_STATUS, statusMessage);
+                            _socket.SendCommand(command);
+                        }
 
-                    _socket.Close();
+                        _socket.Close();
+                    }
+                    catch (IOException ex)
+                    {
+                        _logger.LogError(ex, $"IDX00000(IOClosing): {ex.Message}");
+                    }
+                    catch (Exception ex) { _logger.LogError(ex, $"IDX00005(Unknown): {ex.Message}"); }
                 }
-                catch (IOException ex)
-                {
-                    _logger.LogError(ex, $"IDX00000(IOClosing): {ex.Message}");
-                }
-                catch (Exception ex) { _logger.LogError(ex, $"IDX00005(Unknown): {ex.Message}"); }
             }
         }
     }

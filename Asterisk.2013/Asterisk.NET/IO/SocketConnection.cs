@@ -188,14 +188,21 @@ namespace AsterNET.IO
 					}
                 }
             }
-            catch (OperationCanceledException) {
+            catch (OperationCanceledException) 
+            {
                 _logger.LogTrace("receiving raw data from socket cancelled requested");
             } 
-            catch (SocketException ex) {
-                if (ex.Message.Contains("WSACancelBlockingCall"))
+            catch (SocketException ex) 
+            {
+                if (ex.ErrorCode == 103)
+                    _logger.LogTrace("receiving raw data from socket aborted");
+                
+                else if (ex.Message.Contains("WSACancelBlockingCall"))
                     _logger.LogTrace("receiving raw data from socket cancelled requested at buffering");
+                
                 else if (ex.Message.Contains("reset by peer"))
                     DisconnectedTrigger("reset by peer");
+                
                 else
                     _logger.LogError(ex, "error on receiving raw data from socket");
             }

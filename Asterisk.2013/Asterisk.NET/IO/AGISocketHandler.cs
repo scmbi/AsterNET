@@ -17,7 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace AsterNET.IO
 {
     /// <summary>
-    /// SocketWrapper using standard socket classes.
+    ///     SocketWrapper using standard socket classes.
     /// </summary>
     public class AGISocketHandler
     {
@@ -84,7 +84,7 @@ namespace AsterNET.IO
         }
 
         /// <summary>
-        /// Individual process
+        ///     Individual process
         /// </summary>               
         void PerformListenAsync(IAsyncResult ar)
         {

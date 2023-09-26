@@ -37,7 +37,7 @@ namespace AsterNET.Util
 
 			while (!cts.IsCancellationRequested)
 			{
-				AGIConnectionHandler job = ThreadPool.obtainJob();
+				var job = ThreadPool.obtainJob();
 				if (job == null)
 					break;
 

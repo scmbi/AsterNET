@@ -30,12 +30,8 @@ namespace AsterNET.FastAGI
         /// </summary>
         public IMappingStrategy Strategy { get; }
 
-        /// <summary>The thread pool that contains the worker threads to process incoming requests.</summary>
-        private AsterNET.Util.ThreadPool pool;
-
         /// <summary> True while this server is shut down. </summary>
         private bool stopped;
-
 
         private Encoding socketEncoding = Encoding.ASCII;
 
@@ -80,14 +76,11 @@ namespace AsterNET.FastAGI
         {
             stopped = false;
             Strategy.Load();
-            //pool = new AsterNET.Util.ThreadPool("AGIServer", (int)_options.Workers);
-            //_logger.LogDebug("Thread pool started.");
 
             try
-            {                
-                await _socketHandler.ExecuteAsync(cancellationToken); 
-
-                // await Task.Delay(Timeout.Infinite, cancellationToken);
+            {
+                _logger.LogInformation("Listening on " + _options.Address + ":" + _options.Port + ".");
+                await _socketHandler.ExecuteAsync(cancellationToken);
             }
             catch (Exception ex)
             {
@@ -105,45 +98,17 @@ namespace AsterNET.FastAGI
                 throw ex;
             }
 
-
-            _logger.LogInformation("Listening on " + _options.Address + ":" + _options.Port + ".");
-
             try
             {
-                var loggerFactory = _serviceProvider.GetRequiredService<ILoggerFactory>();
-
-                //ISocketConnection socket;
-                //while (!cancellationToken.IsCancellationRequested)
-                {
-                    //var socket = await serverSocket.AcceptAsync(cancellationToken);
-                    //var connectionHandler = new AGIConnectionHandler(loggerFactory, socket, mappingStrategy, SC511_CAUSES_EXCEPTION, SCHANGUP_CAUSES_EXCEPTION);
-                    //pool.AddJob(connectionHandler);
-                    //break;
-                }
+                _socketHandler.Stop();
             }
             catch (IOException ex)
             {
-                if (!stopped)
-                {
-                    _logger.LogError(ex, "IOException while waiting for connections (1).");
-                    throw ex;
-                }
+                _logger.LogError(ex, "IOException while waiting for connections (2).");
             }
-            finally
-            {
-                try
-                {
-                    _socketHandler.Stop();
-                }
-                catch (IOException ex)
-                {
-                    _logger.LogError("IOException while waiting for connections (2).", ex);
-                }
-				catch { }                
-                //pool.Shutdown();
+			catch { }
 
-                _logger.LogInformation("AGI Server shut down.");
-            }
+            _logger.LogInformation("AGI Server shut down.");            
         }
 
         #endregion
