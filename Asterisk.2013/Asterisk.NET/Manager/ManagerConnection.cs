@@ -25,8 +25,18 @@ namespace AsterNET.Manager
     /// <summary>
     /// Default implementation of the ManagerConnection interface.
     /// </summary>
-    public partial class ManagerConnection : IManagerConnection
+    public partial class ManagerConnection : IManagerConnection, IDisposable
     {
+        #region INTERFACE DISPOSABLE
+
+        public void Dispose() 
+        {
+            disconnect(true);
+
+        }
+
+        #endregion
+
         private ISocketConnection? mrSocket;
         protected void SocketDisposing(object? sender, EventArgs args)
         {

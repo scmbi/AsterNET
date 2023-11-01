@@ -712,9 +712,7 @@ namespace AsterNET.Helpers
             return response;
         }
 
-        #endregion
-
-        
+        #endregion        
 
         #region RegisterBuiltinEventClasses(Hashtable list) 
 

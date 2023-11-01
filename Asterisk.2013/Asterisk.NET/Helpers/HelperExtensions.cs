@@ -1,4 +1,5 @@
-﻿using Sufficit.Asterisk.Manager;
+﻿using Sufficit;
+using Sufficit.Asterisk.Manager;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -21,7 +22,7 @@ namespace AsterNET.Helpers
                     foreach (var s in source.Split(','))
                     {
                         var normalized = s.Trim().ToLowerInvariant();
-                        if(Enum.TryParse(normalized, out Privilege flag))
+                        if (Enum.TryParse(normalized, out Privilege flag))
                         {
                             result |= flag;
                         }
@@ -30,7 +31,10 @@ namespace AsterNET.Helpers
                 } 
                 else
                 {
-                    var result  = Enum.Parse(dataType, source, true);
+                    var result = EnumExtensions.GetValueFromDescription(dataType, source, false);
+                    if (result != null) return result;
+
+                    result = Enum.Parse(dataType, source, true);
                     return System.Convert.ChangeType(result, dataType);
                 }                
             }

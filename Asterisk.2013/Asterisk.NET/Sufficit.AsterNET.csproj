@@ -138,9 +138,11 @@
 
 	<ItemGroup Label="Sufficit Dependencies on Packing" Condition=" '$(Configuration)' != 'Debug' And '$(Configuration)' != 'Release' ">
 		<PackageReference Include="Sufficit.Asterisk.Core" Version="1.*" />
+		<PackageReference Include="Sufficit.Utils" Version="1.*" />
 	</ItemGroup>
 
 	<ItemGroup Label="Sufficit Local Dependencies" Condition=" '$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Release' ">
 		<ProjectReference Include="..\..\..\sufficit-asterisk-core\src\Sufficit.Asterisk.Core.csproj" />
+		<ProjectReference Include="..\..\..\sufficit-utils\src\Sufficit.Utils.csproj" />
 	</ItemGroup>
 </Project>
