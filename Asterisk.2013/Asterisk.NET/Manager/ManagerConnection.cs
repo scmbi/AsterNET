@@ -16,9 +16,9 @@ using Sufficit.Asterisk.Manager.Events;
 using Microsoft.Extensions.Logging;
 using AsterNET.Helpers;
 using System.Linq;
-using Sufficit.Manager.Events;
 using System.Net.Sockets;
 using Sufficit.Asterisk.IO;
+using System.Collections.ObjectModel;
 
 namespace AsterNET.Manager
 {
@@ -29,10 +29,13 @@ namespace AsterNET.Manager
     {
         #region INTERFACE DISPOSABLE
 
+        /// <summary>
+        /// Dispose connection and events handlers
+        /// </summary>
         public void Dispose() 
         {
             disconnect(true);
-
+            Events.Dispose();
         }
 
         #endregion
@@ -84,7 +87,7 @@ namespace AsterNET.Manager
         private AsteriskVersion asteriskVersion;
         private Dictionary<int, IResponseHandler> responseHandlers;
         private Dictionary<int, IResponseHandler> pingHandlers;
-        private Dictionary<int, IResponseHandler> responseEventHandlers;
+        private readonly Dictionary<int, IResponseHandler> responseEventHandlers;
         private int pingInterval = 10000;
 
         private object lockSocket = new object();
@@ -97,11 +100,7 @@ namespace AsterNET.Manager
         private bool reconnected = false;
         private bool reconnectEnable = false;
         private int reconnectCount;
-
-        private Dictionary<int, ConstructorInfo> registeredEventClasses;
-        private Dictionary<int, Func<IManagerEvent, bool>> registeredEventHandlers;
-        private event EventHandler<IManagerEvent> internalEvent;
-        private bool fireAllEvents = false;
+                
         private Thread callerThread;
 
         /// <summary> Default Fast Reconnect retry counter.</summary>
@@ -113,20 +112,16 @@ namespace AsterNET.Manager
         /// <summary> Default Slow Reconnect interval in milliseconds.</summary>
         private int reconnectIntervalMax = 10000;
 
-
-        /// <summary>
-        /// Allows you to specifiy how events are fired. If false (default) then
-        /// events will be fired in order. Otherwise events will be fired as they arrive and 
-        /// control logic in your application will need to handle synchronization.
-        /// </summary>
-        public bool UseASyncEvents = false;
-
         /// <summary>
         /// Permit extensions to log using this object as state
         /// </summary>
         public ILogger Logger => _logger;
 
+        public AsteriskManagerEvents Events { get; }
+
+
         #region Constructor - ManagerConnection()
+
         /// <summary> Creates a new instance.</summary>
         public ManagerConnection(ILogger<ManagerConnection> logger)
         {
@@ -136,138 +131,15 @@ namespace AsterNET.Manager
 
             socketEncoding = Encoding.ASCII;
 
+            responseEventHandlers = new Dictionary<int, IResponseHandler>();
             responseHandlers = new Dictionary<int, IResponseHandler>();
             pingHandlers = new Dictionary<int, IResponseHandler>();
-            responseEventHandlers = new Dictionary<int, IResponseHandler>();
-            registeredEventClasses = new Dictionary<int, ConstructorInfo>();
+            Events = new AsteriskManagerEvents();
 
+            AsteriskManagerEvents.Log(logger);
             Helper.Log(logger);
-            Helper.RegisterBuiltinEventClasses(registeredEventClasses);
-
-            registeredEventHandlers = new Dictionary<int, Func<IManagerEvent, bool>>();
-
-            #region Event mapping table
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(AgentCallbackLoginEvent), arg => fireEvent(AgentCallbackLogin, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(AgentCallbackLogoffEvent), arg => fireEvent(AgentCallbackLogoff, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(AgentCalledEvent), arg => fireEvent(AgentCalled, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(AgentCompleteEvent), arg => fireEvent(AgentComplete, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(AgentConnectEvent), arg => fireEvent(AgentConnect, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(AgentDumpEvent), arg => fireEvent(AgentDump, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(AgentLoginEvent), arg => fireEvent(AgentLogin, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(AgentLogoffEvent), arg => fireEvent(AgentLogoff, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(AgentRingNoAnswerEvent), arg => fireEvent(AgentRingNoAnswer, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(AgentsCompleteEvent), arg => fireEvent(AgentsComplete, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(AgentsEvent), arg => fireEvent(Agents, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(AlarmClearEvent), arg => fireEvent(AlarmClear, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(AlarmEvent), arg => fireEvent(Alarm, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(CdrEvent), arg => fireEvent(Cdr, arg));
-
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(DBGetResponseEvent), arg => fireEvent(DBGetResponse, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(DialEvent), arg => fireEvent(Dial, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(DNDStateEvent), arg => fireEvent(DNDState, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ExtensionStatusEvent), arg => fireEvent(ExtensionStatus, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(HangupEvent), arg => fireEvent(Hangup, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(HangupRequestEvent), arg => fireEvent(HangupRequest, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(HoldedCallEvent), arg => fireEvent(HoldedCall, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(HoldEvent), arg => fireEvent(Hold, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(JoinEvent), arg => fireEvent(Join, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(LeaveEvent), arg => fireEvent(Leave, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(LinkEvent), arg => fireEvent(Link, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(LogChannelEvent), arg => fireEvent(LogChannel, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(MeetmeJoinEvent), arg => fireEvent(MeetMeJoin, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(MeetmeLeaveEvent), arg => fireEvent(MeetMeLeave, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(MeetmeTalkingEvent), arg => fireEvent(MeetMeTalking, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(MessageWaitingEvent), arg => fireEvent(MessageWaiting, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(NewCallerIdEvent), arg => fireEvent(NewCallerId, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(NewChannelEvent), arg => fireEvent(NewChannel, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(NewExtenEvent), arg => fireEvent(NewExten, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(NewStateEvent), arg => fireEvent(NewState, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(OriginateResponseEvent), arg => fireEvent(OriginateResponse, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ParkedCallEvent), arg => fireEvent(ParkedCall, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ParkedCallGiveUpEvent), arg => fireEvent(ParkedCallGiveUp, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ParkedCallsCompleteEvent), arg => fireEvent(ParkedCallsComplete, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ParkedCallTimeOutEvent), arg => fireEvent(ParkedCallTimeOut, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(PeerEntryEvent), arg => fireEvent(PeerEntry, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(PeerlistCompleteEvent), arg => fireEvent(PeerlistComplete, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(PeerStatusEvent), arg => fireEvent(PeerStatus, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueEntryEvent), arg => fireEvent(QueueEntry, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueMemberAddedEvent), arg => fireEvent(QueueMemberAdded, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueMemberEvent), arg => fireEvent(QueueMember, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueMemberRinginuseEvent), arg => fireEvent(QueueMemberRinginuse, arg)); 
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueMemberPausedEvent), arg => fireEvent(QueueMemberPaused, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueMemberPenaltyEvent), arg => fireEvent(QueueMemberPenalty, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueMemberRemovedEvent), arg => fireEvent(QueueMemberRemoved, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueMemberStatusEvent), arg => fireEvent(QueueMemberStatus, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueParamsEvent), arg => fireEvent(QueueParams, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueStatusCompleteEvent), arg => fireEvent(QueueStatusComplete, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(RegistryEvent), arg => fireEvent(Registry, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueCallerAbandonEvent), arg => fireEvent(QueueCallerAbandon, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(RenameEvent), arg => fireEvent(Rename, arg));
-
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(StatusCompleteEvent), arg => fireEvent(StatusComplete, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(StatusEvent), arg => fireEvent(Status, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(UnholdEvent), arg => fireEvent(Unhold, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(UnlinkEvent), arg => fireEvent(Unlink, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(UnparkedCallEvent), arg => fireEvent(UnparkedCall, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(UserEvent), arg => fireEvent(UserEvents, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ZapShowChannelsCompleteEvent), arg => fireEvent(ZapShowChannelsComplete, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ZapShowChannelsEvent), arg => fireEvent(ZapShowChannels, arg));
-
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ConnectEvent), arg => fireEvent(ConnectionState, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(DisconnectEvent), arg => fireEvent(ConnectionState, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ReloadEvent), arg => fireEvent(Reload, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ShutdownEvent), arg => fireEvent(ConnectionState, arg));
-
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(BridgeEvent), arg => fireEvent(Bridge, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(TransferEvent), arg => fireEvent(Transfer, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(DTMFEvent), arg => fireEvent(DTMF, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(DTMFBeginEvent), arg => fireEvent(DTMFBegin, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(DTMFEndEvent), arg => fireEvent(DTMFEnd, arg));
-
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(VarSetEvent), arg => fireEvent(VarSet, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(AGIExecEvent), arg => fireEvent(AGIExec, arg));
-
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ConfbridgeStartEvent), arg => fireEvent(ConfbridgeStart, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ConfbridgeJoinEvent), arg => fireEvent(ConfbridgeJoin, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ConfbridgeLeaveEvent), arg => fireEvent(ConfbridgeLeave, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ConfbridgeEndEvent), arg => fireEvent(ConfbridgeEnd, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ConfbridgeTalkingEvent), arg => fireEvent(ConfbridgeTalking, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ConfbridgeMuteEvent), arg => fireEvent(ConfbridgeMute, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ConfbridgeUnmuteEvent), arg => fireEvent(ConfbridgeUnmute, arg));
-
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(FailedACLEvent), arg => fireEvent(FailedACL, arg));
-
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ChannelUpdateEvent), arg => fireEvent(ChannelUpdate, arg));
-
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(CoreShowChannelEvent), arg => fireEvent(CoreShowChannel, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(CoreShowChannelsCompleteEvent), arg => fireEvent(CoreShowChannelsComplete, arg));
-
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(AttendedTransferEvent), arg => fireEvent(AttendedTransfer, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(BridgeCreateEvent), arg => fireEvent(BridgeCreate, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(BridgeDestroyEvent), arg => fireEvent(BridgeDestroy, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(BridgeEnterEvent), arg => fireEvent(BridgeEnter, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(BridgeLeaveEvent), arg => fireEvent(BridgeLeave, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(BlindTransferEvent), arg => fireEvent(BlindTransfer, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(DialBeginEvent), arg => fireEvent(DialBegin, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(DialEndEvent), arg => fireEvent(DialEnd, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueCallerJoinEvent), arg => fireEvent(QueueCallerJoin, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueCallerLeaveEvent), arg => fireEvent(QueueCallerLeave, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueMemberPauseEvent), arg => fireEvent(QueueMemberPause, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(MusicOnHoldEvent), arg => fireEvent(MusicOnHold, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(MusicOnHoldStartEvent), arg => fireEvent(MusicOnHoldStart, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(MusicOnHoldStopEvent), arg => fireEvent(MusicOnHoldStop, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ChallengeResponseFailedEvent), arg => fireEvent(ChallengeResponseFailed, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(InvalidAccountIDEvent), arg => fireEvent(InvalidAccountID, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(DeviceStateChangeEvent), arg => fireEvent(DeviceStateChanged, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(ChallengeSentEvent), arg => fireEvent(ChallengeSent, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(SuccessfulAuthEvent), arg => fireEvent(SuccessfulAuth, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(QueueSummaryEvent), arg => fireEvent(QueueSummary, arg));
-            Helper.RegisterEventHandler(registeredEventHandlers, typeof(InvalidPasswordEvent), arg => fireEvent(InvalidPassword, arg));
-
-            #endregion
-
-            this.internalEvent += new EventHandler<IManagerEvent>(internalEventHandler);
         }
+
         #endregion
 
         #region Constructor - ManagerConnection(hostname, port, username, password)
@@ -288,16 +160,17 @@ namespace AsterNET.Manager
         }
         #endregion
 
-        public ManagerConnection(ILogger<ManagerConnection> logger, string hostname, int port, string username, string password) 
+        public ManagerConnection(ILogger<ManagerConnection> logger, string hostname, int port, string? username, string? password) 
             : this(logger)
         {
             this.hostname = hostname;
             this.port = port;
-            this.username = username;
-            this.password = password;
+            this.username = username ?? string.Empty;
+            this.password = password ?? string.Empty;
         }
 
         #region Constructor - ManagerConnection(hostname, port, username, password, Encoding socketEncoding)
+
         /// <summary>
         /// Creates a new instance with the given connection parameters.
         /// </summary>
@@ -348,40 +221,6 @@ namespace AsterNET.Manager
         internal Thread CallerThread
         {
             get { return callerThread; }
-        }
-        #endregion
-
-        #region internalEventHandler(object sender, IManagerEvent e)
-        private void internalEventHandler(object sender, IManagerEvent e)
-        {
-            int eventHash = e.GetType().Name.GetHashCode();
-            int userEventHash = typeof(UserEvent).Name.GetHashCode();
-            if (registeredEventHandlers.TryGetValue(eventHash, out var currentEvent)
-            || (registeredEventHandlers.TryGetValue(userEventHash, out currentEvent) && typeof(UserEvent).IsAssignableFrom(e.GetType())))
-            {
-                if (currentEvent(e))
-                {
-                    return;
-                }
-            }
-
-            if (fireAllEvents)
-            {
-                fireEvent(UnhandledEvent, e);
-            }
-        }
-        #endregion
-
-        #region FireAllEvents
-        /// <summary>
-        /// If this property set to <b>true</b> then ManagerConnection send all unassigned events to UnhandledEvent handler,<br/>
-        /// if set to <b>false</b> then all unassgned events lost and send only UnhandledEvent.<br/>
-        /// Default: <b>false</b>
-        /// </summary>
-        public bool FireAllEvents
-        {
-            get { return this.fireAllEvents; }
-            set { this.fireAllEvents = value; }
         }
         #endregion
 
@@ -1169,11 +1008,14 @@ namespace AsterNET.Manager
             else if (!typeof(IResponseEvent).IsAssignableFrom(action.ActionCompleteEventClass()))
                 throw new ArgumentException("Unable to send action: ActionCompleteEventClass is not a ResponseEvent.");
 
-            if (mrSocket == null)
+            if (mrSocket == null || this == null)
                 throw new SystemException("Unable to send " + action.Action + " action: not connected.");
 
-            AutoResetEvent autoEvent = new AutoResetEvent(false);
-            ResponseEventHandler handler = new ResponseEventHandler(this, action, autoEvent);
+            if (this == null)
+                throw new SystemException("Unable to send " + action.Action + " manager null or disposed.");
+
+            var autoEvent = new AutoResetEvent(false);
+            var handler = new ResponseEventHandler(this, action, autoEvent);
 
             string internalActionId = createInternalActionId();
             handler.Hash = internalActionId.GetHashCode();
@@ -1442,14 +1284,14 @@ namespace AsterNET.Manager
         #endregion
 
         #region RegisterUserEventClass(class)
+
         /// <summary>
         /// Register User Event Class
         /// </summary>
         /// <param name="userEventClass"></param>
         public void RegisterUserEventClass(Type userEventClass)
-        {
-            Helper.RegisterEventClass(registeredEventClasses, userEventClass);
-        }
+            => Events.RegisterUserEventClass(userEventClass);        
+
         #endregion
 
         #region DispatchResponse(response)
@@ -1604,6 +1446,7 @@ namespace AsterNET.Manager
         #endregion
 
         #region DispatchEvent(...)
+
         /// <summary>
         /// This method is called by the reader whenever a IManagerEvent is received.
         /// The event is dispatched to all registered IManagerEventHandlers.
@@ -1611,7 +1454,7 @@ namespace AsterNET.Manager
         /// <seealso cref="ManagerReader"/>
         internal void DispatchEvent(Dictionary<string, string> buffer)
         {
-            var e = this.BuildEvent(registeredEventClasses, buffer);
+            var e = Events.Build(buffer);
             DispatchEvent(e.Event);
         }
 
@@ -1628,7 +1471,7 @@ namespace AsterNET.Manager
 
                 if (!string.IsNullOrEmpty(responseEvent.ActionId) && !string.IsNullOrEmpty(responseEvent.InternalActionId))
                 {
-                    ResponseEventHandler eventHandler = (ResponseEventHandler)GetResponseEventHandler(responseEvent.InternalActionId.GetHashCode());
+                    var eventHandler = (ResponseEventHandler)GetResponseEventHandler(responseEvent.InternalActionId.GetHashCode());
                     if (eventHandler != null)
                         try
                         {
@@ -1660,7 +1503,7 @@ namespace AsterNET.Manager
                 if (reconnected)
                 {
                     _logger.LogInformation("Send Challenge action.");
-                    ChallengeAction challengeAction = new ChallengeAction();
+                    var challengeAction = new ChallengeAction();
                     try
                     {
                         SendAction(challengeAction, null);
@@ -1675,9 +1518,9 @@ namespace AsterNET.Manager
             }
             #endregion
 
-            if (reconnected && e is DisconnectEvent)
+            if (reconnected && e is DisconnectEvent disconnectEvent)
             {
-                ((DisconnectEvent)e).Reconnect = true;
+                disconnectEvent.Reconnect = true;
                 fireEvent(e);
                 reconnect(false);
             }
@@ -1693,34 +1536,10 @@ namespace AsterNET.Manager
             }
         }
 
-        private void eventComplete(IAsyncResult result)
-        {
-        }
-
         private void fireEvent(IManagerEvent e)
         {
-            if (enableEvents && internalEvent != null)
-                if (UseASyncEvents)
-                    Task.Run(() => internalEvent.Invoke(this, e)).ContinueWith(eventComplete);
-                else
-                    internalEvent.Invoke(this, e);
-        }
-
-        /// <summary>
-        /// This method is called when send event to client if subscribed
-        /// </summary>
-        /// <typeparam name="T">EventHandler argument</typeparam>
-        /// <param name="asterEvent">Event delegate</param>
-        /// <param name="arg">ManagerEvent or inherited class. Argument of eventHandler.</param>
-        private bool fireEvent<T>(EventHandler<T> asterEvent, IManagerEvent arg) where T : IManagerEvent
-        {
-            if (asterEvent != null)
-            {
-                asterEvent(this, (T)arg);
-                return true;
-            }
-
-            return false;
+            if (enableEvents)           
+                Events.Dispatch(this, e);            
         }
 
         #endregion

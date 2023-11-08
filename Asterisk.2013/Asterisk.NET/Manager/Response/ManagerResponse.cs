@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using AsterNET.Helpers;
+using Sufficit.Asterisk.Manager.Events.Abstracts;
 
 namespace AsterNET.Manager.Response
 {
