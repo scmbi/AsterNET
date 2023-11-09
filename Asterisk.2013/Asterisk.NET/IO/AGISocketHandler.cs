@@ -43,12 +43,12 @@ namespace AsterNET.IO
             _listener.Start((int)_options.BackLog);
             _logger.LogInformation("started agi socket handler executing async");
             
-            int count = 1;
+            Int64 count = 0;
             while (!cancellationToken.IsCancellationRequested)
             {
                 var ar = _listener.BeginAcceptSocket(PerformListenAsync, _listener);
                 ar.AsyncWaitHandle.WaitOne();
-                _logger.LogInformation("started listening, accept counter: {count}", count++);
+                _logger.LogInformation("started listening, accept counter: {count}", ++count);
             }
         }
 

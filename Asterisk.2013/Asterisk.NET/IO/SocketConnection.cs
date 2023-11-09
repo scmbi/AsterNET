@@ -103,7 +103,14 @@ namespace AsterNET.IO
 			if (!string.IsNullOrWhiteSpace(cause))
 				_logger.LogWarning("disconnected, it should not happen, cause: {cause}", cause);
 
-            OnDisconnected?.Invoke(this, cause);
+            try
+            {
+                OnDisconnected?.Invoke(this, cause);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "error at invoke disconnect events");
+            }
         }
 
         #endregion

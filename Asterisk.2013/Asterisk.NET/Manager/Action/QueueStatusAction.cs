@@ -1,6 +1,6 @@
 using System;
 using AsterNET.Manager.Event;
-
+using Sufficit.Asterisk.Manager.Events.Abstracts;
 using Sufficit.Asterisk.Manager.Events;
 
 namespace AsterNET.Manager.Action
