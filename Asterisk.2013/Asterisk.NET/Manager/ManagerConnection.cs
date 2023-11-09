@@ -961,9 +961,6 @@ namespace AsterNET.Manager
 
         #region SendActionAsync(action, timeout)
 
-        public Task<ManagerResponse> SendActionAsync<T>(CancellationToken cancellationToken = default) where T : ManagerAction, new()
-            => SendActionAsync(new T(), cancellationToken);
-
         /// <summary>
         /// Asynchronously send Action async.
         /// </summary>
@@ -971,17 +968,17 @@ namespace AsterNET.Manager
         /// <param name="cancellationToken">cancellation Token</param>
         public Task<ManagerResponse> SendActionAsync(ManagerAction action, CancellationToken cancellationToken = default)
         {
-          var handler = new TaskResponseHandler(action);
-          var source = handler.TaskCompletionSource;
+            var handler = new TaskResponseHandler(action);
+            var source = handler.TaskCompletionSource;
 
-          SendAction(action, handler);
-          cancellationToken.Register(() => { source.TrySetCanceled(); });
+            SendAction(action, handler);
+            cancellationToken.Register(() => { source.TrySetCanceled(); });
 
-          return source.Task.ContinueWith(x =>
-          {
+            return source.Task.ContinueWith(x =>
+            {
             RemoveResponseHandler(handler);
             return x.Result;
-          });
+            });
         }
 
         #endregion

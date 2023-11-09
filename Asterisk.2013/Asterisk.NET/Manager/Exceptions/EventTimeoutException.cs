@@ -1,3 +1,5 @@
+using System;
+
 namespace AsterNET.Manager
 {
 	/// <summary>
@@ -6,7 +8,7 @@ namespace AsterNET.Manager
 	/// This exception allows you to retrieve the partial result, that is the events
 	/// that have been successfully received before the timeout occured.
 	/// </summary>
-	public class EventTimeoutException:TimeoutException
+	public class EventTimeoutException : TimeoutException
 	{
 		/// <summary>
 		/// Returns the partial result that has been received before the timeout occured.<br/>
