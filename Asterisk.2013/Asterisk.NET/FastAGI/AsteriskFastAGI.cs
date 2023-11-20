@@ -106,7 +106,10 @@ namespace AsterNET.FastAGI
             {
                 _logger.LogError(ex, "IOException while waiting for connections (2).");
             }
-			catch { }
+			catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unknown exception on stopping socket, not so important to handle.");
+            }
 
             _logger.LogInformation("AGI Server shut down.");            
         }

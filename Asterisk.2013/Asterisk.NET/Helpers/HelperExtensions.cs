@@ -47,14 +47,14 @@ namespace AsterNET.Helpers
             // 'long' can hold all possible values, except those which 'ulong' can hold.
             if (Enum.GetUnderlyingType(typeof(T)) == typeof(ulong))
             {
-                ulong numericValue = Convert.ToUInt64(value);
-                numericValue |= Convert.ToUInt64(flag);
+                ulong numericValue = System.Convert.ToUInt64(value);
+                numericValue |= System.Convert.ToUInt64(flag);
                 value = (T)Enum.ToObject(typeof(T), numericValue);
             }
             else
             {
-                long numericValue = Convert.ToInt64(value);
-                numericValue |= Convert.ToInt64(flag);
+                long numericValue = System.Convert.ToInt64(value);
+                numericValue |= System.Convert.ToInt64(flag);
                 value = (T)Enum.ToObject(typeof(T), numericValue);
             }
         }

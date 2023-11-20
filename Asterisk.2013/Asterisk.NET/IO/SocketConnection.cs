@@ -96,13 +96,25 @@ namespace AsterNET.IO
 			// checking object was not disposed yet
             if (_socket != null)
             {
-                _socket.Shutdown(SocketShutdown.Both);
-                _socket.Close();
+                // issue at simultaneous counter
+                // 2023/11/14 - testing
+                // semas the the "reset by peer" excepetion may occurs at trying to (shutdown or close) a socket already closed at the client side.
+                try
+                {
+                    _socket.Shutdown(SocketShutdown.Both);
+                    _socket.Close();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "error at invoke disconnect events");
+                }
             }
             
 			if (!string.IsNullOrWhiteSpace(cause))
 				_logger.LogWarning("disconnected, it should not happen, cause: {cause}", cause);
 
+            // issue at simultaneous counter 
+            // 2023/11/14 - before that - not seams to be a problem, marked for remove the try/catch block
             try
             {
                 OnDisconnected?.Invoke(this, cause);

@@ -115,10 +115,10 @@
   </ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="System.Linq.Async" Version="6.*" />
-		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="7.*" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.*" />
-		<PackageReference Include="Microsoft.Extensions.Logging" Version="7.*" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.*" />	
+		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="[*,8.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="[*,8.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="[*,8.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[*,8.0.0)" />	
 	</ItemGroup>
 
 	<ItemGroup Label="Sufficit Pacote NUGET Itens">
