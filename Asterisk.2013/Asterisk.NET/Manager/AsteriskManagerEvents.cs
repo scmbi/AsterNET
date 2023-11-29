@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Threading.Tasks;
 using AsterNET;
 using AsterNET.Helpers;
@@ -11,7 +12,6 @@ using AsterNET.Manager;
 using AsterNET.Manager.Event;
 using Microsoft.Extensions.Logging;
 using Sufficit.Asterisk.Manager.Events;
-using static System.Collections.Specialized.BitVector32;
 
 namespace Sufficit.Asterisk.Manager
 {
@@ -275,6 +275,14 @@ namespace Sufficit.Asterisk.Manager
                 _logger.LogDebug($"Generating event ({generatedType}): {e.ToJson()}");
             }
 
+            /* // testing
+            if (e.Event is HangupEvent)
+            {
+                var json = JsonSerializer.Serialize(e);
+                _logger.LogWarning(json);
+            }
+            */
+
             // ResponseEvents are sent in response to a ManagerAction if the
             // response contains lots of data. They include the actionId of
             // the corresponding ManagerAction.
@@ -320,7 +328,6 @@ namespace Sufficit.Asterisk.Manager
 
             RegisterBuiltinEventClasses(registeredEventClasses);       
         }
-
 
         public delegate void AsteriskManagerEventHandler(object? sender, IManagerEvent e);
 

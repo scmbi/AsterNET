@@ -84,7 +84,7 @@ namespace AsterNET.FastAGI
         #region UniqueId 
 
         /// <summary>
-        ///     Returns the unqiue id of the channel.
+        ///     Returns the unique id of the channel.
         /// </summary>
         /// <returns>the unique id of the channel.</returns>
         public string UniqueId

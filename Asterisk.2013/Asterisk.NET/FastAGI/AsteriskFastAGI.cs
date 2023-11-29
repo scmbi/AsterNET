@@ -56,7 +56,7 @@ namespace AsterNET.FastAGI
 
             var ipAddress = IPAddress.Parse(_options.Address);
             var logger = _serviceProvider.GetRequiredService<ILogger<AGISocketHandler>>();
-            var options = new ListenerOptions() { Port = _options.Port, Address = ipAddress, Encoding = SocketEncoding };
+            var options = new ListenerOptions() { Port = _options.Port, Address = ipAddress, Encoding = SocketEncoding };           
             _socketHandler = new AGISocketHandler(logger, Options.Create<ListenerOptions>(options));
             _socketHandler.OnRequest += OnRequest;
         }

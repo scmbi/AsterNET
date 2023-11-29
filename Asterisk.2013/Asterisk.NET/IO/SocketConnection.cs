@@ -96,33 +96,14 @@ namespace AsterNET.IO
 			// checking object was not disposed yet
             if (_socket != null)
             {
-                // issue at simultaneous counter
-                // 2023/11/14 - testing
-                // semas the the "reset by peer" excepetion may occurs at trying to (shutdown or close) a socket already closed at the client side.
-                try
-                {
-                    _socket.Shutdown(SocketShutdown.Both);
-                    _socket.Close();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "error at invoke disconnect events");
-                }
+                _socket.Shutdown(SocketShutdown.Both);
+                _socket.Close();
             }
             
 			if (!string.IsNullOrWhiteSpace(cause))
 				_logger.LogWarning("disconnected, it should not happen, cause: {cause}", cause);
 
-            // issue at simultaneous counter 
-            // 2023/11/14 - before that - not seams to be a problem, marked for remove the try/catch block
-            try
-            {
-                OnDisconnected?.Invoke(this, cause);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "error at invoke disconnect events");
-            }
+            OnDisconnected?.Invoke(this, cause);            
         }
 
         #endregion
@@ -190,18 +171,19 @@ namespace AsterNET.IO
                 {
                     var buffer = new byte[Options.BufferSize];
                     var bytesRead = _socket.Receive(buffer);
+                    if (bytesRead > 0)
+                    {
+                        // creating an array of exact size for received content
+                        // trimming empty spaces at end of the buffer array, in order to dispatch
+                        var actualData = new byte[bytesRead];
+                        Array.Copy(buffer, actualData, bytesRead);
 
-					if (IsReceiving(_socket))
-					{
-						// creating an array of exact size for received content
-						var actualData = new byte[bytesRead];
-						Array.Copy(buffer, actualData, bytesRead);
+                        // dispatching received data event
+                        OnDataReceived(actualData);
+                    }
 
-						// dispaching received data event
-						OnDataReceived(actualData);
-					}
-					else
-					{
+					if (!IsReceiving(_socket))
+                    { 
                         DisconnectedTrigger();
 						break;
 					}
@@ -215,13 +197,16 @@ namespace AsterNET.IO
             {
                 if (ex.ErrorCode == 103)
                     _logger.LogTrace("receiving raw data from socket aborted");
-                
+
                 else if (ex.Message.Contains("WSACancelBlockingCall"))
                     _logger.LogTrace("receiving raw data from socket cancelled requested at buffering");
-                
+
                 else if (ex.Message.Contains("reset by peer"))
+                {
+                    _logger.LogError(ex, "error on start receiving socket");
                     DisconnectedTrigger("reset by peer");
-                
+                }
+
                 else
                     _logger.LogError(ex, "error on receiving raw data from socket");
             }

@@ -95,6 +95,12 @@ namespace AsterNET.FastAGI
                         _logger.LogInformation(statusMessage);
                     }
                 }
+                // expected behavior
+                catch (OperationCanceledException ex)
+                {
+                    statusMessage = ex.Message;
+                    _logger.LogDebug(ex, statusMessage);
+                }
                 catch (SocketException ex)
                 {
                     statusMessage = ex.Message;

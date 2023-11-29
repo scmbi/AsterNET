@@ -69,6 +69,7 @@ namespace AsterNET.Manager
             Handler += action;
             OnChanged?.Invoke(this, EventArgs.Empty);
         }
+
         public void Dettach(EventHandler<T> action)
         {
             Handler -= action;

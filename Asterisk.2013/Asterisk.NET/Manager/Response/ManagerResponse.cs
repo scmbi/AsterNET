@@ -169,7 +169,7 @@ namespace AsterNET.Manager.Response
         /// </summary>
         /// <param name="attributes">dictionary</param>
         /// <returns>updated dictionary</returns>
-        public virtual Dictionary<string, string> ParseSpecial(Dictionary<string, string> attributes)
+        public virtual Dictionary<string, string> ParseSpecial(Dictionary<string, string>? attributes)
         {
             return attributes;
         }

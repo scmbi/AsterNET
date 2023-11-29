@@ -43,26 +43,16 @@ namespace AsterNET.Manager
         private ISocketConnection? mrSocket;
         protected void SocketDisposing(object? sender, EventArgs args)
         {
-            _logger.LogDebug("internal socket is disposing");
-            if (mrSocket != null)
-            {
-                mrSocket.OnDisposing -= SocketDisposing;
-                mrSocket = null;
-            }
-
-            // what to do ?
+            _logger.LogDebug("internal socket is disposing");            
+            if (sender is ISocketConnection socket)            
+                socket.OnDisposing -= SocketDisposing;
         }
 
         protected void SocketDisconnected(object? sender, string? cause)
         {
             _logger.LogDebug("internal socket was disconnected, cause: {cause}", cause);
-            if (mrSocket != null && !keepAlive)
-            {
-                mrSocket.OnDisconnected -= SocketDisconnected;
-                mrSocket = null;
-            }
-
-            // what to do ?
+            if (sender is ISocketConnection socket && !keepAlive)
+                socket.OnDisconnected -= SocketDisconnected;            
         }
 
 
@@ -654,12 +644,12 @@ namespace AsterNET.Manager
 		#region connect()
 		protected internal bool connect()
 		{
-			bool result = false;
+			bool connected = false;
 			bool startReader = false;
 
 			lock (lockSocket)
 			{
-				if (mrSocket == null)
+				if (mrSocket == null || !mrSocket.IsConnected())
 				{
                     _logger.LogInformation("Connecting to {0}:{1}", hostname, port);
                     try
@@ -676,22 +666,25 @@ namespace AsterNET.Manager
                         mrSocket.OnDisposing += SocketDisposing;
                         mrSocket.OnDisconnected += SocketDisconnected;
 
-                        result = mrSocket.IsConnected();
+                        connected = mrSocket.IsConnected();
                     }
                     catch (Exception ex)
                     {
                         _logger.LogInformation("Connect - Exception  : {0}", ex.Message);
-                        result = false;
+                        connected = false;
                     }
 
-                    if (result)
+                    if (connected)
                     {
                         if (mrReader == null)
                         {
                             mrReader = new ManagerReader(this);
                             startReader = true;
 
-                            mrReaderThread = new Thread(mrReader.Run) { IsBackground = true, Name = "ManagerReader-" + DateTime.Now.Second };                            
+                            // including timestamp at thread name
+                            // using hashcode instead seconds, for append random suffix
+                            var threadname = $"ManagerReader-{DateTime.UtcNow.ToString("yyyyMMddmmss")}-{mrReader.GetHashCode()}";
+                            mrReaderThread = new Thread(mrReader.Run) { IsBackground = true, Name = threadname };                            
                         }
                        
                         mrReader.Socket = mrSocket;   
@@ -704,12 +697,10 @@ namespace AsterNET.Manager
                 }
             }
 
-            if (startReader)
-            {
+            if (startReader)            
                 mrReaderThread.Start();
-            }
-
-            return IsConnected();
+            
+            return connected;
         }
         #endregion
 
@@ -737,10 +728,12 @@ namespace AsterNET.Manager
                         mrReader.Socket = null;
                 }
 
-                if (this.mrSocket != null)
+                if (mrSocket != null)
                 {
                     mrSocket.Close();
-                    mrSocket = null;
+
+                    if (withDie)
+                        mrSocket = null;
                 }
 
                 responseEventHandlers.Clear();
@@ -941,7 +934,7 @@ namespace AsterNET.Manager
             if (action == null)
                 throw new ArgumentException("Unable to send action: action is null.");
 
-            if (mrSocket == null)
+            if (!IsConnected())
                 throw new SystemException("Unable to send " + action.Action + " action: not connected.");
 
             // if the responseHandler is null the user is obviously not interested in the response, thats fine.
@@ -1141,16 +1134,17 @@ namespace AsterNET.Manager
             if (mrSocket == null)
                 throw new SystemException("Unable to send action: socket is null");
 
-            if (!mrSocket.IsConnected())
+            // detecting a (random | non thread safe) disconnect event
+            if (!IsConnected())
             {
-                mrSocket = null; // setting null to force a reconnect on next time
+                lock (lockSocket)
+                    mrSocket = null; // setting null to force a reconnect on next time
+                
                 throw new SystemException("Unable to send action: tcpclient or network stream null or disposed");
             }
 
-            lock (lockSocketWrite)
-            {
-                mrSocket.Write(buffer);
-            }
+            lock (lockSocketWrite)            
+                mrSocket.Write(buffer);            
         }
 
         #endregion
