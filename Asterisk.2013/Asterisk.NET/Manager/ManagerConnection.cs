@@ -660,9 +660,10 @@ namespace AsterNET.Manager
                             Start = false,
                             BufferSize = (uint)SocketReceiveBufferSize,
                             Encoding = socketEncoding,
-                        };                        
+                        };
+                        
                         var client = new TcpClient(hostname, port);
-                        mrSocket = new SocketConnection(_logger, options, client.Client);
+                        mrSocket = new AMISingleSocketHandler(_logger, options, client.Client);
                         mrSocket.OnDisposing += SocketDisposing;
                         mrSocket.OnDisconnected += SocketDisconnected;
 
@@ -683,7 +684,7 @@ namespace AsterNET.Manager
 
                             // including timestamp at thread name
                             // using hashcode instead seconds, for append random suffix
-                            var threadname = $"ManagerReader-{DateTime.UtcNow.ToString("yyyyMMddmmss")}-{mrReader.GetHashCode()}";
+                            var threadname = $"{nameof(ManagerReader)}-{DateTime.UtcNow.ToString("yyyyMMddmmss")}-{mrReader.GetHashCode()}";
                             mrReaderThread = new Thread(mrReader.Run) { IsBackground = true, Name = threadname };                            
                         }
                        
@@ -840,12 +841,11 @@ namespace AsterNET.Manager
 
         #region IsConnected()
 
-        /// <summary> Returns true if there is a socket connection to the
-        /// asterisk server, false otherwise.
-        /// 
+        /// <summary> 
+        ///     Returns true if there is a socket connection to the asterisk server, false otherwise.
         /// </summary>
-        /// <returns> true if there is a socket connection to the
-        /// asterisk server, false otherwise.
+        /// <returns> 
+        ///     true if there is a socket connection to the asterisk server, false otherwise.
         /// </returns>
         public bool IsConnected()
             => mrSocket?.IsConnected() ?? false;
@@ -862,7 +862,7 @@ namespace AsterNET.Manager
             {
                 // stop reconnecting when we got disconnected
                 reconnectEnable = false;
-                if (mrReader != null && mrSocket != null)
+                if (mrReader != null && IsConnected())
                 {
                     try
                     {
@@ -998,11 +998,11 @@ namespace AsterNET.Manager
             else if (!typeof(IResponseEvent).IsAssignableFrom(action.ActionCompleteEventClass()))
                 throw new ArgumentException("Unable to send action: ActionCompleteEventClass is not a ResponseEvent.");
 
-            if (mrSocket == null || this == null)
-                throw new SystemException("Unable to send " + action.Action + " action: not connected.");
-
             if (this == null)
                 throw new SystemException("Unable to send " + action.Action + " manager null or disposed.");
+
+            if (!IsConnected())
+                throw new SystemException("Unable to send " + action.Action + " action: not connected.");
 
             var autoEvent = new AutoResetEvent(false);
             var handler = new ResponseEventHandler(this, action, autoEvent);
@@ -1131,17 +1131,9 @@ namespace AsterNET.Manager
 
         private void sendToAsterisk(string buffer)
         {
-            if (mrSocket == null)
-                throw new SystemException("Unable to send action: socket is null");
-
             // detecting a (random | non thread safe) disconnect event
-            if (!IsConnected())
-            {
-                lock (lockSocket)
-                    mrSocket = null; // setting null to force a reconnect on next time
-                
-                throw new SystemException("Unable to send action: tcpclient or network stream null or disposed");
-            }
+            if (!IsConnected())                            
+                throw new SystemException("Unable to send action: tcpclient or network stream null or disposed");            
 
             lock (lockSocketWrite)            
                 mrSocket.Write(buffer);            

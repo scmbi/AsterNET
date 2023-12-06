@@ -19,13 +19,13 @@ namespace AsterNET.IO
     /// <summary>
     ///     SocketWrapper using standard socket classes.
     /// </summary>
-    public class AGISocketHandler
+    public class AGIServerSocketHandler
     {
         private readonly ILogger _logger;
         private readonly TcpListener _listener;
 		private readonly ListenerOptions _options;
 
-        public AGISocketHandler(ILogger<AGISocketHandler> logger, IOptions<ListenerOptions> options)
+        public AGIServerSocketHandler(ILogger<AGIServerSocketHandler> logger, IOptions<ListenerOptions> options)
 		{
             _logger = logger;
             _options = options.Value;
@@ -34,7 +34,7 @@ namespace AsterNET.IO
             _listener.Server.DualMode = _options.DualMode;
 		}
 
-        public async Task ExecuteAsync(CancellationToken cancellationToken)
+        public Task ExecuteAsync(CancellationToken cancellationToken)
         {
             if (_listener.Server.Connected)
                 throw new Exception("already started");
@@ -44,34 +44,46 @@ namespace AsterNET.IO
             _logger.LogInformation("started agi socket handler executing async");
             
             Int64 count = 0;
+
+            // running until cancellation is requested
             while (!cancellationToken.IsCancellationRequested)
             {
-                var ar = _listener.BeginAcceptSocket(PerformListenAsync, _listener);
-                ar.AsyncWaitHandle.WaitOne();
-                _logger.LogInformation("started listening, accept counter: {count}", ++count);
+                // Accept Request, invite
+                var ar = _listener.BeginAcceptSocket(PerformListenAsync, cancellationToken);
+                
+                // waits for the accept, just the accept, not entire proccess
+                // a diferent socket will be created for the proccess
+                if (ar.AsyncWaitHandle.WaitOne())
+                    _logger.LogInformation("accepted requests counter: {count}", ++count);
+                else 
+                    _listener.Server.EndConnect(ar);
             }
+
+            return Task.CompletedTask;
         }
 
-        private int count;
         private int simultaneous;
-        public event EventHandler<SocketConnection>? OnRequest;
+        public event EventHandler<AMISingleSocketHandler>? OnRequest;
 
-        void RequestReceived(Socket socket)
+        void RequestAccepted(Socket socket, CancellationToken cancellationToken)
         {
-            count++;
             try
             {
                 // simultaneous count here because socket maybe cancelled, so can throw a exception
                 simultaneous++;
 
-                var listener = new SocketConnection(_logger, _options, socket);
-                _logger.LogInformation("dispatching request received, thread id: {thread_id}, thread name: {thread_name}, socket id: {socket}, simultaneous: {simultaneous}",
-                        Thread.CurrentThread.ManagedThreadId,
-                        Thread.CurrentThread.Name,
-                        socket.Handle,
-                        simultaneous);
+                // forcing start from this task context, testing
+                _options.Start = false;
 
-                OnRequest?.Invoke(this, listener);
+                // creating a handler for the accepted client socket
+                var sc = new AMISingleSocketHandler(_logger, _options, socket);
+                if (!_options.Start)
+                    sc.Background(cancellationToken);
+
+                _logger.LogInformation("dispatching accepted request, simultaneous: {simultaneous}", simultaneous);
+
+                // dispatching events
+                OnRequest?.Invoke(this, sc);
             }
             catch (Exception ex)
             {
@@ -88,12 +100,17 @@ namespace AsterNET.IO
         /// </summary>               
         void PerformListenAsync(IAsyncResult ar)
         {
+            if (ar.AsyncState is CancellationToken cancellationToken) ;
+
             try
             {
                 // Always call End async method or there will be a memory leak. (HRM)
                 // It creates a new socket to continue 
+                // And sends a signal to async request context to continue
                 var socket = _listener.EndAcceptSocket(ar);
-                RequestReceived(socket);
+                
+                // main execution control
+                RequestAccepted(socket, cancellationToken);
 
                 _listener.Server.EndConnect(ar);
             } 

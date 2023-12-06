@@ -23,7 +23,7 @@ namespace AsterNET.FastAGI
         private readonly FastAGIOptions _options;
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger _logger;
-        private readonly AGISocketHandler _socketHandler;
+        private readonly AGIServerSocketHandler _socketHandler;
 
         /// <summary>
         ///     The strategy to use for bind AGIRequests to AGIScripts that serve them.
@@ -55,13 +55,13 @@ namespace AsterNET.FastAGI
             _logger = _serviceProvider.GetRequiredService<ILogger<AsteriskFastAGI>>();
 
             var ipAddress = IPAddress.Parse(_options.Address);
-            var logger = _serviceProvider.GetRequiredService<ILogger<AGISocketHandler>>();
+            var logger = _serviceProvider.GetRequiredService<ILogger<AGIServerSocketHandler>>();
             var options = new ListenerOptions() { Port = _options.Port, Address = ipAddress, Encoding = SocketEncoding };           
-            _socketHandler = new AGISocketHandler(logger, Options.Create<ListenerOptions>(options));
+            _socketHandler = new AGIServerSocketHandler(logger, Options.Create<ListenerOptions>(options));
             _socketHandler.OnRequest += OnRequest;
         }
 
-        private async void OnRequest(object sender, SocketConnection e)
+        private async void OnRequest(object sender, AMISingleSocketHandler e)
         {
             _logger.LogDebug("Received connection.");
             var loggerFactory = _serviceProvider.GetRequiredService<ILoggerFactory>();
@@ -115,7 +115,6 @@ namespace AsterNET.FastAGI
         }
 
         #endregion
-
         #region Stop() 
 
         public void Stop()

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
+using System.Xml;
 using AsterNET.Helpers;
 using AsterNET.IO;
 using AsterNET.Manager.Action;
@@ -35,6 +36,27 @@ namespace AsterNET.Manager
 		private DateTime lastPacketTime;
 		private readonly Dictionary<string, string> packet;
 		private readonly List<string> commandList;
+
+        public bool IsConnected()
+            => mrSocket?.IsConnected() ?? false;
+
+		/// <summary>
+		/// Disconnect cause
+		/// </summary>
+		public Exception? Exception { get; private set; }
+
+		protected void Close(Exception ex)
+		{
+			Exception = ex;
+            _logger.LogError(ex, "Read data error: {message}", ex.Message);
+
+            // Any catch - disconnect !
+            if (IsConnected())
+                mrSocket.Close();
+
+            mrSocket = null;
+            disconnect = true;
+        }
 
         #region ManagerReader(dispatcher, asteriskServer) 
 
@@ -103,15 +125,15 @@ namespace AsterNET.Manager
 			if (mrReader.die)
 				return;
 
-			var mrSocket = mrReader.mrSocket;
-			if (mrSocket == null || !mrSocket.IsConnected())
+			if (!mrReader.IsConnected())
 			{
                 // No socket - it's DISCONNECT !!!
                 mrReader.disconnect = true;
 				return;
 			}
 
-			var nstream = mrSocket.GetStream();
+            var mrSocket = mrReader.mrSocket;
+            var nstream = mrSocket.GetStream();
 			if (nstream == null)
 			{
                 // No network stream - it's DISCONNECT !!!
@@ -148,13 +170,7 @@ namespace AsterNET.Manager
 			}
 			catch (Exception ex)
 			{
-				mrReader._logger.LogError(ex, "Read data error: {message}", ex.Message);
-			
-                // Any catch - disconncatch !
-                mrReader.disconnect = true;
-				if (mrReader.mrSocket != null)
-					mrReader.mrSocket.Close();
-				mrReader.mrSocket = null;
+				mrReader.Close(ex);                
 			}
 		}
 
