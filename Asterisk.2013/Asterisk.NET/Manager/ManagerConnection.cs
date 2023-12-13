@@ -386,7 +386,7 @@ namespace AsterNET.Manager
 
         #region login(timeout)
 
-        public Task Login(uint? timeout = null)
+        public Task Login (uint? timeout = null)
         {
             var cts = new CancellationTokenSource((int)(timeout ?? defaultResponseTimeout));
             return Login(cts.Token);
@@ -402,9 +402,8 @@ namespace AsterNET.Manager
         /// <throws>  TimeoutException if no response is received within the specified timeout period</throws>
         /// <seealso cref="Action.ChallengeAction"/>
         /// <seealso cref="Action.LoginAction"/>
-        public async Task Login(CancellationToken cancellationToken)
-        {
-            
+        public async Task Login (CancellationToken cancellationToken)
+        {            
             enableEvents = false;
             if (reconnected)
             {
@@ -424,28 +423,30 @@ namespace AsterNET.Manager
                     throw new TimeoutException("Timeout waiting for protocol identifier");
                 }
 
-                if (connect())
+                if (connect(cancellationToken))
                 {
                     // Increase delay after connection up to 500 ms
-                    Thread.Sleep(10 * sleepTime);   // 200 milliseconds delay
+                    await Task.Delay(10 * sleepTime);   // 200 milliseconds delay
+                    //Thread.Sleep(10 * sleepTime);   // 200 milliseconds delay
                 }
+
                 try
                 {
-                    Thread.Sleep(4 * sleepTime);    // 200 milliseconds delay
+                    await Task.Delay(4 * sleepTime);   // 200 milliseconds delay
+                    //Thread.Sleep(4 * sleepTime);    // 200 milliseconds delay
                 }
                 catch
                 { }
             };
 
-            ChallengeAction challengeAction = new ChallengeAction();
-            Response.ManagerResponse response = SendAction(challengeAction, defaultResponseTimeout * 2);
-            if (response is ChallengeResponse)
+            var challengeAction = new ChallengeAction();
+            var response = SendAction(challengeAction, defaultResponseTimeout * 2);
+            if (response is ChallengeResponse challengeResponse)
             {
-                ChallengeResponse challengeResponse = (ChallengeResponse)response;
                 string key, challenge = challengeResponse.Challenge;
                 try
                 {
-                    Util.MD5Support md = Util.MD5Support.GetInstance();
+                    var md = Util.MD5Support.GetInstance();
                     if (challenge != null)
                         md.Update(UTF8Encoding.UTF8.GetBytes(challenge));
                     if (password != null)
@@ -463,7 +464,7 @@ namespace AsterNET.Manager
                 }
 
                 var loginAction = new LoginAction(username, "MD5", key);
-                ManagerResponse loginResponse = SendAction(loginAction);
+                var loginResponse = SendAction(loginAction);
                 if (loginResponse is Response.ManagerError)
                 {
                     disconnect(true);
@@ -480,7 +481,7 @@ namespace AsterNET.Manager
                 _logger.LogInformation("Determined Asterisk version: " + asteriskVersion);
 
 				enableEvents = true;
-				ConnectEvent ce = new ConnectEvent();
+				var ce = new ConnectEvent();
 				ce.ProtocolIdentifier = this.protocolIdentifier;
 				DispatchEvent(ce);
 			}
@@ -642,7 +643,7 @@ namespace AsterNET.Manager
 		#endregion
 
 		#region connect()
-		protected internal bool connect()
+		protected internal bool connect(CancellationToken cancellationToken)
 		{
 			bool connected = false;
 			bool startReader = false;
@@ -668,6 +669,7 @@ namespace AsterNET.Manager
                         mrSocket.OnDisconnected += SocketDisconnected;
 
                         connected = mrSocket.IsConnected();
+                        _logger.LogInformation("Connected to {0}:{1}", hostname, port);
                     }
                     catch (Exception ex)
                     {
@@ -699,7 +701,7 @@ namespace AsterNET.Manager
             }
 
             if (startReader)            
-                mrReaderThread.Start();
+                mrReaderThread.Start(cancellationToken);
             
             return connected;
         }
@@ -806,7 +808,7 @@ namespace AsterNET.Manager
                         try
                         {
                             _logger.LogInformation("Try connect.");
-                            if (connect())
+                            if (connect(CancellationToken.None))
                                 break;
                         }
                         catch (Exception ex)

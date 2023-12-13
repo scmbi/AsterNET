@@ -203,18 +203,23 @@ namespace AsterNET.Manager
 		/// received and dispatches the received events and responses via the associated dispatcher.
 		/// </summary>
 		/// <seealso cref="ManagerConnection.DispatchResponse(Response.ManagerResponse)" />
-		internal void Run()
+		internal void Run(object parameter)
 		{
 			if (mrSocket == null)
 				throw new SystemException("Unable to run: socket is null.");
 
-			string line;
+			CancellationTokenSource cts;
+			if (parameter is CancellationToken cancellationToken)
+				cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+			else 
+				cts = new CancellationTokenSource();
 
-			while (true)
+			while (!cts.IsCancellationRequested)
 			{
 				try
-				{
-					while (!die)
+                {
+                    string line;
+                    while (!die)
 					{
 						#region check line from *
 

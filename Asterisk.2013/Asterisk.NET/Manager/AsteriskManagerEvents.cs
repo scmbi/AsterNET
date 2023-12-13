@@ -382,7 +382,7 @@ namespace Sufficit.Asterisk.Manager
 
             if (FireAllEvents)
             {
-                _logger.LogInformation("dispatching unhandled event: {0}", e);                
+                _logger.LogDebug("dispatching unhandled event: {0}", e);                
                 UnhandledEvent?.Invoke(sender, e);
             }
         }

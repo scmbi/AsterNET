@@ -149,16 +149,6 @@ namespace AsterNET.IO
         public Task? BackgroundReadingTask { get; internal set; }
 
         /// <summary>
-        /// Last ManagedThreadId for BackgroundReadingTask
-        /// </summary>
-        public int? BackgroundManagedThreadId { get; internal set; }
-
-        /// <summary>
-        /// Last ManagedThread Name for BackgroundReadingTask
-        /// </summary>
-        public string? BackgroundManagedThreadName { get; internal set; }
-
-        /// <summary>
         ///     Starts reading from background 
         /// </summary>
         public void Background(CancellationToken cancellationToken)
