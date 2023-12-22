@@ -170,20 +170,20 @@ namespace AsterNET.FastAGI
             }
         }
 
-        public string Argument(int position)
+        public string Argument (int position)
         {
             var args = Arguments;
             int count = args.Count();
             if (count > 0)
             {               
-                if(position >= 0)
+                if (position >= 0)
                 {
-                    if(count > position)
+                    if (count > position)
                         return args.ElementAt(position);
                 }
                 else
                 {
-                    if(-count <= position)
+                    if (-count <= position)
                         return args.ElementAt(count + position);
                 }
             } 

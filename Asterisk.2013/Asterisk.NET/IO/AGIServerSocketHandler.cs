@@ -24,53 +24,78 @@ namespace AsterNET.IO
         private readonly ILogger _logger;
         private readonly TcpListener _listener;
 		private readonly ListenerOptions _options;
+        private readonly Simultaneous _simultaneous;
 
         public AGIServerSocketHandler(ILogger<AGIServerSocketHandler> logger, IOptions<ListenerOptions> options)
 		{
             _logger = logger;
             _options = options.Value;
-            
+
+            _simultaneous = new Simultaneous();
+
             _listener = new TcpListener(_options.Address, (int)_options.Port);
             _listener.Server.DualMode = _options.DualMode;
 		}
 
-        public Task ExecuteAsync(CancellationToken cancellationToken)
+        public async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             if (_listener.Server.Connected)
                 throw new Exception("already started");
 
-            //_token = cancellationToken;
-            _listener.Start((int)_options.BackLog);
-            _logger.LogInformation("started agi socket handler executing async");
-            
-            Int64 count = 0;
-
-            // running until cancellation is requested
-            while (!cancellationToken.IsCancellationRequested)
+            try
             {
-                // Accept Request, invite
-                var ar = _listener.BeginAcceptSocket(PerformListenAsync, cancellationToken);
-                
-                // waits for the accept, just the accept, not entire proccess
-                // a diferent socket will be created for the proccess
-                if (ar.AsyncWaitHandle.WaitOne())
-                    _logger.LogInformation("accepted requests counter: {count}", ++count);
-                else 
-                    _listener.Server.EndConnect(ar);
-            }
+                _listener.Start((int)_options.BackLog);
+                _logger.LogInformation("started agi socket handler executing async");
 
-            return Task.CompletedTask;
+                Int64 count = 0;
+
+                // running until cancellation is requested
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    // await for a request, invite
+                    var clientsocket = await Task.Run(_listener.AcceptSocketAsync, cancellationToken);
+
+                    _logger.LogInformation("accepted requests counter: {count}", ++count);
+                    _ = Task.Run(() => RequestAccepted(clientsocket, cancellationToken)).ConfigureAwait(false);
+                }
+
+                /*
+                // running until cancellation is requested
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    // Accept Request, invite
+                    var ar = _listener.BeginAcceptSocket(PerformListenAsync, cancellationToken);
+
+                    // waits for the accept, just the accept, not entire proccess
+                    // a diferent socket will be created for the proccess
+                    if (ar.AsyncWaitHandle.WaitOne())
+                        _logger.LogInformation("accepted requests counter: {count}", ++count);
+                    else
+                        _listener.Server.EndConnect(ar);
+
+                }
+                */
+            }
+            catch (Exception ex) // never throw, marked for remove
+            {
+                _logger.LogError(ex, "error listening");
+                throw;
+            }
+            
+            //return Task.CompletedTask;
         }
 
-        private int simultaneous;
         public event EventHandler<AMISingleSocketHandler>? OnRequest;
 
-        void RequestAccepted(Socket socket, CancellationToken cancellationToken)
+        /// <summary>
+        ///     Starts reader and invoke attached events 
+        /// </summary>
+        void RequestAccepted (Socket socket, CancellationToken cancellationToken)
         {
             try
             {
                 // simultaneous count here because socket maybe cancelled, so can throw a exception
-                simultaneous++;
+                using var runner = _simultaneous.Run();
 
                 // forcing start from this task context, testing
                 _options.Start = false;
@@ -80,7 +105,7 @@ namespace AsterNET.IO
                 if (!_options.Start)
                     sc.Background(cancellationToken);
 
-                _logger.LogInformation("dispatching accepted request, simultaneous: {simultaneous}", simultaneous);
+                _logger.LogInformation("dispatching accepted request, simultaneous: {simultaneous}", _simultaneous);
 
                 // dispatching events
                 OnRequest?.Invoke(this, sc);
@@ -89,16 +114,13 @@ namespace AsterNET.IO
             {
                 _logger.LogError(ex, "error at processing individual client socket");
             }
-            finally
-            {
-                simultaneous--;              
-            }
         }
 
         /// <summary>
-        ///     Individual process
-        /// </summary>               
-        void PerformListenAsync(IAsyncResult ar)
+        ///     Individual process, async
+        /// </summary>        
+        [Obsolete]
+        async void PerformListenAsync (IAsyncResult ar)
         {
             if (ar.AsyncState is CancellationToken cancellationToken) ;
 
@@ -114,7 +136,7 @@ namespace AsterNET.IO
 
                 _listener.Server.EndConnect(ar);
             } 
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "error performing async listener");
             }

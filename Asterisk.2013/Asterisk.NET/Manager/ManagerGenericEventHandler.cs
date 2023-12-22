@@ -6,20 +6,7 @@ using System.Linq;
 using System.Text;
 
 namespace AsterNET.Manager
-{
-    public interface ManagerInvokable
-    {
-        void Invoke(object? sender, IManagerEvent e);
-
-        int Count { get; }
-
-        string Key { get; }
-
-        bool IsAbstract { get; }
-
-        Type Type { get; }
-    }
-
+{  
     public class DisposableHandler<T> : IDisposable where T : IManagerEvent
     {
         private ManagerEventHandler<T> control;

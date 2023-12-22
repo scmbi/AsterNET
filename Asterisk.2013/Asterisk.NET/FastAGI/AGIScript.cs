@@ -12,13 +12,6 @@ namespace AsterNET.FastAGI
 	/// </summary>
 	public abstract class AGIScript : IDisposable
 	{
-        ~AGIScript()
-        {            
-            Dispose(disposing: false);
-        }
-
-        protected bool disposed = false;
-
         /// <summary>
         /// Default sincronous executing starting point
         /// </summary>
@@ -33,20 +26,30 @@ namespace AsterNET.FastAGI
 		public virtual async ValueTask ExecuteAsync(AGIRequest request, AGIChannel channel, CancellationToken cancellationToken)
             => await Task.Run(() => Execute(request, channel));
 
+        /// <summary>
+        ///     Invokes dispose for ensure the closure at inheritances classes
+        /// </summary>
+        ~AGIScript() => Dispose();
+
+        #region IMPLEMENT IDISPOSABLE
+
+        protected bool disposed = false;
+
         public void Dispose()
         {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
             // Check to see if Dispose has already been called.
-            if (!this.disposed)
+            if (!disposed)
             {
                 // Note disposing has been done.
                 disposed = true;
-            }
+                Dispose(true);
+
+                GC.SuppressFinalize(this);
+            }            
         }
+
+        protected virtual void Dispose (bool disposing) { }
+
+        #endregion
     }
 }

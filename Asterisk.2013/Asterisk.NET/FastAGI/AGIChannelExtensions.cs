@@ -27,9 +27,9 @@ namespace AsterNET.FastAGI
 		#region Hangup()
 
 		/// <summary>
-		/// Hangs the channel up.
+		///     Hangs the channel up.
 		/// </summary>
-		public static void Hangup(this AGIChannel source)
+		public static void Hangup (this AGIChannel source)
 		{
 			source.SendCommand(new HangupCommand());
 		}

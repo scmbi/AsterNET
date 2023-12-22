@@ -79,7 +79,7 @@ namespace AsterNET.FastAGI
 
             try
             {
-                _logger.LogInformation("Listening on " + _options.Address + ":" + _options.Port + ".");
+                _logger.LogInformation("Listening on " + _options.Address + ":" + _options.Port + " ...");
                 await _socketHandler.ExecuteAsync(cancellationToken);
             }
             catch (Exception ex)

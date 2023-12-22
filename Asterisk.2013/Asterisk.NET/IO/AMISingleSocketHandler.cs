@@ -176,7 +176,10 @@ namespace AsterNET.IO
 
             try
             {
-                while (!CTSBackgroundReceiving.IsCancellationRequested)
+                // _socket.Connect here not throw disconnect event
+                // take a look in future
+
+                while (!CTSBackgroundReceiving.IsCancellationRequested && _socket.Connected)
                 {
                     var buffer = new byte[Options.BufferSize];
                     var bytesRead = _socket.Receive(buffer);
@@ -205,19 +208,19 @@ namespace AsterNET.IO
             catch (SocketException ex) 
             {
                 if (ex.ErrorCode == 103)
-                    _logger.LogTrace("receiving raw data from socket aborted");
+                    _logger.LogTrace("receiving raw data from socket aborted: {code}", ex.SocketErrorCode);
 
                 else if (ex.Message.Contains("WSACancelBlockingCall"))
-                    _logger.LogTrace("receiving raw data from socket cancelled requested at buffering");
+                    _logger.LogTrace("receiving raw data from socket cancelled requested at buffering: {code}", ex.SocketErrorCode);
 
-                else if (ex.Message.Contains("reset by peer"))
+                else if (ex.ErrorCode == 104)
                 {
-                    _logger.LogError(ex, "error on start receiving socket");
+                    _logger.LogError(ex, "error on start receiving socket: {code}", ex.SocketErrorCode);
                     DisconnectedTrigger("reset by peer");
                 }
 
                 else
-                    _logger.LogError(ex, "error on receiving raw data from socket");
+                    _logger.LogError(ex, "error on receiving raw data from socket: {code}", ex.SocketErrorCode);
             }
         }
 
