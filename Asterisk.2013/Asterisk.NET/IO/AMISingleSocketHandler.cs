@@ -92,7 +92,7 @@ namespace AsterNET.IO
         #endregion
         #region DISCONNECTED
 
-        /// <inheritdoc cref="ISocketConnection.OnDisconnected"/>
+        /// <inheritdoc cref="ISocketConnection.OnDisconnected" />
         public event EventHandler<string?>? OnDisconnected;
 
         protected virtual void DisconnectedTrigger(string? cause = null)
@@ -179,8 +179,10 @@ namespace AsterNET.IO
                 // _socket.Connect here not throw disconnect event
                 // take a look in future
 
-                while (!CTSBackgroundReceiving.IsCancellationRequested && _socket.Connected)
+                while (IsReceiving(_socket))
                 {
+                    CTSBackgroundReceiving.Token.ThrowIfCancellationRequested();
+
                     var buffer = new byte[Options.BufferSize];
                     var bytesRead = _socket.Receive(buffer);
                     if (bytesRead > 0)
@@ -193,13 +195,10 @@ namespace AsterNET.IO
                         // dispatching received data event
                         OnDataReceived(actualData);
                     }
-
-					if (!IsReceiving(_socket))
-                    { 
-                        DisconnectedTrigger();
-						break;
-					}
                 }
+
+                // not receiving anymore
+                DisconnectedTrigger();
             }
             catch (OperationCanceledException) 
             {
@@ -414,7 +413,7 @@ namespace AsterNET.IO
 
 		#region Close
 
-		public new void Close() => Close(string.Empty);
+		public void Close() => Close(string.Empty);
 
 		/// <summary>
 		/// Closes the socket connection including its input and output stream and

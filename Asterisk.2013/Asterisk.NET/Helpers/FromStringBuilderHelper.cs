@@ -1,6 +1,7 @@
 ﻿using AsterNET.Manager;
 using Microsoft.Extensions.Logging;
 using Sufficit.Asterisk;
+using Sufficit.Asterisk.Manager;
 using System;
 using System.Collections.Generic;
 using System.Globalization;

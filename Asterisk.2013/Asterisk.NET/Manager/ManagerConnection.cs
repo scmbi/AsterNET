@@ -109,6 +109,14 @@ namespace AsterNET.Manager
 
         public AsteriskManagerEvents Events { get; }
 
+        protected virtual void ThrowIfNotConnected(string? msg)
+        {
+            if (!IsConnected())
+            {
+                throw new NotConnectedException(msg);
+            }
+        }
+
 
         #region Constructor - ManagerConnection()
 
@@ -427,16 +435,9 @@ namespace AsterNET.Manager
                 {
                     // Increase delay after connection up to 500 ms
                     await Task.Delay(10 * sleepTime);   // 200 milliseconds delay
-                    //Thread.Sleep(10 * sleepTime);   // 200 milliseconds delay
                 }
 
-                try
-                {
-                    await Task.Delay(4 * sleepTime);   // 200 milliseconds delay
-                    //Thread.Sleep(4 * sleepTime);    // 200 milliseconds delay
-                }
-                catch
-                { }
+                await Task.Delay(4 * sleepTime);   // 200 milliseconds delay
             };
 
             var challengeAction = new ChallengeAction();
@@ -935,9 +936,8 @@ namespace AsterNET.Manager
         {
             if (action == null)
                 throw new ArgumentException("Unable to send action: action is null.");
-
-            if (!IsConnected())
-                throw new SystemException("Unable to send " + action.Action + " action: not connected.");
+            
+            ThrowIfNotConnected("Unable to send " + action.Action + " action: not connected.");
 
             // if the responseHandler is null the user is obviously not interested in the response, thats fine.
             string internalActionId = string.Empty;
@@ -961,7 +961,7 @@ namespace AsterNET.Manager
         /// </summary>
         /// <param name="action">action to send</param>
         /// <param name="cancellationToken">cancellation Token</param>
-        public Task<ManagerResponse> SendActionAsync(ManagerAction action, CancellationToken cancellationToken = default)
+        public Task<ManagerResponse> SendActionAsync(ManagerAction action, CancellationToken cancellationToken)
         {
             var handler = new TaskResponseHandler(action);
             var source = handler.TaskCompletionSource;
@@ -971,8 +971,8 @@ namespace AsterNET.Manager
 
             return source.Task.ContinueWith(x =>
             {
-            RemoveResponseHandler(handler);
-            return x.Result;
+                RemoveResponseHandler(handler);
+                return x.Result;
             });
         }
 

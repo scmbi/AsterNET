@@ -1,11 +1,12 @@
+using Sufficit.Asterisk.Manager;
 using System;
 namespace AsterNET.Manager
 {
 	/// <summary>
 	/// An AuthenticationFailedException is thrown when a login fails due to an incorrect username and/or password.
 	/// </summary>
-	public class AuthenticationFailedException : Exception
-	{
+	public class AuthenticationFailedException : ManagerException
+    {
 		/// <summary>
 		/// Creates a new AuthenticationFailedException with the given message.
 		/// </summary>
