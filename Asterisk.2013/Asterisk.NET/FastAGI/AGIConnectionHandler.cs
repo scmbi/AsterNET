@@ -50,7 +50,7 @@ namespace AsterNET.FastAGI
 
         #endregion
 
-        public async Task Run(CancellationToken cancellationToken)
+        public async Task Run (CancellationToken cancellationToken)
         {
             using (_logger.BeginScope<string>($"[HND:{new Random().Next()}]"))
             {
@@ -138,13 +138,16 @@ namespace AsterNET.FastAGI
                 {
                     try
                     {
-                        if (!string.IsNullOrWhiteSpace(statusMessage))
+                        if (_socket.IsConnected())
                         {
-                            var command = new SetVariableCommand(Common.AGI_DEFAULT_RETURN_STATUS, statusMessage);
-                            _socket.SendCommand(command);
-                        }
+                            if (!string.IsNullOrWhiteSpace(statusMessage))
+                            {
+                                var command = new SetVariableCommand(Common.AGI_DEFAULT_RETURN_STATUS, statusMessage);
+                                _socket.SendCommand(command);
+                            }
 
-                        _socket.Close();
+                            _socket.Close();
+                        }
                     }
                     catch (IOException ex)
                     {

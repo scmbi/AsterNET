@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk" ToolsVersion="Current">
 
 	<PropertyGroup Label="Sufficit Targeting">
-		<TargetFramework>netstandard2.0</TargetFramework>
+		<TargetFrameworks>netstandard2.0;net6.0;net7.0;net8.0</TargetFrameworks>
 		<RootNamespace>AsterNET</RootNamespace>
 		<LangVersion>8.0</LangVersion>
 		
@@ -115,12 +115,49 @@
   </ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="System.Linq.Async" Version="6.*" />
-		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="[*,9.0.0)" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="[*,9.0.0)" />
-		<PackageReference Include="Microsoft.Extensions.Logging" Version="[*,9.0.0)" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[*,9.0.0)" />	
 	</ItemGroup>
 
+	<ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
+		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="*" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="*" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="*" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="*" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="*" />
+		<PackageReference Include="Microsoft.Extensions.Options" Version="*" />
+		<PackageReference Include="System.Text.Json" Version="*" />
+	</ItemGroup>
+
+
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
+		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="[*,7.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="[*,7.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="[*,7.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="[*,7.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[*,7.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.Options" Version="[*,7.0.0)" />
+		<PackageReference Include="System.Text.Json" Version="[*,7.0.0)" />
+	</ItemGroup>
+	
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net7.0' ">
+		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="[*,8.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="[*,8.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="[*,8.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="[*,8.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[*,8.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.Options" Version="[*,8.0.0)" />
+		<PackageReference Include="System.Text.Json" Version="[*,8.0.0)" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
+		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="[*,9.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="[*,9.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="[*,9.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="[*,9.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[*,9.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.Options" Version="[*,9.0.0)" />
+		<PackageReference Include="System.Text.Json" Version="[*,9.0.0)" />
+	</ItemGroup>
+	
 	<ItemGroup Label="Sufficit Pacote NUGET Itens">
 		<None Include="../../icon.png">
 			<Pack>True</Pack>

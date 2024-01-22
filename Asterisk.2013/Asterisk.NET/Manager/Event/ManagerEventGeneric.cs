@@ -41,14 +41,14 @@ namespace AsterNET.Manager.Event
         /// This generic instance should not have any attribute after the full preparation. 
         /// If its remaining, improve the underlayng classes.
         /// </summary>
-        public bool HasAttributes() => Attributes.Count > 0;
+        public bool HasAttributes() => Attributes?.Count > 0;
 
         /// <summary>
         /// Store all unknown (without setter) keys from manager event.<br/>
         /// Use in default Parse method <see cref="IParseSupport.Parse(string, string)"/>
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public Dictionary<string, string>? Attributes { get; }
+        public Dictionary<string, string>? Attributes { get; internal set; }
 
         #region Methods
 
@@ -58,10 +58,14 @@ namespace AsterNET.Manager.Event
         /// <param name="key">key name</param>
         /// <param name="value">key value</param>
         /// <returns>true - value parsed, false - can't parse value</returns>
-        public virtual void Parse(string key, string value)
+        public virtual void Parse (string key, string value)
         {
-            if (Attributes.ContainsKey(key))            
-                Attributes[key] = value;            
+            if (Attributes == null)
+                Attributes = new Dictionary<string, string>();
+
+            if (Attributes.ContainsKey(key))
+                // Key already presents, add with delimiter
+                Attributes[key] += string.Concat(Common.LINE_SEPARATOR, value);
             else            
                 Attributes.Add(key, value);      
         }
@@ -73,13 +77,13 @@ namespace AsterNET.Manager.Event
         /// <returns>updated dictionary</returns>
         public virtual Dictionary<string, string> ParseSpecial(Dictionary<string, string>? attributes)
         {
-            if(attributes == null)
+            if (attributes == null)
                 return new Dictionary<string, string>();
 
-            foreach(var pair in attributes)            
+            foreach (var pair in attributes)            
                 Parse(pair.Key, pair.Value);
             
-            return Attributes;
+            return Attributes ?? new Dictionary<string, string>(); ;
         }
 
         #endregion

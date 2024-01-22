@@ -60,7 +60,7 @@ namespace Sufficit.Asterisk.Manager
         /// <summary>
         /// Update internal logger
         /// </summary>
-        public static void Log(ILogger logger) => _logger = logger;
+        public static void Log (ILogger logger) => _logger = logger;
 
         #endregion
         #region STATIC PRIVATE
@@ -93,12 +93,12 @@ namespace Sufficit.Asterisk.Manager
             = new LoggerFactory().CreateLogger<Helper>();
 
         private static object _lockDiscovered = new object();
-        private static IEnumerable<Type> DiscoveredTypes;
+        private static IEnumerable<Type>? DiscoveredTypes;
 
         private static bool AssemblyMatch(Assembly assembly)
         {
             return
-                !assembly.IsDynamic && (
+                !assembly.IsDynamic && assembly.FullName != null && (
                 assembly.FullName.StartsWith(nameof(Sufficit), true, CultureInfo.InvariantCulture) ||
                 assembly.FullName.StartsWith(nameof(AsterNET), true, CultureInfo.InvariantCulture)
                 );
@@ -164,7 +164,7 @@ namespace Sufficit.Asterisk.Manager
             if (list.ContainsKey(eventKey))
                 return;
 
-            ConstructorInfo constructor = null;
+            ConstructorInfo? constructor = null;
             try
             {
                 constructor = clazz.GetConstructor(Array.Empty<Type>());
@@ -220,15 +220,12 @@ namespace Sufficit.Asterisk.Manager
         /// <summary>
         ///     Builds the event based on the given map of attributes and the registered event classes.
         /// </summary>
-        /// <param name="source">source attribute for the event</param>
-        /// <param name="list"></param>
         /// <param name="attributes">map containing event attributes</param>
         /// <returns>a concrete instance of IManagerEvent or null if no event class was registered for the event type.</returns>
         internal ManagerEventGeneric Build(Dictionary<string, string> attributes)
         {
             ManagerEventGeneric e;
-            ConstructorInfo constructor = null;
-            int hash, hashEvent;
+            ConstructorInfo? constructor = null;
 
             string eventKey = GetEventKey(attributes["event"]);
             if (eventKey == "userevent")
@@ -256,16 +253,17 @@ namespace Sufficit.Asterisk.Manager
 
                     _logger.LogTrace($"creating event: {generic}");
                 }
+
+#if LOGGER
                 catch (Exception ex)
                 {
-#if LOGGER
                     _logger.LogError("Unable to create new instance of " + eventKey, ex);
                     return null;
-#else
-					throw;
-#endif
                 }
-            }
+#else
+                catch { throw; }
+#endif
+            }            
 
             Helper.SetAttributes(e, attributes, _logger);
 
@@ -349,7 +347,7 @@ namespace Sufficit.Asterisk.Manager
             return new DisposableHandler<T>(handler, action);
         }
 
-        private void OnHandlerChanged(object sender, EventArgs e)
+        private void OnHandlerChanged(object? sender, EventArgs e)
         {
             if (sender is ManagerInvokable handler && handler.Count == 0)            
                 Handlers.Remove(handler);            

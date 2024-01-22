@@ -122,7 +122,8 @@ namespace AsterNET.IO
         [Obsolete]
         async void PerformListenAsync (IAsyncResult ar)
         {
-            if (ar.AsyncState is CancellationToken cancellationToken) ;
+            CancellationToken cancellationToken = default;
+            if (ar.AsyncState is CancellationToken ct) cancellationToken = ct;
 
             try
             {

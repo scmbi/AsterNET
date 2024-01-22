@@ -6,13 +6,10 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using AsterNET.Manager;
-using AsterNET.Manager.Event;
 using AsterNET.Manager.Response;
 using Microsoft.Extensions.Logging;
 using Sufficit.Asterisk;
 using Sufficit.Asterisk.Manager;
-using Sufficit.Asterisk.Manager.Events;
 
 namespace AsterNET.Helpers
 {
@@ -23,7 +20,7 @@ namespace AsterNET.Helpers
         /// </summary>
         public static void Log(ILogger logger) => _logger = logger;
 
-        private static CultureInfo defaultCulture;
+        private static CultureInfo? defaultCulture;
 
         private static ILogger _logger 
             = new LoggerFactory().CreateLogger<Helper>();
@@ -188,7 +185,9 @@ namespace AsterNET.Helpers
         {
             int index = 0;
 
-            Type type = objects.GetType().GetElementType();
+            var type = objects.GetType().GetElementType();
+            if (type == null) throw new Exception("cant get array element type");
+
             var objs = (object[]) Array.CreateInstance(type, c.Count);
 
             IEnumerator e = c.GetEnumerator();
@@ -252,10 +251,6 @@ namespace AsterNET.Helpers
         /// <summary>
         ///     Join variables dictionary to string.
         /// </summary>
-        /// <param name="dictionary"></param>
-        /// <param name="delim"></param>
-        /// <param name="delimKeyValue"></param>
-        /// <returns></returns>
         internal static string JoinVariables(NameValueCollection? collection, char[] delim, string delimKeyValue)
             => JoinVariables(collection, new string(delim), delimKeyValue);
         
@@ -265,7 +260,7 @@ namespace AsterNET.Helpers
                 return string.Empty;
 
             var sb = new StringBuilder();
-            var items = collection.AllKeys.SelectMany(collection.GetValues, (k, v) => new { Key = k, Value = v });
+            var items = collection.AllKeys.SelectMany(collection.GetValues!, (k, v) => new { Key = k, Value = v });
             foreach (var pair in items)
             {
                 if (sb.Length > 0)
@@ -278,10 +273,6 @@ namespace AsterNET.Helpers
         /// <summary>
         ///     Join variables dictionary to string.
         /// </summary>
-        /// <param name="dictionary"></param>
-        /// <param name="delim"></param>
-        /// <param name="delimKeyValue"></param>
-        /// <returns></returns>
         internal static string JoinVariables(IDictionary collection, char[] delim, string delimKeyValue)
         {
             return JoinVariables(collection, new string(delim), delimKeyValue);
@@ -405,25 +396,27 @@ namespace AsterNET.Helpers
         /// <returns></returns>
         internal static string ToString(object obj)
         {
-            object value;
+            object? value;
             var sb = new StringBuilder(obj.GetType().Name, 1024);
             sb.Append(" {");
-            string strValue;
+            string? strValue;
             IDictionary getters = GetGetters(obj.GetType());
             bool notFirst = false;
             var arrays = new List<MethodInfo>();
             // First step - all values properties (not a list)
             foreach (string name in getters.Keys)
             {
-                var getter = (MethodInfo) getters[name];
-                Type propType = getter.ReturnType;
+                var getter = (MethodInfo?) getters[name];
+                if (getter == null) throw new ArgumentNullException(name);
+
+                var propType = getter.ReturnType;
                 if (propType == typeof (object))
                     continue;
                 if (
                     !(propType == typeof (string) || propType == typeof (bool) || propType == typeof (double) ||
                       propType == typeof (DateTime) || propType == typeof (int) || propType == typeof (long)))
                 {
-                    string propTypeName = propType.Name;
+                    var propTypeName = propType.Name;
                     if (propTypeName.StartsWith("Dictionary") || propTypeName.StartsWith("List"))
                     {
                         arrays.Add(getter);
@@ -538,7 +531,7 @@ namespace AsterNET.Helpers
                     bool notFirst2 = false;
                     foreach (var key in ((IDictionary) value).Keys)
                     {
-                        object o = ((IDictionary) value)[key];
+                        var o = ((IDictionary) value)[key];
                         if (notFirst2)
                             sb.Append("; ");
                         notFirst2 = true;
@@ -558,10 +551,10 @@ namespace AsterNET.Helpers
 
         #region SetAttributes(object evt, IDictionary attributes) 
 
-        internal static void SetAttributes(IParseSupport o, Dictionary<string, string> attributes, ILogger? logger = default)
+        internal static void SetAttributes (IParseSupport o, Dictionary<string, string> attributes, ILogger? logger = default)
         {
             Type dataType;
-            object val;
+            object? val;
 
             // Preparse attributes
             attributes = o.ParseSpecial(attributes);
@@ -569,16 +562,16 @@ namespace AsterNET.Helpers
             var underlayingEvent = o.GetSetter();
             var underlayingType = underlayingEvent.GetType();
             IDictionary setters = GetSetters(underlayingType);
-            MethodInfo setter;
+            MethodInfo? setter;
             foreach (var name in attributes.Keys)
             {
                 if (name == "event")
                     continue;
 
                 if (name == "source")
-                    setter = (MethodInfo) setters["src"];
+                    setter = (MethodInfo?) setters["src"];
                 else
-                    setter = (MethodInfo) setters[stripIllegalCharacters(name)];
+                    setter = (MethodInfo?) setters[stripIllegalCharacters(name)];
 
                 if (setter == null)
                 {
@@ -644,7 +637,7 @@ namespace AsterNET.Helpers
             bool needsStrip = false;
 
             if (string.IsNullOrEmpty(s))
-                return null;
+                throw new ArgumentNullException(nameof(s));
 
             for (int i = 0; i < s.Length; i++)
             {
