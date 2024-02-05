@@ -242,7 +242,7 @@ namespace Sufficit.Asterisk.Manager
             {
                 e = new ManagerEventGeneric<UnknownEvent>();
                 string s = string.Join(";", attributes.Select(x => x.Key + "=" + x.Value).ToArray());
-                _logger.LogWarning($"unknown event: {s}");
+                _logger.LogWarning("unknown event: {s}", s);
             }
             else
             {
@@ -251,7 +251,7 @@ namespace Sufficit.Asterisk.Manager
                     var generic = (IManagerEvent)constructor.Invoke(null);
                     e = new ManagerEventGeneric(generic);
 
-                    _logger.LogTrace($"creating event: {generic}");
+                    _logger.LogTrace("creating event: {generic}", generic);
                 }
 
 #if LOGGER
@@ -270,7 +270,7 @@ namespace Sufficit.Asterisk.Manager
             if (e.HasAttributes())
             {
                 var generatedType = e.Event.GetType();
-                _logger.LogDebug($"Generating event ({generatedType}): {e.ToJson()}");
+                _logger.LogDebug("Generating event ({type}): {json}", generatedType, e.ToJson());
             }
 
             /* // testing

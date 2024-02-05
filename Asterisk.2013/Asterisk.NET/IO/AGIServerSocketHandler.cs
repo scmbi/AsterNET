@@ -22,18 +22,22 @@ namespace AsterNET.IO
     public class AGIServerSocketHandler
     {
         private readonly ILogger _logger;
+        private readonly ILoggerFactory _loggerFactory;
         private readonly TcpListener _listener;
 		private readonly ListenerOptions _options;
         private readonly Simultaneous _simultaneous;
 
-        public AGIServerSocketHandler(ILogger<AGIServerSocketHandler> logger, IOptions<ListenerOptions> options)
+        public AGIServerSocketHandler(ILoggerFactory factory, IOptions<ListenerOptions> options)
 		{
-            _logger = logger;
+            _loggerFactory = factory;
+            _logger = factory.CreateLogger<AGIServerSocketHandler>(); 
+
             _options = options.Value;
 
             _simultaneous = new Simultaneous();
 
-            _listener = new TcpListener(_options.Address, (int)_options.Port);
+            var address = _options.Address ?? IPAddress.IPv6Any;
+            _listener = new TcpListener(address, (int)_options.Port);
             _listener.Server.DualMode = _options.DualMode;
 		}
 
@@ -58,23 +62,6 @@ namespace AsterNET.IO
                     _logger.LogInformation("accepted requests counter: {count}", ++count);
                     _ = Task.Run(() => RequestAccepted(clientsocket, cancellationToken)).ConfigureAwait(false);
                 }
-
-                /*
-                // running until cancellation is requested
-                while (!cancellationToken.IsCancellationRequested)
-                {
-                    // Accept Request, invite
-                    var ar = _listener.BeginAcceptSocket(PerformListenAsync, cancellationToken);
-
-                    // waits for the accept, just the accept, not entire proccess
-                    // a diferent socket will be created for the proccess
-                    if (ar.AsyncWaitHandle.WaitOne())
-                        _logger.LogInformation("accepted requests counter: {count}", ++count);
-                    else
-                        _listener.Server.EndConnect(ar);
-
-                }
-                */
             }
             catch (Exception ex) // never throw, marked for remove
             {
@@ -90,8 +77,23 @@ namespace AsterNET.IO
         /// <summary>
         ///     Starts reader and invoke attached events 
         /// </summary>
-        void RequestAccepted (Socket socket, CancellationToken cancellationToken)
+        void RequestAccepted (Socket? socket, CancellationToken cancellationToken)
         {
+            // probably a test connection, a health check connection !
+            {
+                if (socket == null)
+                {
+                    _logger.LogDebug("ignoring accepted request, cause socket disposed");
+                    return;
+                }
+
+                if (!socket.Connected)
+                {
+                    _logger.LogDebug("ignoring accepted request, cause it's not connected");
+                    return;
+                }
+            }
+
             try
             {
                 // simultaneous count here because socket maybe cancelled, so can throw a exception
@@ -101,7 +103,8 @@ namespace AsterNET.IO
                 _options.Start = false;
 
                 // creating a handler for the accepted client socket
-                var sc = new AMISingleSocketHandler(_logger, _options, socket);
+                var logger = _loggerFactory.CreateLogger<AMISingleSocketHandler>();
+                var sc = new AMISingleSocketHandler(logger, _options, socket);
                 if (!_options.Start)
                     sc.Background(cancellationToken);
 
@@ -113,33 +116,6 @@ namespace AsterNET.IO
             catch (Exception ex)
             {
                 _logger.LogError(ex, "error at processing individual client socket");
-            }
-        }
-
-        /// <summary>
-        ///     Individual process, async
-        /// </summary>        
-        [Obsolete]
-        async void PerformListenAsync (IAsyncResult ar)
-        {
-            CancellationToken cancellationToken = default;
-            if (ar.AsyncState is CancellationToken ct) cancellationToken = ct;
-
-            try
-            {
-                // Always call End async method or there will be a memory leak. (HRM)
-                // It creates a new socket to continue 
-                // And sends a signal to async request context to continue
-                var socket = _listener.EndAcceptSocket(ar);
-                
-                // main execution control
-                RequestAccepted(socket, cancellationToken);
-
-                _listener.Server.EndConnect(ar);
-            } 
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "error performing async listener");
             }
         }
 

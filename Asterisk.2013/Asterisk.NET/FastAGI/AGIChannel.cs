@@ -33,7 +33,7 @@ namespace AsterNET.FastAGI
             _logger.BeginScope(this);
 
             Socket = socket;
-            _logger.LogDebug("agi channel id: {id}", socket.Handle);
+            _logger.LogTrace("agi channel socket id: {id}", socket.Handle);
 
             _SC511_CAUSES_EXCEPTION = SC511_CAUSES_EXCEPTION;
             _SCHANGUP_CAUSES_EXCEPTION = SCHANGUP_CAUSES_EXCEPTION;

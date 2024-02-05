@@ -83,7 +83,7 @@ namespace AsterNET.Manager.Event
             foreach (var pair in attributes)            
                 Parse(pair.Key, pair.Value);
             
-            return Attributes ?? new Dictionary<string, string>(); ;
+            return Attributes ?? new Dictionary<string, string>();
         }
 
         #endregion

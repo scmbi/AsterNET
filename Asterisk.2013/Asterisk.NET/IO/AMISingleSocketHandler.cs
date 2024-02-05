@@ -4,7 +4,9 @@ using System.Net.Sockets;
 using System.Net;
 using System;
 using System.Collections.Generic;
+using Sufficit;
 using Sufficit.Asterisk;
+using Sufficit.Asterisk.IO;
 using AsterNET.Manager;
 using Microsoft.Extensions.Logging;
 using AsterNET.FastAGI;
@@ -14,7 +16,6 @@ using System.Threading;
 using System.Collections;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using Sufficit.Asterisk.IO;
 using System.Text.RegularExpressions;
 using System.Collections.Concurrent;
 using System.Linq;
@@ -61,13 +62,8 @@ namespace AsterNET.IO
 				_logger.LogTrace("disposing requested");
 
                 // Closing socket if connected
-                Close();
-                
-                if (BackgroundReadingTask != null)
-                {
-                    BackgroundReadingTask.Dispose();
-                    BackgroundReadingTask = null;
-                }
+                Close("disposed");
+                TriggerCancellation();                
 			}
         }
 
@@ -95,6 +91,9 @@ namespace AsterNET.IO
         /// <inheritdoc cref="ISocketConnection.OnDisconnected" />
         public event EventHandler<string?>? OnDisconnected;
 
+        protected virtual void DisconnectedTrigger(AGIDisconnectReason cause)
+            => DisconnectedTrigger(cause.GetEnumMemberValue());
+
         protected virtual void DisconnectedTrigger(string? cause = null)
         {
 			// checking object was not disposed yet
@@ -105,14 +104,68 @@ namespace AsterNET.IO
             }
             
 			if (!string.IsNullOrWhiteSpace(cause))
-				_logger.LogWarning("disconnected, it should not happen, cause: {cause}", cause);
+				_logger.LogWarning("({hash}) disconnected triggered, cause: {cause}", GetHashCode(), cause);
 
             OnDisconnected?.Invoke(this, cause);            
         }
 
         #endregion
+        #region CANCEL REQUEST
 
-		public AGISocketOptions Options { get; }
+        private void TriggerCancellation()
+        {
+            if (CTSBackgroundReading != null && !CTSBackgroundReading.IsCancellationRequested)
+            {
+                CTSBackgroundReading.Cancel();
+
+                // avoiding read error
+                Task.Delay(50).Wait();
+
+                CTSBackgroundReading = null;
+            }
+
+            if (BackgroundReadingTask != null)
+            {    
+                if (BackgroundReadingTask.IsCompleted)
+                    BackgroundReadingTask.Dispose();
+
+                BackgroundReadingTask = null;
+            }
+        }
+
+        #endregion
+        #region SOCKET EXCEPTION CONTROL
+
+        private void TriggerSocketException(SocketException ex)
+        {
+            string cause;
+            if (ex.ErrorCode == 103)
+            {
+                _logger.LogTrace("({hash}) receiving raw data from socket aborted: {code}", GetHashCode(), ex.SocketErrorCode);
+                cause = "aborted";
+            }
+            else if (ex.Message.Contains("WSACancelBlockingCall"))
+            {
+                _logger.LogTrace("({hash}) receiving raw data from socket cancelled requested at buffering: {code}", GetHashCode(), ex.SocketErrorCode);
+                cause = "cancellation requested";
+            }
+            else if (ex.ErrorCode == 104)
+            {
+                _logger.LogError(ex, "({hash}) socket reseted by peer: {code}", GetHashCode(), ex.SocketErrorCode);
+                cause = "reset by peer";
+            }
+            else
+            {
+                _logger.LogError(ex, "({hash}) error on receiving raw data from socket: {code}", GetHashCode(), ex.SocketErrorCode);
+                cause = $"unhandled: {ex.SocketErrorCode}";
+            }
+
+            DisconnectedTrigger(cause);
+        }
+
+        #endregion
+
+        public AGISocketOptions Options { get; }
 
         private readonly ILogger _logger;
         private readonly Socket _socket;
@@ -135,8 +188,9 @@ namespace AsterNET.IO
             _socket = socket;
             Options = options;
 
-			_logger.LogDebug("starting connection, thread id: {thread}, socket id: {socket}", Thread.CurrentThread.ManagedThreadId, socket.Handle); 
 			initial = true;
+
+            _logger.LogDebug("({hash}) socket handler instantiated, thread id: {thread}, socket id: {socket}, auto start: {start}", GetHashCode(), Thread.CurrentThread.ManagedThreadId, socket.Handle, Options.Start);
 
             // auto start reading
             if (Options.Start)
@@ -154,37 +208,43 @@ namespace AsterNET.IO
         public void Background(CancellationToken cancellationToken)
         {
             if (!IsConnected())
-                throw new Exception("socket must be connect before starts reading");
+                throw new Exception($"({GetHashCode()}) socket must be connect before starts reading");
 
-            if (CTSBackgroundReceiving != null && !CTSBackgroundReceiving.IsCancellationRequested)
-                CTSBackgroundReceiving.Cancel();
+            if (CTSBackgroundReading != null && !CTSBackgroundReading.IsCancellationRequested)
+                CTSBackgroundReading.Cancel();
 
-            BackgroundReadingTask = Task.Factory.StartNew(() => StartReceiving(cancellationToken));
+            BackgroundReadingTask = Task.Factory.StartNew(() => BackgroundReading(cancellationToken));
         }
 
-        private CancellationTokenSource? CTSBackgroundReceiving;
+        private CancellationTokenSource? CTSBackgroundReading;
 
-        private void StartReceiving(CancellationToken cancellationToken)
+        private void BackgroundReading(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("starting receiving, thread id: {thread_id}, thread name: {thread_name}, socket id: {socket}",
-                    Thread.CurrentThread.ManagedThreadId,
-                    Thread.CurrentThread.Name,
-                    _socket.Handle);
-
-            // setting the cancellation source
-            CTSBackgroundReceiving = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-
             try
             {
+                _logger.LogInformation("({hash}) starting receiving, thread id: {thread_id}, thread name: {thread_name}, socket id: {socket}", 
+                GetHashCode(),
+                Thread.CurrentThread.ManagedThreadId,
+                Thread.CurrentThread.Name,
+                _socket.Handle);
+
+                // setting the cancellation source
+                CTSBackgroundReading = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                var token = CTSBackgroundReading.Token;
+
                 // _socket.Connect here not throw disconnect event
                 // take a look in future
 
                 while (IsReceiving(_socket))
                 {
-                    CTSBackgroundReceiving.Token.ThrowIfCancellationRequested();
+                    token.ThrowIfCancellationRequested();
 
                     var buffer = new byte[Options.BufferSize];
-                    var bytesRead = _socket.Receive(buffer);
+                    var bytesRead = _socket.Receive(buffer, 0, buffer.Length, SocketFlags.None, out SocketError error);
+
+                    if (error != SocketError.Success)
+                        _logger.LogWarning("({hash}) receiving raw socket error: {error}", GetHashCode(), error);
+
                     if (bytesRead > 0)
                     {
                         // creating an array of exact size for received content
@@ -195,32 +255,24 @@ namespace AsterNET.IO
                         // dispatching received data event
                         OnDataReceived(actualData);
                     }
-                }
+                    else break;
+                }                
 
-                // not receiving anymore
-                DisconnectedTrigger();
+                DisconnectedTrigger(AGIDisconnectReason.NOTRECEIVING);
             }
             catch (OperationCanceledException) 
             {
-                _logger.LogTrace("receiving raw data from socket cancelled requested");
+                _logger.LogTrace("({hash}) receiving raw data from socket cancelled requested", GetHashCode());
             } 
-            catch (SocketException ex) 
+            catch (SocketException ex)
             {
-                if (ex.ErrorCode == 103)
-                    _logger.LogTrace("receiving raw data from socket aborted: {code}", ex.SocketErrorCode);
-
-                else if (ex.Message.Contains("WSACancelBlockingCall"))
-                    _logger.LogTrace("receiving raw data from socket cancelled requested at buffering: {code}", ex.SocketErrorCode);
-
-                else if (ex.ErrorCode == 104)
-                {
-                    _logger.LogError(ex, "error on start receiving socket: {code}", ex.SocketErrorCode);
-                    DisconnectedTrigger("reset by peer");
-                }
-
-                else
-                    _logger.LogError(ex, "error on receiving raw data from socket: {code}", ex.SocketErrorCode);
+                TriggerSocketException(ex);                
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"({GetHashCode()}) unknown error on receiving raw data from socket");
+                throw;
+            }           
         }
 
 		// not sure if all received events fix at default buffer size
@@ -313,8 +365,11 @@ namespace AsterNET.IO
         /// <summary>
         ///		Check if the socket still connected and receiving
         /// </summary>
-        private static bool IsReceiving(Socket socket)
+        private static bool IsReceiving(Socket? socket)
         {
+            if (socket == null)
+                return false;
+
             return !(socket.Poll(1000, SelectMode.SelectRead) && socket.Available == 0);
         }
 
@@ -406,14 +461,18 @@ namespace AsterNET.IO
 		/// <summary>connection has already been closed.</summary>
 		public void Write(string s)
 		{
-			_socket.Send(Options.Encoding.GetBytes(s));
+            var bytes = Options.Encoding.GetBytes(s);
+
+            try
+            {
+                _socket.Send(bytes);
+            } 
+            catch (SocketException ex) { TriggerSocketException(ex); throw; }
 		}
 
 		#endregion
 
 		#region Close
-
-		public void Close() => Close(string.Empty);
 
 		/// <summary>
 		/// Closes the socket connection including its input and output stream and
@@ -422,21 +481,13 @@ namespace AsterNET.IO
 		/// will be unblocked and receive an IOException.
 		/// </summary>
 		/// <throws>  IOException if the socket connection cannot be closed. </throws>
-		public void Close(string cause)
+		public void Close(string? reason = null)
 		{
-            if (!string.IsNullOrWhiteSpace(cause))
-			    _logger.LogWarning("forcing to close connection, cause: {cause}", cause);
+            if (!string.IsNullOrWhiteSpace(reason))
+			    _logger.LogWarning("({hash}) forcing to close connection, cause: {cause}", GetHashCode(), reason);
 
-			if (CTSBackgroundReceiving != null && !CTSBackgroundReceiving.IsCancellationRequested)
-			{
-				CTSBackgroundReceiving.Cancel();
-                CTSBackgroundReceiving = null;
-
-                // avoiding read error
-                Task.Delay(50).Wait();
-			}
-
-			DisconnectedTrigger();
+            TriggerCancellation();
+			DisconnectedTrigger(reason);
 		}
 
         #endregion

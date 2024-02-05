@@ -44,11 +44,11 @@ namespace AsterNET.Manager.Action
         ///     Get/Set the name of the channel, if you query for a local channel variable.
         ///     Leave empty to query for a global variable.
         /// </summary>
-        public string Channel { get; set; }
+        public string Channel { get; set; } = default!;
 
         /// <summary>
         ///     Get/Set the name of the variable to query.
         /// </summary>
-        public string Variable { get; set; }
+        public new string Variable { get; set; }
     }
 }

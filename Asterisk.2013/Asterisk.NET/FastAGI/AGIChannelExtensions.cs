@@ -3,7 +3,9 @@ using AsterNET.IO;
 using Microsoft.Extensions.Logging;
 using Sufficit.Asterisk;
 using System;
+using System.ComponentModel;
 using System.Xml.Linq;
+using static Sufficit.Asterisk.Common;
 
 namespace AsterNET.FastAGI
 {
@@ -458,6 +460,24 @@ namespace AsterNET.FastAGI
 			return lastReply.Extra;
 		}
 
+        public static T GetVariable<T>(this AGIChannel source, string name, T value = default, IFormatProvider? provider = null) where T : struct
+        {
+            var asteriskvar = source.GetVariable(name);
+            if (string.IsNullOrWhiteSpace(asteriskvar)) return default;
+
+            var type = typeof(T);
+
+            var converter = TypeDescriptor.GetConverter(type);
+            if (converter.CanConvertFrom(typeof(string)))            
+                return (T)converter.ConvertFromString(asteriskvar);
+            //else if(type is IConvertible)
+            //    return (T)Convert.ChangeType(asteriskvar, type, provider);
+            else if (type == typeof(Guid))
+                return (T)(object) new Guid(asteriskvar);
+
+            throw new Exception($"unhandled type for conversion, var: {name}, type: {type}, value: {asteriskvar}, converter: {converter}");
+        }
+
         #endregion
         #region SetVariable(string name, string value_Renamed)
 
@@ -467,24 +487,34 @@ namespace AsterNET.FastAGI
 		/// <param name="source"></param>
         /// <param name="name">the name of the variable to retrieve.</param>
         /// <param name="val">the new value to set.</param>
+        /// <remarks><see cref="SetVariableCommand"/></remarks>
         public static void SetVariable(this AGIChannel source, string name, string? val = default)
-		{
-			source.SendCommand(new SetVariableCommand(name, val));
-		}
+            => source.SendCommand(new SetVariableCommand(name, val));		
+
+        public static void SetVariable(this AGIChannel source, string name, Guid? val)
+            => source.SetVariable(name, val.HasValue ? val.Value.ToString("N") : string.Empty);
+
+        public static void SetVariable(this AGIChannel source, string name, bool? val)
+            => source.SetVariable(name, val.HasValue ? val.Value.ToString().ToLower() : string.Empty);
+
+        public static void SetVariable(this AGIChannel source, string name, Enum val)
+            => source.SetVariable(name, val.ToString().ToLower());
+
+        #endregion
+        #region GoSub(context, extension, priority, args
 
         public static void GoSub(this AGIChannel source, string context, string extension, string priority, string? args = null)
             => source.SendCommand(new GoSubCommand(context, extension, priority, args));
 
         #endregion
-        #region SetVariable(string name, string value_Renamed)
+        #region SetReturn(string val)
 
         /// <summary>
-        /// Sets the value for return to asterisk
+        ///     Sets the value for return to asterisk
         /// </summary>
+        /// <remarks><see cref="AGI_DEFAULT_RETURN_VALUE"/><br /><see cref="SetVariableCommand"/></remarks>
         public static void SetReturn(this AGIChannel source, string? val = default)
-        {
-            source.SendCommand(new SetVariableCommand(Common.AGI_DEFAULT_RETURN_VALUE, val));
-        }
+            => source.SendCommand(new SetVariableCommand(AGI_DEFAULT_RETURN_VALUE, val));        
 
         #endregion
         #region WaitForDigit(int timeout)

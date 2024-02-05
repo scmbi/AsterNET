@@ -27,10 +27,10 @@ namespace AsterNET.Manager
 		private bool die;
 		private bool is_logoff;
 		private bool disconnect;
-		private byte[] lineBytes;
-		private string lineBuffer;
+		private byte[]? lineBytes;
+		private string? lineBuffer;
 		private readonly Queue<string> lineQueue;
-		private ResponseHandler pingHandler;
+		private ResponseHandler? pingHandler;
 		private bool processingCommandResult;
 		private bool wait4identiier;
 		private DateTime lastPacketTime;
@@ -50,11 +50,15 @@ namespace AsterNET.Manager
 			Exception = ex;
             _logger.LogError(ex, "Read data error: {message}", ex.Message);
 
-            // Any catch - disconnect !
-            if (IsConnected())
-                mrSocket.Close();
+			// Any catch - disconnect !
+			if (mrSocket != null) 
+			{ 
+				if (mrSocket.IsConnected())
+					mrSocket.Close();
 
-            mrSocket = null;
+                mrSocket = null;
+            }
+
             disconnect = true;
         }
 
@@ -72,7 +76,7 @@ namespace AsterNET.Manager
 			lineQueue = new Queue<string>();
 			packet = new Dictionary<string, string>();
 			commandList = new List<string>();
-		}
+        }
 
 		#endregion
 
@@ -120,57 +124,73 @@ namespace AsterNET.Manager
 		/// <param name="ar">IAsyncResult</param>
 		private static void mrReaderCallback(IAsyncResult ar)
 		{
-			// mreader = Mr.Reader
-			var mrReader = (ManagerReader) ar.AsyncState;
-			if (mrReader.die)
-				return;
-
-			if (!mrReader.IsConnected())
+			if (ar.AsyncState is ManagerReader mrReader)
 			{
-                // No socket - it's DISCONNECT !!!
-                mrReader.disconnect = true;
-				return;
-			}
+				if (mrReader.die)
+					return;
 
-            var mrSocket = mrReader.mrSocket;
-            var nstream = mrSocket.GetStream();
-			if (nstream == null)
-			{
-                // No network stream - it's DISCONNECT !!!
-                mrReader.disconnect = true;
-				return;
-			}
-
-			try
-			{
-				int count = nstream.EndRead(ar);
-				if (count == 0)
+				if (!mrReader.IsConnected())
 				{
-					// No received data - it's may be DISCONNECT !!!
-					if (!mrReader.is_logoff)
-                        mrReader.disconnect = true;
+					// No socket - it's DISCONNECT !!!
+					mrReader.disconnect = true;
 					return;
 				}
-				string line = mrSocket.Options.Encoding.GetString(mrReader.lineBytes, 0, count);
-				mrReader.lineBuffer += line;
-				int idx;
-				// \n - because not all dev in Digium use \r\n
-				// .Trim() kill \r
-				lock (((ICollection)mrReader.lineQueue).SyncRoot)
-					while (!string.IsNullOrEmpty(mrReader.lineBuffer) && (idx = mrReader.lineBuffer.IndexOf('\n')) >= 0)
+
+				var mrSocket = mrReader.mrSocket;
+                if (mrSocket == null)
+                {
+                    // No socket available - it's DISCONNECT !!!
+                    mrReader.disconnect = true;
+                    return;
+                }
+
+                var nstream = mrSocket.GetStream();
+				if (nstream == null)
+				{
+					// No network stream - it's DISCONNECT !!!
+					mrReader.disconnect = true;
+					return;
+				}
+
+				try
+				{
+					int count = nstream.EndRead(ar);
+					if (count == 0)
 					{
-						line = idx > 0 ? mrReader.lineBuffer.Substring(0, idx).Trim() : string.Empty;
-						mrReader.lineBuffer = (idx + 1 < mrReader.lineBuffer.Length
-							? mrReader.lineBuffer.Substring(idx + 1)
-							: string.Empty);
-                        mrReader.lineQueue.Enqueue(line);
+						// No received data - it's may be DISCONNECT !!!
+						if (!mrReader.is_logoff)
+							mrReader.disconnect = true;
+						return;
 					}
-				// Give a next portion !!!
-				nstream.BeginRead(mrReader.lineBytes, 0, mrReader.lineBytes.Length, mrReaderCallback, mrReader);
-			}
-			catch (Exception ex)
-			{
-				mrReader.Close(ex);                
+
+					if (mrReader.lineBytes == null)
+					{
+                        // Invalid bytes buffer !!! it's may be DISCONNECT Or Not Configured !!!
+                        mrReader.disconnect = true;
+                        return;
+                    }
+
+					string line = mrSocket.Options.Encoding.GetString(mrReader.lineBytes, 0, count);
+					mrReader.lineBuffer += line;
+					int idx;
+					// \n - because not all dev in Digium use \r\n
+					// .Trim() kill \r
+					lock (((ICollection)mrReader.lineQueue).SyncRoot)
+						while (!string.IsNullOrEmpty(mrReader.lineBuffer) && (idx = mrReader.lineBuffer.IndexOf('\n')) >= 0)
+						{
+							line = idx > 0 ? mrReader.lineBuffer.Substring(0, idx).Trim() : string.Empty;
+							mrReader.lineBuffer = (idx + 1 < mrReader.lineBuffer.Length
+								? mrReader.lineBuffer.Substring(idx + 1)
+								: string.Empty);
+							mrReader.lineQueue.Enqueue(line);
+						}
+					// Give a next portion !!!
+					nstream.BeginRead(mrReader.lineBytes, 0, mrReader.lineBytes.Length, mrReaderCallback, mrReader);
+				}
+				catch (Exception ex)
+				{
+					mrReader.Close(ex);
+				}
 			}
 		}
 
@@ -179,20 +199,24 @@ namespace AsterNET.Manager
 		#region Reinitialize 
 
 		internal void Reinitialize()
-		{
-			mrSocket.Initial = false;
+		{			
 			disconnect = false;
 			lineQueue.Clear();
 			packet.Clear();
 			commandList.Clear();
-			lineBuffer = string.Empty;
-			lineBytes = new byte[mrSocket.Options.BufferSize];
+			lineBuffer = string.Empty;            
 			lastPacketTime = DateTime.Now;
 			wait4identiier = true;
 			processingCommandResult = false;
-			mrSocket.GetStream().BeginRead(lineBytes, 0, lineBytes.Length, mrReaderCallback, this);
-			lastPacketTime = DateTime.Now;
-		}
+			lastPacketTime = DateTime.Now; 
+			
+			if (mrSocket != null)
+            {
+                mrSocket.Initial = false;
+                lineBytes = new byte[mrSocket.Options.BufferSize];
+                mrSocket.GetStream()?.BeginRead(lineBytes, 0, lineBytes.Length, mrReaderCallback, this);
+            }
+        }
 
 		#endregion
 

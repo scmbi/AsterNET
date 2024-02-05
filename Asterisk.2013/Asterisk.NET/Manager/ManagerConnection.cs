@@ -932,7 +932,7 @@ namespace AsterNET.Manager
         /// <param name="action">action to send</param>
         /// <param name="responseHandler">Response Handler</param>
         /// <returns></returns>
-        public int SendAction(ManagerAction action, IResponseHandler responseHandler)
+        public int SendAction(ManagerAction? action, IResponseHandler responseHandler)
         {
             if (action == null)
                 throw new ArgumentException("Unable to send action: action is null.");

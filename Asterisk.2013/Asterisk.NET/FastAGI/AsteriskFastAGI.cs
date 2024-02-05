@@ -23,6 +23,7 @@ namespace AsterNET.FastAGI
         private readonly FastAGIOptions _options;
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger _logger;
+        private readonly ILoggerFactory _loggerFactory;
         private readonly AGIServerSocketHandler _socketHandler;
 
         /// <summary>
@@ -53,19 +54,20 @@ namespace AsterNET.FastAGI
 
             _options = _serviceProvider.GetRequiredService<IOptions<FastAGIOptions>>().Value;
             _logger = _serviceProvider.GetRequiredService<ILogger<AsteriskFastAGI>>();
+            _loggerFactory = _serviceProvider.GetRequiredService<ILoggerFactory>();
 
             var ipAddress = IPAddress.Parse(_options.Address);
             var logger = _serviceProvider.GetRequiredService<ILogger<AGIServerSocketHandler>>();
-            var options = new ListenerOptions() { Port = _options.Port, Address = ipAddress, Encoding = SocketEncoding };           
-            _socketHandler = new AGIServerSocketHandler(logger, Options.Create<ListenerOptions>(options));
+            var options = new ListenerOptions() { Port = _options.Port, Address = ipAddress, Encoding = SocketEncoding }; 
+            
+            _socketHandler = new AGIServerSocketHandler(_loggerFactory, Options.Create<ListenerOptions>(options));
             _socketHandler.OnRequest += OnRequest;
         }
 
         private async void OnRequest(object sender, AMISingleSocketHandler e)
         {
             _logger.LogDebug("Received connection.");
-            var loggerFactory = _serviceProvider.GetRequiredService<ILoggerFactory>();
-            var connectionHandler = new AGIConnectionHandler(loggerFactory, e, Strategy, _options.SC511_CAUSES_EXCEPTION, _options.SCHANGUP_CAUSES_EXCEPTION);
+            var connectionHandler = new AGIConnectionHandler(_loggerFactory, e, Strategy, _options.SC511_CAUSES_EXCEPTION, _options.SCHANGUP_CAUSES_EXCEPTION);
             await connectionHandler.Run(CancellationToken.None);
         }
 

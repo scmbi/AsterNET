@@ -10,16 +10,16 @@ namespace AsterNET.Manager
     public class ResponseHandler : IResponseHandler
     {
         private ManagerAction action;
-        private AutoResetEvent autoEvent;
+        private AutoResetEvent? autoEvent;
         private int hash;
-        private ManagerResponse response;
+        private ManagerResponse? response;
 
         /// <summary>
         ///     Creates a new <see cref="ResponseHandler"/>.
         /// </summary>
         /// <param name="action"><see cref="ManagerAction"/></param>
         /// <param name="autoEvent"><see cref="AutoResetEvent"/></param>
-        public ResponseHandler(ManagerAction action, AutoResetEvent autoEvent)
+        public ResponseHandler (ManagerAction action, AutoResetEvent? autoEvent)
         {
             response = null;
             this.action = action;
@@ -29,7 +29,7 @@ namespace AsterNET.Manager
         /// <summary>
         ///     Gets the response.
         /// </summary>
-        public ManagerResponse Response
+        public ManagerResponse? Response
         {
             get { return this.response; }
         }
@@ -57,7 +57,6 @@ namespace AsterNET.Manager
         public void Free()
         {
             autoEvent = null;
-            action = null;
             response = null;
         }
 
@@ -65,7 +64,7 @@ namespace AsterNET.Manager
         ///     This method is called when a response is received.
         /// </summary>
         /// <param name="response">the response received</param>
-        public virtual void HandleResponse(ManagerResponse response)
+        public virtual void HandleResponse (ManagerResponse response)
         {
             this.response = response;
             if (autoEvent != null)

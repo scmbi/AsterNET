@@ -24,11 +24,11 @@ namespace AsterNET.IO
 
         bool IsRemoteRequest { get; }
 
-        void Close();
+        void Close(string? reason = null);
 
         void Write(string s);
 
-        NetworkStream GetStream();
+        NetworkStream? GetStream();
                 
         //IEnumerable<string> ReadRequest(uint? timeoutms = null);
 
