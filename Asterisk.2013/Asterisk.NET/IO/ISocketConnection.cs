@@ -26,6 +26,8 @@ namespace AsterNET.IO
 
         void Close(string? reason = null);
 
+        void Close(AGISocketReason reason);
+
         void Write(string s);
 
         NetworkStream? GetStream();

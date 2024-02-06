@@ -91,22 +91,46 @@ namespace AsterNET.IO
         /// <inheritdoc cref="ISocketConnection.OnDisconnected" />
         public event EventHandler<string?>? OnDisconnected;
 
-        protected virtual void DisconnectedTrigger(AGIDisconnectReason cause)
-            => DisconnectedTrigger(cause.GetEnumMemberValue());
+        public bool IsDisconnectRequested { get; internal set; }
 
-        protected virtual void DisconnectedTrigger(string? cause = null)
+        protected virtual void DisconnectedTrigger(AGISocketReason reason)
         {
-			// checking object was not disposed yet
-            if (_socket != null)
+            if (!IsDisconnectRequested)
             {
-                _socket.Shutdown(SocketShutdown.Both);
-                _socket.Close();
-            }
-            
-			if (!string.IsNullOrWhiteSpace(cause))
-				_logger.LogWarning("({hash}) disconnected triggered, cause: {cause}", GetHashCode(), cause);
+                IsDisconnectRequested = true;
 
-            OnDisconnected?.Invoke(this, cause);            
+                // checking object was not disposed yet
+                if (_socket != null)
+                {
+                    _socket.Shutdown(SocketShutdown.Both);
+                    _socket.Close();
+                }
+
+                if (!reason.HasFlag(AGISocketReason.NORMALENDING))
+                    _logger.LogWarning("({hash}) disconnected triggered, reason: {reason}", GetHashCode(), reason);
+
+                OnDisconnected?.Invoke(this, reason.ToString());
+            }
+        }
+
+        protected virtual void DisconnectedTrigger(string? reason = null)
+        {
+            if (!IsDisconnectRequested)
+            {
+                IsDisconnectRequested = true;
+
+                // checking object was not disposed yet
+                if (_socket != null)
+                {
+                    _socket.Shutdown(SocketShutdown.Both);
+                    _socket.Close();
+                }
+
+                if (!string.IsNullOrWhiteSpace(reason))
+                    _logger.LogWarning("({hash}) disconnected triggered, reason: {reason}", GetHashCode(), reason);
+
+                OnDisconnected?.Invoke(this, reason);
+            }
         }
 
         #endregion
@@ -232,18 +256,12 @@ namespace AsterNET.IO
                 CTSBackgroundReading = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 var token = CTSBackgroundReading.Token;
 
-                // _socket.Connect here not throw disconnect event
-                // take a look in future
-
                 while (IsReceiving(_socket))
                 {
                     token.ThrowIfCancellationRequested();
 
                     var buffer = new byte[Options.BufferSize];
-                    var bytesRead = _socket.Receive(buffer, 0, buffer.Length, SocketFlags.None, out SocketError error);
-
-                    if (error != SocketError.Success)
-                        _logger.LogWarning("({hash}) receiving raw socket error: {error}", GetHashCode(), error);
+                    var bytesRead = _socket.Receive(buffer);
 
                     if (bytesRead > 0)
                     {
@@ -258,7 +276,7 @@ namespace AsterNET.IO
                     else break;
                 }                
 
-                DisconnectedTrigger(AGIDisconnectReason.NOTRECEIVING);
+                DisconnectedTrigger(AGISocketReason.NOTRECEIVING);
             }
             catch (OperationCanceledException) 
             {
@@ -474,20 +492,44 @@ namespace AsterNET.IO
 
 		#region Close
 
-		/// <summary>
-		/// Closes the socket connection including its input and output stream and
-		/// frees all associated ressources.<br/>
-		/// When calling close() any Thread currently blocked by a call to readLine()
-		/// will be unblocked and receive an IOException.
-		/// </summary>
-		/// <throws>  IOException if the socket connection cannot be closed. </throws>
-		public void Close(string? reason = null)
-		{
-            if (!string.IsNullOrWhiteSpace(reason))
-			    _logger.LogWarning("({hash}) forcing to close connection, cause: {cause}", GetHashCode(), reason);
+        /// <summary>
+        ///     Indicates that <see cref="Close(string?)"></see> was already called />
+        /// </summary>
+        public bool IsCloseRequested { get; private set; }
 
-            TriggerCancellation();
-			DisconnectedTrigger(reason);
+        public void Close(AGISocketReason reason)
+        {
+            if (!IsCloseRequested)
+            {
+                IsCloseRequested = true;
+                
+                if (!reason.HasFlag(AGISocketReason.NORMALENDING))
+                    _logger.LogWarning("({hash}) forcing to close connection, cause: {cause}", GetHashCode(), reason);
+
+                TriggerCancellation();
+                DisconnectedTrigger(reason);
+            }
+        }
+
+        /// <summary>
+        /// Closes the socket connection including its input and output stream and
+        /// frees all associated ressources.<br/>
+        /// When calling close() any Thread currently blocked by a call to readLine()
+        /// will be unblocked and receive an IOException.
+        /// </summary>
+        /// <throws>  IOException if the socket connection cannot be closed. </throws>
+        public void Close(string? reason = null)
+		{
+            if (!IsCloseRequested)
+            {
+                IsCloseRequested = true;
+
+                if (!string.IsNullOrWhiteSpace(reason))
+                    _logger.LogWarning("({hash}) forcing to close connection, generic cause: {cause}", GetHashCode(), reason);
+
+                TriggerCancellation();
+                DisconnectedTrigger(reason);
+            }
 		}
 
         #endregion

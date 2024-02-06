@@ -61,14 +61,14 @@ namespace AsterNET.FastAGI
             var options = new ListenerOptions() { Port = _options.Port, Address = ipAddress, Encoding = SocketEncoding }; 
             
             _socketHandler = new AGIServerSocketHandler(_loggerFactory, Options.Create<ListenerOptions>(options));
-            _socketHandler.OnRequest += OnRequest;
+            _socketHandler.OnRequest = OnRequest;
         }
 
-        private async void OnRequest(object sender, AMISingleSocketHandler e)
+        private ValueTask OnRequest(AMISingleSocketHandler e, CancellationToken cancellationToken)
         {
             _logger.LogDebug("Received connection.");
             var connectionHandler = new AGIConnectionHandler(_loggerFactory, e, Strategy, _options.SC511_CAUSES_EXCEPTION, _options.SCHANGUP_CAUSES_EXCEPTION);
-            await connectionHandler.Run(CancellationToken.None);
+            return connectionHandler.Run(cancellationToken);
         }
 
         #endregion

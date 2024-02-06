@@ -72,12 +72,16 @@ namespace AsterNET.IO
             //return Task.CompletedTask;
         }
 
-        public event EventHandler<AMISingleSocketHandler>? OnRequest;
+        /// <summary>
+        ///     Handler for each client request received
+        /// </summary>
+        //public event EventHandler<AMISingleSocketHandler>? OnRequest;
+        public Func<AMISingleSocketHandler, CancellationToken, ValueTask>? OnRequest; 
 
         /// <summary>
         ///     Starts reader and invoke attached events 
         /// </summary>
-        void RequestAccepted (Socket? socket, CancellationToken cancellationToken)
+        async void RequestAccepted (Socket? socket, CancellationToken cancellationToken)
         {
             // probably a test connection, a health check connection !
             {
@@ -111,7 +115,8 @@ namespace AsterNET.IO
                 _logger.LogInformation("dispatching accepted request, simultaneous: {simultaneous}", _simultaneous);
 
                 // dispatching events
-                OnRequest?.Invoke(this, sc);
+                if (OnRequest != null)
+                    await OnRequest(sc, cancellationToken);
             }
             catch (Exception ex)
             {

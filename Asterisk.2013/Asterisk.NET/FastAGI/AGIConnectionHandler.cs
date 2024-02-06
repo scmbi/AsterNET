@@ -8,6 +8,7 @@ using AsterNET.IO;
 using AsterNET.Manager;
 using Microsoft.Extensions.Logging;
 using Sufficit.Asterisk;
+using Sufficit.Asterisk.IO;
 
 namespace AsterNET.FastAGI
 {
@@ -50,7 +51,7 @@ namespace AsterNET.FastAGI
 
         #endregion
 
-        public async Task Run (CancellationToken cancellationToken)
+        public async ValueTask Run (CancellationToken cancellationToken)
         {
             using (_logger.BeginScope<string>($"[HND:{new Random().Next()}]"))
             {
@@ -109,28 +110,28 @@ namespace AsterNET.FastAGI
                     if (ex.ErrorCode == 103) _socket = null;
 
                     // just log if not 103 => connection aborted
-                    else _logger.LogError(ex, $"IDX00006(SOCKET): {statusMessage}");
+                    else _logger.LogError(ex, "IDX00006(SOCKET): {message}", statusMessage);
                         
                 }
                 catch (AGIHangupException ex)
                 {
                     statusMessage = ex.Message;
-                    _logger.LogError(ex, $"IDX00004(AGIHangup): {statusMessage}");
+                    _logger.LogError(ex, "IDX00004(AGIHangup): {message}", statusMessage);
                 }
                 catch (IOException ex)
                 {
                     statusMessage = ex.Message;
-                    _logger.LogError(ex, $"IDX00003(IO): {statusMessage}");
+                    _logger.LogError(ex, "IDX00003(IO): {message}", statusMessage);
                 }
                 catch (AGIException ex)
                 {
                     statusMessage = ex.Message;
-                    _logger.LogError(ex, $"IDX00002(AGI): {statusMessage}");
+                    _logger.LogError(ex, "IDX00002(AGI): {message}", statusMessage);
                 }
                 catch (Exception ex) // exception at script level
                 {
                     statusMessage = ex.Message;
-                    _logger.LogError(ex, $"IDX00001(Unexpected): {statusMessage}");
+                    _logger.LogError(ex, "IDX00001(Unexpected): {message}", statusMessage);
                 }
 
                 // testing if connection was aborted, before sending back status msgs
@@ -146,14 +147,14 @@ namespace AsterNET.FastAGI
                                 _socket.SendCommand(command);
                             }
 
-                            _socket.Close();
+                            _socket.Close(AGISocketReason.SCRIPTEND);
                         }
                     }
                     catch (IOException ex)
                     {
-                        _logger.LogError(ex, $"IDX00000(IOClosing): {ex.Message}");
+                        _logger.LogError(ex, "IDX00000(IOClosing): {message}", ex.Message);
                     }
-                    catch (Exception ex) { _logger.LogError(ex, $"IDX00005(Unknown): {ex.Message}"); }
+                    catch (Exception ex) { _logger.LogError(ex, "IDX00005(Unknown): {message}", ex.Message); }
                 }
             }
         }
