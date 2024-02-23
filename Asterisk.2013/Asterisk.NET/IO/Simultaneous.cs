@@ -21,6 +21,6 @@ namespace AsterNET.IO
             => _counter.ToString();
 
         public void Dispose()
-            => _counter--;
+            =>  _counter--;
     }
 }

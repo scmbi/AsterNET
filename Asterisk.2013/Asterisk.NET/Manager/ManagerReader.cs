@@ -54,7 +54,7 @@ namespace AsterNET.Manager
 			if (mrSocket != null) 
 			{ 
 				if (mrSocket.IsConnected())
-					mrSocket.Close();
+					mrSocket.Close("manager reader, close");
 
                 mrSocket = null;
             }
@@ -374,8 +374,10 @@ namespace AsterNET.Manager
 
 						packet.Clear();
 					}
+
 					if (mrSocket != null)
-						mrSocket.Close();
+						mrSocket.Close("manager reader, run");
+
 					break;
 				}
 				catch (Exception ex)

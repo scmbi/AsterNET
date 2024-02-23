@@ -98,23 +98,24 @@ namespace AsterNET.IO
                 }
             }
 
-            try
-            {
-                // simultaneous count here because socket maybe cancelled, so can throw a exception
-                using var runner = _simultaneous.Run();
+            // simultaneous count here because socket maybe cancelled, so can throw a exception
+            using var runner = _simultaneous.Run();
 
+            try
+            {               
                 // forcing start from this task context, testing
                 _options.Start = false;
 
                 // creating a handler for the accepted client socket
                 var logger = _loggerFactory.CreateLogger<AMISingleSocketHandler>();
-                var sc = new AMISingleSocketHandler(logger, _options, socket);
+                using var sc = new AMISingleSocketHandler(logger, _options, socket);
+
                 if (!_options.Start)
                     sc.Background(cancellationToken);
 
                 _logger.LogInformation("dispatching accepted request, simultaneous: {simultaneous}", _simultaneous);
 
-                // dispatching events
+                // starting request handler delegate
                 if (OnRequest != null)
                     await OnRequest(sc, cancellationToken);
             }

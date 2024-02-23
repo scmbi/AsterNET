@@ -734,7 +734,7 @@ namespace AsterNET.Manager
 
                 if (mrSocket != null)
                 {
-                    mrSocket.Close();
+                    mrSocket.Close("manager connection, disconnect");
 
                     if (withDie)
                         mrSocket = null;

@@ -42,29 +42,43 @@ namespace AsterNET.IO
         public const string AGI_REPLY_HANGUP = "HANGUP";
 
 		public NetworkStream? GetStream()
-			=> !_disposed ? new NetworkStream(_socket) : null;		
+			=> !IsDisposeRequested ? new NetworkStream(_socket) : null;		
 
         #region DISPOSING
 
         /// <inheritdoc cref="ISocketConnection.OnDisposing" />
         public event EventHandler? OnDisposing;
 
-		private bool _disposed;
-        		
+        public bool IsDisposeRequested { get; internal set; }
+
         public void Dispose()
         {
-			if (!_disposed)
+			if (!IsDisposeRequested)
             {
                 // invoking before dispose internals, to grant availability
                 OnDisposing?.Invoke(this, EventArgs.Empty);
 
-                _disposed = true;
+                IsDisposeRequested = true;
 				_logger.LogTrace("disposing requested");
 
                 // Closing socket if connected
-                Close("disposed");
-                TriggerCancellation();                
-			}
+                // checking object was not disposed yet
+                if (_socket != null)
+                {
+                    if (_socket.Connected)
+                    {
+                        _socket.Shutdown(SocketShutdown.Both);
+                        _socket.Close();
+                    }
+
+                    _socket.Dispose();
+                }
+
+                TriggerCancellation();
+
+                if (BackgroundReadingTask.IsCompleted)
+                    BackgroundReadingTask.Dispose();
+            }
         }
 
         #endregion
@@ -102,8 +116,11 @@ namespace AsterNET.IO
                 // checking object was not disposed yet
                 if (_socket != null)
                 {
-                    _socket.Shutdown(SocketShutdown.Both);
-                    _socket.Close();
+                    if (_socket.Connected)
+                    {
+                        _socket.Shutdown(SocketShutdown.Both);
+                        _socket.Close();
+                    }
                 }
 
                 if (!reason.HasFlag(AGISocketReason.NORMALENDING))
@@ -122,8 +139,11 @@ namespace AsterNET.IO
                 // checking object was not disposed yet
                 if (_socket != null)
                 {
-                    _socket.Shutdown(SocketShutdown.Both);
-                    _socket.Close();
+                    if (_socket.Connected)
+                    {
+                        _socket.Shutdown(SocketShutdown.Both);
+                        _socket.Close();
+                    }
                 }
 
                 if (!string.IsNullOrWhiteSpace(reason))
@@ -136,6 +156,8 @@ namespace AsterNET.IO
         #endregion
         #region CANCEL REQUEST
 
+        public bool IsCancellationRequested => CTSBackgroundReading?.IsCancellationRequested ?? false;
+
         private void TriggerCancellation()
         {
             if (CTSBackgroundReading != null && !CTSBackgroundReading.IsCancellationRequested)
@@ -144,17 +166,9 @@ namespace AsterNET.IO
 
                 // avoiding read error
                 Task.Delay(50).Wait();
-
-                CTSBackgroundReading = null;
             }
 
-            if (BackgroundReadingTask != null)
-            {    
-                if (BackgroundReadingTask.IsCompleted)
-                    BackgroundReadingTask.Dispose();
-
-                BackgroundReadingTask = null;
-            }
+            CTSBackgroundReading = null;
         }
 
         #endregion
@@ -216,6 +230,8 @@ namespace AsterNET.IO
 
             _logger.LogDebug("({hash}) socket handler instantiated, thread id: {thread}, socket id: {socket}, auto start: {start}", GetHashCode(), Thread.CurrentThread.ManagedThreadId, socket.Handle, Options.Start);
 
+            BackgroundReadingTask = new Task(BackgroundReading);
+
             // auto start reading
             if (Options.Start)
                 Background(CancellationToken.None);
@@ -224,25 +240,26 @@ namespace AsterNET.IO
         #endregion
         #region BACKGROUND RECEIVING
                 
-        public Task? BackgroundReadingTask { get; internal set; }
+        public Task BackgroundReadingTask { get; }
 
         /// <summary>
         ///     Starts reading from background 
         /// </summary>
         public void Background(CancellationToken cancellationToken)
         {
-            if (!IsConnected())
-                throw new Exception($"({GetHashCode()}) socket must be connect before starts reading");
+            if (BackgroundReadingTask.Status == TaskStatus.Created)
+            {
+                if (!IsConnected())
+                    throw new Exception($"({GetHashCode()}) socket must be connect before starts reading");
 
-            if (CTSBackgroundReading != null && !CTSBackgroundReading.IsCancellationRequested)
-                CTSBackgroundReading.Cancel();
-
-            BackgroundReadingTask = Task.Factory.StartNew(() => BackgroundReading(cancellationToken));
+                CTSBackgroundReading = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                BackgroundReadingTask.Start(TaskScheduler.Default);
+            }
         }
 
         private CancellationTokenSource? CTSBackgroundReading;
 
-        private void BackgroundReading(CancellationToken cancellationToken)
+        private void BackgroundReading()
         {
             try
             {
@@ -253,8 +270,7 @@ namespace AsterNET.IO
                 _socket.Handle);
 
                 // setting the cancellation source
-                CTSBackgroundReading = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                var token = CTSBackgroundReading.Token;
+                var token = CTSBackgroundReading?.Token ?? CancellationToken.None;
 
                 while (IsReceiving(_socket))
                 {
@@ -400,7 +416,7 @@ namespace AsterNET.IO
 		}
 
 		public bool IsConnected()
-            => !_disposed && _socket.Connected;
+            => !IsDisposeRequested && _socket.Connected;
 				
         #region LocalAddress 
 
