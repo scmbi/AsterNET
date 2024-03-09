@@ -51,6 +51,9 @@ namespace AsterNET.IO
 
         public bool IsDisposeRequested { get; internal set; }
 
+        /// <summary>
+        ///     Invoked when none of these resources are necessary anymore
+        /// </summary>
         public void Dispose()
         {
 			if (!IsDisposeRequested)
@@ -61,19 +64,7 @@ namespace AsterNET.IO
                 IsDisposeRequested = true;
 				_logger.LogTrace("disposing requested");
 
-                // Closing socket if connected
-                // checking object was not disposed yet
-                if (_socket != null)
-                {
-                    if (_socket.Connected)
-                    {
-                        _socket.Shutdown(SocketShutdown.Both);
-                        _socket.Close();
-                    }
-
-                    _socket.Dispose();
-                }
-
+                SocketCloseAndDispose();
                 TriggerCancellation();
 
                 if (BackgroundReadingTask.IsCompleted)
@@ -113,15 +104,7 @@ namespace AsterNET.IO
             {
                 IsDisconnectRequested = true;
 
-                // checking object was not disposed yet
-                if (_socket != null)
-                {
-                    if (_socket.Connected)
-                    {
-                        _socket.Shutdown(SocketShutdown.Both);
-                        _socket.Close();
-                    }
-                }
+                SocketCloseAndDispose();
 
                 if (!reason.HasFlag(AGISocketReason.NORMALENDING))
                     _logger.LogWarning("({hash}) disconnected triggered, reason: {reason}", GetHashCode(), reason);
@@ -136,18 +119,10 @@ namespace AsterNET.IO
             {
                 IsDisconnectRequested = true;
 
-                // checking object was not disposed yet
-                if (_socket != null)
-                {
-                    if (_socket.Connected)
-                    {
-                        _socket.Shutdown(SocketShutdown.Both);
-                        _socket.Close();
-                    }
-                }
+                SocketCloseAndDispose();
 
                 if (!string.IsNullOrWhiteSpace(reason))
-                    _logger.LogWarning("({hash}) disconnected triggered, reason: {reason}", GetHashCode(), reason);
+                    _logger.LogWarning("({hash}) disconnected triggered, generic reason: {reason}", GetHashCode(), reason);
 
                 OnDisconnected?.Invoke(this, reason);
             }
@@ -199,6 +174,27 @@ namespace AsterNET.IO
             }
 
             DisconnectedTrigger(cause);
+        }
+
+        /// <summary>
+        ///     Ensure that undelaying socket is closed
+        /// </summary>
+        protected void SocketCloseAndDispose()
+        {
+            // checking object was not disposed yet
+            if (_socket != null)
+            {
+                try
+                {
+                    if (_socket.Connected)
+                    {
+                        _socket.Shutdown(SocketShutdown.Both);
+                        _socket.Close();
+                    }
+                    _socket.Dispose();
+                } 
+                catch( Exception ex ) { _logger.LogError(ex, "error on finalizing underlaying socket"); }
+            }
         }
 
         #endregion
@@ -415,9 +411,16 @@ namespace AsterNET.IO
 			set { initial = value; }
 		}
 
+        /// <inheritdoc cref="ISocketConnection.IsConnected"/>
 		public bool IsConnected()
-            => !IsDisposeRequested && _socket.Connected;
-				
+            => IsReady && _socket.Connected;
+
+        /// <summary>
+        ///     Testing for close requests or diposed socket
+        /// </summary>
+        protected bool IsReady
+            => !IsDisposeRequested && !IsCloseRequested && !IsDisconnectRequested && _socket != null;
+
         #region LocalAddress 
 
         public IPAddress LocalAddress
@@ -495,6 +498,9 @@ namespace AsterNET.IO
 		/// <summary>connection has already been closed.</summary>
 		public void Write(string s)
 		{
+            if (!IsReady)
+                throw new NotConnectedException();
+
             var bytes = Options.Encoding.GetBytes(s);
 
             try
@@ -550,7 +556,7 @@ namespace AsterNET.IO
 
         #endregion
 
-        public IntPtr Handle => _socket.Handle;
+        public IntPtr Handle => _socket?.Handle ?? IntPtr.Zero;
 
         /// <summary>
         /// Recover the underlaying log system to use on extensions

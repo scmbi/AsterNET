@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using AsterNET.FastAGI.Command;
@@ -40,7 +41,8 @@ namespace AsterNET.FastAGI
             this.loggerFactory = loggerFactory;
             
             _socket = socket;
-            _socket.OnDisposing += (_, __) => _socket = null;
+            _socket.OnDisposing += OnSocketDisposing;
+            _socket.OnDisconnected += OnSocketDisconnected;
 
             this.mappingStrategy = mappingStrategy;
             _SC511_CAUSES_EXCEPTION = SC511_CAUSES_EXCEPTION;
@@ -49,7 +51,26 @@ namespace AsterNET.FastAGI
             _logger = loggerFactory.CreateLogger<AGIConnectionHandler>();            
         }
 
+        ~AGIConnectionHandler()
+            => OnSocketEvent();
+
         #endregion
+
+        private void OnSocketDisconnected(object sender, string? reason)
+            => OnSocketEvent();
+
+        private void OnSocketDisposing(object sender, EventArgs e)
+            => OnSocketEvent();
+
+        private void OnSocketEvent()
+        {
+            if (_socket != null)
+            {
+                _socket.OnDisposing -= OnSocketDisposing;
+                _socket.OnDisconnected -= OnSocketDisconnected;
+                _socket = null;
+            }
+        }
 
         public async ValueTask Run (CancellationToken cancellationToken)
         {
@@ -107,10 +128,11 @@ namespace AsterNET.FastAGI
                     statusMessage = ex.Message;
 
                     // cleanup socket if aborted
-                    if (ex.ErrorCode == 103) _socket = null;
+                    //if (ex.ErrorCode == 103) _socket = null;
 
                     // just log if not 103 => connection aborted
-                    else _logger.LogError(ex, "IDX00006(SOCKET): {message}", statusMessage);
+                    //else 
+                        _logger.LogError(ex, "IDX00006(SOCKET): {message}", statusMessage);
                         
                 }
                 catch (AGIHangupException ex)

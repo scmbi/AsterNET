@@ -116,8 +116,8 @@ namespace AsterNET.IO
                 _logger.LogInformation("dispatching accepted request, simultaneous: {simultaneous}", _simultaneous);
 
                 // starting request handler delegate
-                if (OnRequest != null)
-                    await OnRequest(sc, cancellationToken);
+                if (OnRequest != null)                
+                    await OnRequest(sc, cancellationToken);                
             }
             catch (Exception ex)
             {

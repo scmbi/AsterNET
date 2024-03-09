@@ -34,7 +34,7 @@ namespace AsterNET.Manager
         /// </summary>
         public void Dispose() 
         {
-            disconnect(true);
+            disconnect(true, "dispose");
             Events.Dispose();
         }
 
@@ -427,7 +427,7 @@ namespace AsterNET.Manager
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    disconnect(true);
+                    disconnect(true, "cancelled and timeout at login");
                     throw new TimeoutException("Timeout waiting for protocol identifier");
                 }
 
@@ -456,7 +456,7 @@ namespace AsterNET.Manager
                 }
                 catch (Exception ex)
                 {
-                    disconnect(true);
+                    disconnect(true, "exception at login challenge");
 
                     string description = "Unable to create login key using MD5 Message Digest.";
                     var newException = new AuthenticationFailedException(description, ex);
@@ -468,7 +468,7 @@ namespace AsterNET.Manager
                 var loginResponse = SendAction(loginAction);
                 if (loginResponse is Response.ManagerError)
                 {
-                    disconnect(true);
+                    disconnect(true, "authentication failed");
                     throw new AuthenticationFailedException(loginResponse.Message);
                 }
 
@@ -710,7 +710,7 @@ namespace AsterNET.Manager
 
         #region disconnect()
         /// <summary> Closes the socket connection.</summary>
-        private void disconnect(bool withDie)
+        private void disconnect(bool withDie, string? cause = null)
         {
             lock (lockSocket)
             {
@@ -734,7 +734,7 @@ namespace AsterNET.Manager
 
                 if (mrSocket != null)
                 {
-                    mrSocket.Close("manager connection, disconnect");
+                    mrSocket.Close($"manager connection, disconnect, die: {withDie}, cause: {cause}");
 
                     if (withDie)
                         mrSocket = null;
@@ -771,7 +771,7 @@ namespace AsterNET.Manager
                 _logger.LogWarning("Try reconnect.");
                 enableEvents = false;
                 reconnected = true;
-                disconnect(false);
+                disconnect(false, "reconnect enable and requested");
 
                 int retryCount = 0;
                 while (reconnectEnable && !mrReader.Die)
@@ -826,7 +826,7 @@ namespace AsterNET.Manager
                 _logger.LogInformation("Can't reconnect.");
                 enableEvents = true;
                 reconnected = false;
-                disconnect(true);
+                disconnect(true, "reconnect not enable");
                 fireEvent(new DisconnectEvent());
             }
         }
@@ -880,7 +880,7 @@ namespace AsterNET.Manager
                     }
                 }
             }
-            disconnect(true);
+            disconnect(true, "logoff");
             await Task.CompletedTask;
         }
         #endregion
@@ -1387,6 +1387,7 @@ namespace AsterNET.Manager
                         key = null;
                     }
                 }
+
                 bool fail = true;
                 if (!string.IsNullOrEmpty(key))
                     try
@@ -1400,14 +1401,14 @@ namespace AsterNET.Manager
                     if (keepAliveAfterAuthenticationFailure)
                         reconnect(true);
                     else
-                        disconnect(true);
+                        disconnect(true, "fail at challenging without keepalive");
             }
             else if (response is ManagerError)
             {
                 if (keepAliveAfterAuthenticationFailure)
                     reconnect(true);
                 else
-                    disconnect(true);
+                    disconnect(true, "error without keepalive");
             }
             else if (response is ManagerResponse)
             {
@@ -1424,7 +1425,7 @@ namespace AsterNET.Manager
                 else if (keepAliveAfterAuthenticationFailure)
                     reconnect(true);
                 else
-                    disconnect(true);
+                    disconnect(true, "response not success without keepalive");
             }
             #endregion
         }
@@ -1496,7 +1497,7 @@ namespace AsterNET.Manager
                     catch (Exception ex)
                     {
                         _logger.LogInformation("Send Challenge fail : ", ex.Message);
-                        disconnect(true);
+                        disconnect(true, "exception at connect event");
                     }
                     return;
                 }

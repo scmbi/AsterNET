@@ -11,6 +11,12 @@ namespace AsterNET.IO
 {
     public interface ISocketConnection
     {
+        /// <summary>
+        ///     Test for underlaying socket is ready and last knowning as connected   
+        /// </summary>
+        /// <remarks>
+        ///     "Last Knowning" because the <see cref="System.Net.Sockets.Socket.Connected">Connected</see>  information from <see cref="System.Net.Sockets.Socket">Net.Socket</see> indicates only the last try (send|receive) and not the current info.
+        /// </remarks>
         bool IsConnected();
 
         bool Initial { get; set; }
