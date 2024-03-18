@@ -228,11 +228,11 @@ namespace Sufficit.Asterisk.Manager
             ConstructorInfo? constructor = null;
 
             string eventKey = GetEventKey(attributes["event"]);
-            if (eventKey == "userevent")
+            if (eventKey == "user")
             {
                 string userevent = attributes["userevent"].Trim().ToLowerInvariant();
                 if (!string.IsNullOrWhiteSpace(userevent))
-                    eventKey = userevent;
+                    eventKey = "user" + userevent;
             }
 
             if (registeredEventClasses.ContainsKey(eventKey))
