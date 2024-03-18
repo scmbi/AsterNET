@@ -56,7 +56,7 @@ namespace AsterNET.FastAGI
 
         #endregion
 
-        private void OnSocketDisconnected(object sender, string? reason)
+        private void OnSocketDisconnected(object sender, AGISocketReason reason)
             => OnSocketEvent();
 
         private void OnSocketDisposing(object sender, EventArgs e)

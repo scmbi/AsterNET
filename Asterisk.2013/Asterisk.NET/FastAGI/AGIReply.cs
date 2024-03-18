@@ -242,7 +242,7 @@ namespace AsterNET.FastAGI
         /// </summary>
         /// <param name="name">the name of the attribute to retrieve. The name is case insensitive.</param>
         /// <returns>the value of the attribute or null if it is not set.</returns>
-        public string GetAttribute(string name)
+        public string? GetAttribute(string name)
         {
             if (GetStatus() != (int) AGIReplyStatuses.SC_SUCCESS)
                 return null;

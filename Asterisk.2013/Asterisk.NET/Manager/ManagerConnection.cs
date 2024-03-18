@@ -48,7 +48,7 @@ namespace AsterNET.Manager
                 socket.OnDisposing -= SocketDisposing;
         }
 
-        protected void SocketDisconnected(object? sender, string? cause)
+        protected void SocketDisconnected(object? sender, AGISocketReason cause)
         {
             _logger.LogDebug("internal socket was disconnected, cause: {cause}", cause);
             if (sender is ISocketConnection socket && !keepAlive)

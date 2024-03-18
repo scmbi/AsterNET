@@ -276,7 +276,7 @@ namespace AsterNET.FastAGI
 
         #region Dnid 
 
-        public string Dnid
+        public string? Dnid
             => request.TryGetValue("dnid", out string value) && value.ToLower(Helper.CultureInfo) != "unknown" ? value : null;
 
         #endregion

@@ -24,7 +24,7 @@ namespace AsterNET.FastAGI.Command
 		/// <summary>
 		/// Get/Set the the keytree to delete.
 		/// </summary>
-		public string KeyTree
+		public string? KeyTree
 		{
 			get { return keyTree; }
 			set { this.keyTree = value; }

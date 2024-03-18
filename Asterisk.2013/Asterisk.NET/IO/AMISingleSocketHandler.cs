@@ -19,6 +19,7 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.ComponentModel;
 
 namespace AsterNET.IO
 {
@@ -31,6 +32,14 @@ namespace AsterNET.IO
     /// </remarks>
     public class AMISingleSocketHandler : ISocketConnection, IDisposable
     {
+        #region STATIC SIMULTANEOUS CONTER
+
+        public static int Running { get; private set; }
+
+        public static int InMemory { get; private set; }
+
+        #endregion
+
         /// <summary>
         /// Named Group (code) http status code
         /// </summary>
@@ -41,8 +50,8 @@ namespace AsterNET.IO
         /// </summary>
         public const string AGI_REPLY_HANGUP = "HANGUP";
 
-		public NetworkStream? GetStream()
-			=> !IsDisposeRequested ? new NetworkStream(_socket) : null;		
+        public NetworkStream? GetStream()
+            => !IsDisposeRequested ? new NetworkStream(_socket) : null;
 
         #region DISPOSING
 
@@ -56,19 +65,49 @@ namespace AsterNET.IO
         /// </summary>
         public void Dispose()
         {
-			if (!IsDisposeRequested)
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!IsDisposeRequested)
             {
                 // invoking before dispose internals, to grant availability
                 OnDisposing?.Invoke(this, EventArgs.Empty);
 
                 IsDisposeRequested = true;
-				_logger.LogTrace("disposing requested");
+                InMemory--;
 
-                SocketCloseAndDispose();
-                TriggerCancellation();
+                _logger.LogTrace("disposing requested, with managed resources: {managed}", disposing);
 
-                if (BackgroundReadingTask.IsCompleted)
-                    BackgroundReadingTask.Dispose();
+                if (disposing)
+                {
+                    // checking object was not disposed yet
+                    if (_socket != null)
+                    {
+                        try
+                        {
+                            if (_socket.Connected)
+                            {
+                                _socket.Shutdown(SocketShutdown.Both);
+                                _socket.Close();
+                            }
+                            _socket.Dispose();
+                        }
+                        finally { }
+                    }
+
+                    Cancel();
+
+                    if (BackgroundReadingTask.IsCompleted)
+                        BackgroundReadingTask.Dispose();
+                }
+
+                CTSBackgroundReading = null;
+                OnDisposing = null;
+                OnDisconnected = null;
+                OnHangUp = null;
             }
         }
 
@@ -86,7 +125,7 @@ namespace AsterNET.IO
         protected void HangUpTrigger()
         {
             IsHangUp = true;
-			_logger.LogTrace("hangup");
+            _logger.LogTrace("hangup");
             OnHangUp?.Invoke(this, EventArgs.Empty);
         }
 
@@ -94,7 +133,7 @@ namespace AsterNET.IO
         #region DISCONNECTED
 
         /// <inheritdoc cref="ISocketConnection.OnDisconnected" />
-        public event EventHandler<string?>? OnDisconnected;
+        public event EventHandler<AGISocketReason>? OnDisconnected;
 
         public bool IsDisconnectRequested { get; internal set; }
 
@@ -104,25 +143,8 @@ namespace AsterNET.IO
             {
                 IsDisconnectRequested = true;
 
-                SocketCloseAndDispose();
-
                 if (!reason.HasFlag(AGISocketReason.NORMALENDING))
                     _logger.LogWarning("({hash}) disconnected triggered, reason: {reason}", GetHashCode(), reason);
-
-                OnDisconnected?.Invoke(this, reason.ToString());
-            }
-        }
-
-        protected virtual void DisconnectedTrigger(string? reason = null)
-        {
-            if (!IsDisconnectRequested)
-            {
-                IsDisconnectRequested = true;
-
-                SocketCloseAndDispose();
-
-                if (!string.IsNullOrWhiteSpace(reason))
-                    _logger.LogWarning("({hash}) disconnected triggered, generic reason: {reason}", GetHashCode(), reason);
 
                 OnDisconnected?.Invoke(this, reason);
             }
@@ -133,7 +155,7 @@ namespace AsterNET.IO
 
         public bool IsCancellationRequested => CTSBackgroundReading?.IsCancellationRequested ?? false;
 
-        private void TriggerCancellation()
+        private void Cancel()
         {
             if (CTSBackgroundReading != null && !CTSBackgroundReading.IsCancellationRequested)
             {
@@ -142,8 +164,6 @@ namespace AsterNET.IO
                 // avoiding read error
                 Task.Delay(50).Wait();
             }
-
-            CTSBackgroundReading = null;
         }
 
         #endregion
@@ -151,50 +171,29 @@ namespace AsterNET.IO
 
         private void TriggerSocketException(SocketException ex)
         {
-            string cause;
+            AGISocketReason cause;
             if (ex.ErrorCode == 103)
             {
                 _logger.LogTrace("({hash}) receiving raw data from socket aborted: {code}", GetHashCode(), ex.SocketErrorCode);
-                cause = "aborted";
+                cause = AGISocketReason.ABORTED;
             }
             else if (ex.Message.Contains("WSACancelBlockingCall"))
             {
                 _logger.LogTrace("({hash}) receiving raw data from socket cancelled requested at buffering: {code}", GetHashCode(), ex.SocketErrorCode);
-                cause = "cancellation requested";
+                cause = AGISocketReason.ABORTED;
             }
             else if (ex.ErrorCode == 104)
             {
                 _logger.LogError(ex, "({hash}) socket reseted by peer: {code}", GetHashCode(), ex.SocketErrorCode);
-                cause = "reset by peer";
+                cause = AGISocketReason.RESETED;
             }
             else
             {
                 _logger.LogError(ex, "({hash}) error on receiving raw data from socket: {code}", GetHashCode(), ex.SocketErrorCode);
-                cause = $"unhandled: {ex.SocketErrorCode}";
+                cause = AGISocketReason.UNKNOWN;
             }
 
             DisconnectedTrigger(cause);
-        }
-
-        /// <summary>
-        ///     Ensure that undelaying socket is closed
-        /// </summary>
-        protected void SocketCloseAndDispose()
-        {
-            // checking object was not disposed yet
-            if (_socket != null)
-            {
-                try
-                {
-                    if (_socket.Connected)
-                    {
-                        _socket.Shutdown(SocketShutdown.Both);
-                        _socket.Close();
-                    }
-                    _socket.Dispose();
-                } 
-                catch( Exception ex ) { _logger.LogError(ex, "error on finalizing underlaying socket"); }
-            }
         }
 
         #endregion
@@ -203,26 +202,28 @@ namespace AsterNET.IO
 
         private readonly ILogger _logger;
         private readonly Socket _socket;
-		private readonly BlockingCollection<string?> _buffer;
-		private bool initial;
+        private readonly BlockingCollection<string?> _buffer;
+        private bool initial;
 
         #region CONSTRUCTORS
 
-		public AMISingleSocketHandler(AGISocketOptions options, Socket socket) : 
-			this(new LoggerFactory().CreateLogger<AMISingleSocketHandler>(), options, socket){ }
+        public AMISingleSocketHandler(AGISocketOptions options, Socket socket) :
+            this(new LoggerFactory().CreateLogger<AMISingleSocketHandler>(), options, socket) { }
 
-        public AMISingleSocketHandler(ILogger logger, AGISocketOptions options, Socket socket)   
-        {			
-			// use that only for already connected sockets
-			if (!socket.Connected)
-				throw new Exception("invalid socket not connected");
+        public AMISingleSocketHandler(ILogger logger, AGISocketOptions options, Socket socket)
+        {
+            InMemory++;
+
+            // use that only for already connected sockets
+            if (!socket.Connected)
+                throw new Exception("invalid socket not connected");
 
             _buffer = new BlockingCollection<string?>();
             _logger = logger;
             _socket = socket;
             Options = options;
 
-			initial = true;
+            initial = true;
 
             _logger.LogDebug("({hash}) socket handler instantiated, thread id: {thread}, socket id: {socket}, auto start: {start}", GetHashCode(), Thread.CurrentThread.ManagedThreadId, socket.Handle, Options.Start);
 
@@ -233,9 +234,12 @@ namespace AsterNET.IO
                 Background(CancellationToken.None);
         }
 
+        ~AMISingleSocketHandler()
+            => Dispose(disposing: false);
+
         #endregion
         #region BACKGROUND RECEIVING
-                
+
         public Task BackgroundReadingTask { get; }
 
         /// <summary>
@@ -257,13 +261,16 @@ namespace AsterNET.IO
 
         private void BackgroundReading()
         {
+            Running++;
+            Exception? exception = null;
             try
             {
-                _logger.LogInformation("({hash}) starting receiving, thread id: {thread_id}, thread name: {thread_name}, socket id: {socket}", 
+                _logger.LogInformation("({hash}) starting receiving, thread id: {thread_id}, thread name: {thread_name}, socket id: {socket}, simultaneous: {simultaneous}",
                 GetHashCode(),
                 Thread.CurrentThread.ManagedThreadId,
                 Thread.CurrentThread.Name,
-                _socket.Handle);
+                _socket.Handle,
+                Running);
 
                 // setting the cancellation source
                 var token = CTSBackgroundReading?.Token ?? CancellationToken.None;
@@ -286,23 +293,34 @@ namespace AsterNET.IO
                         OnDataReceived(actualData);
                     }
                     else break;
-                }                
+                }
 
                 DisconnectedTrigger(AGISocketReason.NOTRECEIVING);
             }
-            catch (OperationCanceledException) 
+            catch (OperationCanceledException)
             {
                 _logger.LogTrace("({hash}) receiving raw data from socket cancelled requested", GetHashCode());
-            } 
+            }
             catch (SocketException ex)
             {
-                TriggerSocketException(ex);                
+                TriggerSocketException(ex);
+            }
+            catch (ObjectDisposedException ex)
+            {
+                // expected socket disposed exception
+                if (ex.ObjectName != typeof(Socket).FullName)
+                    exception = ex;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"({GetHashCode()}) unknown error on receiving raw data from socket");
-                throw;
-            }           
+                exception = ex;
+            }
+            
+            if (exception != null)            
+                _logger.LogError(exception, "({hash}) unknown error on receiving raw data from socket", GetHashCode());
+            
+            Running--;
+            Dispose();            
         }
 
 		// not sure if all received events fix at default buffer size
@@ -528,7 +546,7 @@ namespace AsterNET.IO
                 if (!reason.HasFlag(AGISocketReason.NORMALENDING))
                     _logger.LogWarning("({hash}) forcing to close connection, cause: {cause}", GetHashCode(), reason);
 
-                TriggerCancellation();
+                Cancel();
                 DisconnectedTrigger(reason);
             }
         }
@@ -549,8 +567,8 @@ namespace AsterNET.IO
                 if (!string.IsNullOrWhiteSpace(reason))
                     _logger.LogWarning("({hash}) forcing to close connection, generic cause: {cause}", GetHashCode(), reason);
 
-                TriggerCancellation();
-                DisconnectedTrigger(reason);
+                Cancel();
+                DisconnectedTrigger(AGISocketReason.UNKNOWN);
             }
 		}
 

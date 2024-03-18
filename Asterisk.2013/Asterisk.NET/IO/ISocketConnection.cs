@@ -61,7 +61,7 @@ namespace AsterNET.IO
         ///		Source parameter may be null because disposing <br />
 		///		Nulls cause means expected behaviors <br />
         /// </summary>
-        event EventHandler<string?>? OnDisconnected;
+        event EventHandler<AGISocketReason>? OnDisconnected;
 
         IntPtr Handle { get; }
 

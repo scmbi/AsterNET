@@ -10,7 +10,7 @@ namespace AsterNET.FastAGI.Command
 		/// <summary> The text to say.</summary>
 		private string text;
 		/// <summary> When one of these digits is pressed the command returns.</summary>
-		private string escapeDigits;
+		private string? escapeDigits;
 
 		/// <summary>
 		/// Get/Set Returns the text to say.

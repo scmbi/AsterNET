@@ -16,7 +16,6 @@ namespace AsterNET.FastAGI.Command
         /// <summary>
         /// Creates a new ExecCommand.
         /// </summary>
-        /// <param name="application">the name of the application to execute.</param>
         public GoSubCommand(string context, string extension, string priority, string? argument = null)
 		{
 			this.Context = context;

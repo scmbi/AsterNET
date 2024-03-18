@@ -99,7 +99,7 @@ namespace AsterNET.IO
             }
 
             // simultaneous count here because socket maybe cancelled, so can throw a exception
-            using var runner = _simultaneous.Run();
+            //using var runner = _simultaneous.Run();
 
             try
             {               
@@ -113,7 +113,7 @@ namespace AsterNET.IO
                 if (!_options.Start)
                     sc.Background(cancellationToken);
 
-                _logger.LogInformation("dispatching accepted request, simultaneous: {simultaneous}", _simultaneous);
+                _logger.LogInformation("dispatching accepted request, in memory: {memory}", AMISingleSocketHandler.InMemory);
 
                 // starting request handler delegate
                 if (OnRequest != null)                

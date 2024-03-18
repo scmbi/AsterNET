@@ -12,7 +12,7 @@ namespace AsterNET.FastAGI.Command
 		private static string DEFAULT_FORMAT = "ABdY 'digits/at' IMp";
 
 		private long time;
-		private string escapeDigits;
+		private string? escapeDigits;
 		private string format;
 		private string timezone;
 

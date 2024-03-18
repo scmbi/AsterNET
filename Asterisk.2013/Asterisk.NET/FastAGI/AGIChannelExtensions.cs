@@ -122,7 +122,7 @@ namespace AsterNET.FastAGI
 		/// </returns>
 		public static int GetChannelStatus(this AGIChannel source)
 		{
-			AGIReply lastReply = source.SendCommand(new ChannelStatusCommand());
+			var lastReply = source.SendCommand(new ChannelStatusCommand());
 			return lastReply.ResultCode;
 		}
 
@@ -282,7 +282,7 @@ namespace AsterNET.FastAGI
         /// <param name="file">name of the file to play.</param>
         /// <param name="escapeDigits">a String containing the DTMF digits that allow the user to escape.</param>
         /// <param name="offset">skip mili-seconds from start.</param>
-        /// <param name="timeout">max timeout for wait a response, useful at long audio files</param>
+        /// <param name="readtime">max timeout for wait a response, useful at long audio files</param>
         /// <returns> the DTMF digit pressed or 0x0 if none was pressed.</returns>
         public static char StreamFile(this AGIChannel source, string file, string escapeDigits = "", int? offset = null, uint? readtime = 60000)
 		{
