@@ -174,17 +174,17 @@ namespace AsterNET.IO
             AGISocketReason cause;
             if (ex.ErrorCode == 103)
             {
-                _logger.LogTrace("({hash}) receiving raw data from socket aborted: {code}", GetHashCode(), ex.SocketErrorCode);
+                _logger.LogDebug("({hash}) receiving raw data from socket aborted: {code}", GetHashCode(), ex.SocketErrorCode);
                 cause = AGISocketReason.ABORTED;
             }
             else if (ex.Message.Contains("WSACancelBlockingCall"))
             {
-                _logger.LogTrace("({hash}) receiving raw data from socket cancelled requested at buffering: {code}", GetHashCode(), ex.SocketErrorCode);
+                _logger.LogDebug("({hash}) receiving raw data from socket cancelled requested at buffering: {code}", GetHashCode(), ex.SocketErrorCode);
                 cause = AGISocketReason.ABORTED;
             }
             else if (ex.ErrorCode == 104)
             {
-                _logger.LogError(ex, "({hash}) socket reseted by peer: {code}", GetHashCode(), ex.SocketErrorCode);
+                _logger.LogDebug("({hash}) socket reseted by peer: {code}", GetHashCode(), ex.SocketErrorCode);
                 cause = AGISocketReason.RESETED;
             }
             else

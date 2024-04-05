@@ -579,6 +579,24 @@ namespace AsterNET.Manager
                                 astversion = AsteriskVersion.ASTERISK_17;
                                 return true;
                             }
+                            else if (version.StartsWith("18."))
+                            {
+                                VAR_DELIMITER = new char[] { ',' };
+                                astversion = AsteriskVersion.ASTERISK_18;
+                                return true;
+                            }
+                            else if (version.StartsWith("19."))
+                            {
+                                VAR_DELIMITER = new char[] { ',' };
+                                astversion = AsteriskVersion.ASTERISK_19;
+                                return true;
+                            }
+                            else if (version.StartsWith("20."))
+                            {
+                                VAR_DELIMITER = new char[] { ',' };
+                                astversion = AsteriskVersion.ASTERISK_20;
+                                return true;
+                            }
                             else if (version.IndexOf('.') >= 2)
                             {
                                 VAR_DELIMITER = new char[] { ',' };
@@ -733,11 +751,13 @@ namespace AsterNET.Manager
                 }
 
                 if (mrSocket != null)
-                {
-                    mrSocket.Close($"manager connection, disconnect, die: {withDie}, cause: {cause}");
-
-                    if (withDie)
-                        mrSocket = null;
+                {                    
+                    if (cause == "dispose")                    
+                        mrSocket.Dispose();                    
+                    else                    
+                        mrSocket.Close($"manager connection, disconnect, die: {withDie}, cause: {cause}");                    
+                    
+                    mrSocket = null;
                 }
 
                 responseEventHandlers.Clear();

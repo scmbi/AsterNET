@@ -16,11 +16,6 @@ namespace AsterNET
             return JsonSerializer.Serialize(source);
         }
 
-        public static string ToJson(this object source)
-        {
-            return JsonSerializer.Serialize(source, source.GetType());
-        }
-
         public static string ToJson(this ManagerEventGeneric source)
         {
             var options = new JsonSerializerOptions();

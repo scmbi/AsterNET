@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace AsterNET.IO
 {
-    public interface ISocketConnection
+    public interface ISocketConnection : IDisposable
     {
         /// <summary>
         ///     Test for underlaying socket is ready and last knowning as connected   
@@ -32,6 +32,7 @@ namespace AsterNET.IO
 
         void Close(string? reason = null);
 
+        [Obsolete("prefer dispose")]
         void Close(AGISocketReason reason);
 
         void Write(string s);
