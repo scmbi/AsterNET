@@ -18,7 +18,6 @@ using AsterNET.Helpers;
 using System.Linq;
 using System.Net.Sockets;
 using Sufficit.Asterisk.IO;
-using System.Collections.ObjectModel;
 
 namespace AsterNET.Manager
 {
@@ -27,15 +26,34 @@ namespace AsterNET.Manager
     /// </summary>
     public partial class ManagerConnection : IManagerConnection, IDisposable
     {
-        #region INTERFACE DISPOSABLE
+        #region DISPOSING
+
+        /// <inheritdoc cref="ISocketConnection.OnDisposing" />
+        public event EventHandler? OnDisposing;
+
+        public bool IsDisposed { get; internal set; }
 
         /// <summary>
-        /// Dispose connection and events handlers
+        ///     Invoked when none of these resources are necessary anymore
         /// </summary>
-        public void Dispose() 
+        public void Dispose()
         {
-            disconnect(true, "dispose");
-            Events.Dispose();
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!IsDisposed)
+            {
+                // invoking before dispose internals, to grant availability
+                OnDisposing?.Invoke(this, EventArgs.Empty);
+
+                IsDisposed = true;
+
+                disconnect(true, "dispose");
+                Events.Dispose();
+            }
         }
 
         #endregion
