@@ -227,7 +227,7 @@ namespace AsterNET.Manager
 		/// received and dispatches the received events and responses via the associated dispatcher.
 		/// </summary>
 		/// <seealso cref="ManagerConnection.DispatchResponse(Response.ManagerResponse)" />
-		internal void Run(object parameter)
+		internal void Run (object parameter)
 		{
 			if (mrSocket == null)
 				throw new SystemException("Unable to run: socket is null.");
@@ -256,9 +256,10 @@ namespace AsterNET.Manager
 							else if (disconnect)
 							{
 								disconnect = false;
-								mrConnector.DispatchEvent(new DisconnectEvent());
+								mrConnector.DispatchEvent(new DisconnectEvent() { Message = "socket disconnected" });
 							}
 						}
+
 						if (lineQueue.Count == 0)
 						{
 							if (lastPacketTime.AddMilliseconds(mrConnector.PingInterval) < DateTime.Now
@@ -274,7 +275,7 @@ namespace AsterNET.Manager
 									{
 										// If one PingInterval from Ping without Pong then send Disconnect event
 										mrConnector.RemoveResponseHandler(pingHandler);
-										mrConnector.DispatchEvent(new DisconnectEvent());
+										mrConnector.DispatchEvent(new DisconnectEvent() { Message = "no ping response" });
 									}
 									pingHandler.Free();
 									pingHandler = null;
@@ -382,14 +383,14 @@ namespace AsterNET.Manager
 				}
 				catch (Exception ex)
 				{
-                    _logger.LogError(ex, "Exception : {0}", ex.Message);				
+                    _logger.LogError(ex, "reader exception");				
 				}
 
 				if (die)
 					break;
 
-                _logger.LogTrace("No die, any error - send disconnect.");
-				mrConnector.DispatchEvent(new DisconnectEvent());
+                _logger.LogTrace("no die, any error - send disconnect.");
+				mrConnector.DispatchEvent(new DisconnectEvent() { Message = "reader exception, no die"});
 			}
 		}
 

@@ -16,7 +16,7 @@ using Sufficit.Asterisk.Manager.Events;
 namespace Sufficit.Asterisk.Manager
 {
     /// <summary>
-    /// Default implementation of the ManagerConnection interface.
+    /// Asterisk Manager Connection Events (handler, builder)
     /// </summary>
     public class AsteriskManagerEvents : IDisposable
     {
@@ -222,17 +222,21 @@ namespace Sufficit.Asterisk.Manager
         /// </summary>
         /// <param name="attributes">map containing event attributes</param>
         /// <returns>a concrete instance of IManagerEvent or null if no event class was registered for the event type.</returns>
-        internal ManagerEventGeneric Build(Dictionary<string, string> attributes)
+        internal ManagerEventGeneric? Build (Dictionary<string, string> attributes)
         {
             ManagerEventGeneric e;
             ConstructorInfo? constructor = null;
 
             string eventKey = GetEventKey(attributes["event"]);
+
             if (eventKey == "user")
             {
-                string userevent = attributes["userevent"].Trim().ToLowerInvariant();
-                if (!string.IsNullOrWhiteSpace(userevent))
-                    eventKey = "user" + userevent;
+                if (attributes.ContainsKey("userevent"))
+                {
+                    string? userevent = attributes["userevent"]?.Trim().ToLowerInvariant();
+                    if (!string.IsNullOrWhiteSpace(userevent))
+                        eventKey = "user" + userevent;
+                }
             }
 
             if (registeredEventClasses.ContainsKey(eventKey))
@@ -241,8 +245,10 @@ namespace Sufficit.Asterisk.Manager
             if (constructor == null)
             {
                 e = new ManagerEventGeneric<UnknownEvent>();
-                string s = string.Join(";", attributes.Select(x => x.Key + "=" + x.Value).ToArray());
-                _logger.LogWarning("unknown event: {s}", s);
+                if (attributes.ContainsKey("userevent"))
+                    _logger.LogDebug("unknown user event: {atts}", attributes.ToJson());
+                else
+                    _logger.LogWarning("unknown event: {atts}", attributes.ToJson());
             }
             else
             {
@@ -253,34 +259,20 @@ namespace Sufficit.Asterisk.Manager
 
                     _logger.LogTrace("creating event: {generic}", generic);
                 }
-
-#if LOGGER
                 catch (Exception ex)
                 {
-                    _logger.LogError("Unable to create new instance of " + eventKey, ex);
+                    _logger.LogError(ex, "unable to create new instance of {eventkey}", eventKey);
                     return null;
                 }
-#else
-                catch { throw; }
-#endif
-            }            
-
+            }
+                      
             Helper.SetAttributes(e, attributes, _logger);
-
-            if (e.HasAttributes())
+            if (e.HasAttributes() && !(e.Event is UnknownEvent))
             {
                 var generatedType = e.Event.GetType();
-                _logger.LogDebug("Generating event ({type}): {json}", generatedType, e.ToJson());
+                _logger.LogInformation("event with unmatch attributes ({type}): event: {event}, pending atts: {atts}", generatedType, e.Event.ToJson(), e.Attributes.ToJson());
             }
-
-            /* // testing
-            if (e.Event is HangupEvent)
-            {
-                var json = JsonSerializer.Serialize(e);
-                _logger.LogWarning(json);
-            }
-            */
-
+                       
             // ResponseEvents are sent in response to a ManagerAction if the
             // response contains lots of data. They include the actionId of
             // the corresponding ManagerAction.

@@ -148,7 +148,7 @@ namespace AsterNET.Manager.Response
         /// <param name="key">key name</param>
         /// <param name="value">key value</param>
         /// <returns>true - value parsed, false - can't parse value</returns>
-        public virtual void Parse(string key, string value)
+        public virtual void Parse (string key, string value)
         {
             if (Attributes == null)
                 Attributes = new Dictionary<string, string>();
@@ -164,15 +164,10 @@ namespace AsterNET.Manager.Response
 
         #region ParseSpecial(Dictionary<string, string> attributes)
 
-        /// <summary>
-        ///     Unknown properties parser
-        /// </summary>
-        /// <param name="attributes">dictionary</param>
-        /// <returns>updated dictionary</returns>
-        public virtual Dictionary<string, string> ParseSpecial(Dictionary<string, string>? attributes)
-        {
-            return attributes;
-        }
+        /// <inheritdoc cref="IParseSupport.ParseSpecial(Dictionary{string, string}?)"/>
+        public virtual Dictionary<string, string> ParseSpecial (Dictionary<string, string>? attributes)
+            => attributes ?? new Dictionary<string, string>();
+        
 
         #endregion
 

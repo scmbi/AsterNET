@@ -392,8 +392,6 @@ namespace AsterNET.Helpers
         /// <summary>
         ///     Convert object with all properties to string
         /// </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
         internal static string ToString(object obj)
         {
             object? value;
@@ -551,22 +549,23 @@ namespace AsterNET.Helpers
 
         #region SetAttributes(object evt, IDictionary attributes) 
 
-        internal static void SetAttributes (IParseSupport o, Dictionary<string, string> attributes, ILogger? logger = default)
+        internal static void SetAttributes (IParseSupport o, Dictionary<string, string> buffer, ILogger? logger = default)
         {
             Type dataType;
             object? val;
 
             // Preparse attributes
-            attributes = o.ParseSpecial(attributes);
+            var attributes = o.ParseSpecial(buffer);
 
             var underlayingEvent = o.GetSetter();
             var underlayingType = underlayingEvent.GetType();
-            IDictionary setters = GetSetters(underlayingType);
-            MethodInfo? setter;
+            var setters = GetSetters(underlayingType);
+            
             foreach (var name in attributes.Keys)
             {
-                if (name == "event")
-                    continue;
+                if (name == "event" || name == "userevent") continue;
+
+                MethodInfo? setter;
 
                 if (name == "source")
                     setter = (MethodInfo?) setters["src"];
@@ -580,23 +579,17 @@ namespace AsterNET.Helpers
                 else
                 {                    
                     dataType = (setter.GetParameters()[0]).ParameterType;
-#if LOGGER
-                    if(!FromStringBuilderHelper.TryConvert(dataType, attributes[name], name, underlayingType, logger, out val))                    
-                        continue;
-#else
-					val = FromStringBuilderHelper.Convert(dataType, attributes[name], name, underlayingType, logger);
-#endif                         
+
+                    if (!FromStringBuilderHelper.TryConvert(dataType, attributes[name], name, underlayingType, (logger ?? _logger), out val))                    
+                        continue;                    
+                    
                     try
                     {
                         setter.Invoke(underlayingEvent, new[] {val});
                     }
                     catch (Exception ex)
                     {
-#if LOGGER
-                        logger?.LogError(ex, "Unable to set property '" + name + "' on " + underlayingType);
-#else
-						throw new ManagerException("Unable to set property '" + name + "' on " + o.GetType(), ex);
-#endif
+                        (logger ?? _logger).LogError(ex, "unable to set property '{name}' on {type}", name, underlayingType);						
                     }
                 }
             }
@@ -679,7 +672,7 @@ namespace AsterNET.Helpers
         /// </summary>
         /// <param name="attributes">the attributes and their values. The keys of this map must be all lower case.</param>
         /// <returns>the response with the given attributes.</returns>
-        internal static ManagerResponse BuildResponse(Dictionary<string, string> attributes)
+        internal static ManagerResponse BuildResponse(Dictionary<string, string> attributes, ILogger? logger = null)
         {
             ManagerResponse response;
 
@@ -701,7 +694,7 @@ namespace AsterNET.Helpers
             else
                 response = new ManagerResponse();
 
-            SetAttributes(response, attributes);
+            SetAttributes(response, attributes, logger);
             return response;
         }
 

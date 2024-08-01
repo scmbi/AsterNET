@@ -8,40 +8,40 @@ namespace AsterNET.Helpers
 {
     public static class HelperExtensions
     {
-        public static object? EnumParse(this string source, Type type)
+        public static object? EnumParse(this string? source, Type type)
         {
-            if (!string.IsNullOrWhiteSpace(source))
+            if (string.IsNullOrWhiteSpace(source))
+                return null;
+
+            var dataType = type;
+            if (!dataType.IsEnum)                
+                dataType = Nullable.GetUnderlyingType(dataType);                
+
+            if (dataType == typeof(Privilege))
             {
-                var dataType = type;
-                if (!dataType.IsEnum)                
-                    dataType = Nullable.GetUnderlyingType(dataType);                
-
-                if (dataType == typeof(Privilege))
+                var result = Privilege.none;
+                foreach (var s in source!.Split(','))
                 {
-                    Privilege result = Privilege.none;
-                    foreach (var s in source.Split(','))
+                    var normalized = s.Trim().ToLowerInvariant();
+                    if (Enum.TryParse(normalized, out Privilege flag))
                     {
-                        var normalized = s.Trim().ToLowerInvariant();
-                        if (Enum.TryParse(normalized, out Privilege flag))
-                        {
-                            result |= flag;
-                        }
+                        result |= flag;
                     }
-                    return result;
-                } 
-                else
-                {
-                    var result = EnumExtensions.GetValueFromDescription(dataType, source, false);
-                    if (result != null) return result;
+                }
+                return result;
+            } 
+            else
+            {
+                var result = EnumExtensions.GetValueFromDescription(dataType, source!, false);
+                if (result != null) return result;
 
-                    result = Enum.Parse(dataType, source, true);
-                    return System.Convert.ChangeType(result, dataType);
-                }                
-            }
-
-            return null;
+                result = Enum.Parse(dataType, source, true);
+                return System.Convert.ChangeType(result, dataType);
+            }                
+            
         }
 
+        [Obsolete("2024/05/27 not used anymore")]
         private static void SetFlag<T>(ref T value, T flag) where T : Enum
         {
             // 'long' can hold all possible values, except those which 'ulong' can hold.

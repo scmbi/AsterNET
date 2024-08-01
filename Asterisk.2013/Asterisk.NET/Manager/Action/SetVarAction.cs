@@ -26,7 +26,7 @@ namespace AsterNET.Manager.Action
         /// </summary>
         /// <param name="variable">the name of the global variable to set</param>
         /// <param name="value">the new value</param>
-        public SetVarAction(string variable, string value)
+        public SetVarAction (string variable, string value)
         {
             varName = variable;
             varValue = value;

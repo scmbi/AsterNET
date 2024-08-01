@@ -1,6 +1,7 @@
 ﻿using Sufficit.Asterisk;
 using Sufficit.Asterisk.Manager.Events;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -39,7 +40,7 @@ namespace AsterNET.Manager.Event
 
         /// <summary>
         /// This generic instance should not have any attribute after the full preparation. 
-        /// If its remaining, improve the underlayng classes.
+        /// If its remaining, improve the underlaying classes.
         /// </summary>
         public bool HasAttributes() => Attributes?.Count > 0;
 
@@ -58,7 +59,7 @@ namespace AsterNET.Manager.Event
         /// <param name="key">key name</param>
         /// <param name="value">key value</param>
         /// <returns>true - value parsed, false - can't parse value</returns>
-        public virtual void Parse (string key, string value)
+        public void Parse (string key, string value)
         {
             if (Attributes == null)
                 Attributes = new Dictionary<string, string>();
@@ -70,21 +71,9 @@ namespace AsterNET.Manager.Event
                 Attributes.Add(key, value);      
         }
 
-        /// <summary>
-        /// Unknown properties parser.
-        /// </summary>
-        /// <param name="attributes">dictionary</param>
-        /// <returns>updated dictionary</returns>
-        public virtual Dictionary<string, string> ParseSpecial(Dictionary<string, string>? attributes)
-        {
-            if (attributes == null)
-                return new Dictionary<string, string>();
-
-            foreach (var pair in attributes)            
-                Parse(pair.Key, pair.Value);
-            
-            return Attributes ?? new Dictionary<string, string>();
-        }
+        /// <inheritdoc cref="IParseSupport.ParseSpecial(Dictionary{string, string}?)"/>
+        public Dictionary<string, string> ParseSpecial (Dictionary<string, string>? attributes)
+            => attributes ?? new Dictionary<string, string>();        
 
         #endregion
     }

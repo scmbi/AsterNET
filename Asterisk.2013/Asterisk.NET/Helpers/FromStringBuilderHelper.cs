@@ -19,9 +19,10 @@ namespace AsterNET.Helpers
                 Result = Convert(type, value, title, sourceType, logger);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
                 Result = null;
+                logger?.LogError(ex, "error on TryConvert");
                 return false;
             }
         }
@@ -30,6 +31,13 @@ namespace AsterNET.Helpers
         {
             var type = typeof(T);
             if (match == type || Nullable.GetUnderlyingType(match) == type) return true;
+            else return false;
+        }
+
+        public static bool IsNullableOf<T>(Type match)
+        {
+            var type = typeof(T);
+            if (Nullable.GetUnderlyingType(match) == type) return true;
             else return false;
         }
 
@@ -54,41 +62,43 @@ namespace AsterNET.Helpers
                 return ParseString(value);
             else if (IsTypeOrNullableOf<uint>(type))
             {
-                uint v = 0;
-                uint.TryParse(value, out v);
+                uint.TryParse(value, out uint v);
                 return v;
             }
             else if (IsTypeOrNullableOf<Int32>(type))
             {
-                Int32 v = 0;
-                Int32.TryParse(value, out v);
+                Int32.TryParse(value, out Int32 v);
                 return v;
             }
             else if (IsTypeOrNullableOf<Int64>(type))
             {
-                Int64 v = 0;
-                Int64.TryParse(value, out v);
+                Int64.TryParse(value, out Int64 v);
                 return v;
             }
             else if (IsTypeOrNullableOf<double>(type))
             {
-                Double v = 0.0;
-                Double.TryParse(value, NumberStyles.AllowDecimalPoint, Common.CultureInfoEn, out v);
+                Double.TryParse(value, NumberStyles.AllowDecimalPoint, Common.CultureInfoEn, out Double v);
                 return v;
             }
             else if (IsTypeOrNullableOf<decimal>(type))
             {
-                Decimal v = 0;
-                Decimal.TryParse(value, NumberStyles.AllowDecimalPoint, Common.CultureInfoEn, out v);
+                Decimal.TryParse(value, NumberStyles.AllowDecimalPoint, Common.CultureInfoEn, out Decimal v);
                 return v;
             } 
             else if (IsTypeOrNullableOf<DateTime>(type))
             {
-                if (type is Nullable && string.IsNullOrWhiteSpace(value))
+                if (IsNullableOf<DateTime>(type) && string.IsNullOrWhiteSpace(value))
                     return null;
 
-                DateTime v = DateTime.MinValue;
-                DateTime.TryParse(value, out v);
+                DateTime.TryParse(value, out DateTime v);
+                return v;
+            }
+            else if (IsTypeOrNullableOf<TimeSpan>(type))
+            {
+                if (IsNullableOf<TimeSpan>(type) && string.IsNullOrWhiteSpace(value))
+                    return null;
+
+                TimeSpan.TryParse(value, out TimeSpan v);
                 return v;
             }
             else if (IsEnumOrNullableOf(type))
@@ -108,8 +118,8 @@ namespace AsterNET.Helpers
             {
                 try
                 {
-                    ConstructorInfo constructor = type.GetConstructor(new[] { typeof(string) });
-                    return constructor.Invoke(new object[] { value });
+                    var constructor = type.GetConstructor(new[] { typeof(string) });
+                    return constructor.Invoke(new object?[] { value });
                 }
                 catch (Exception ex)
                 {
@@ -118,13 +128,11 @@ namespace AsterNET.Helpers
     				throw new ManagerException(errorString, ex);
                 }
             }
-
-            return null;
         }
 
         #region ParseString(string val) 
 
-        internal static object ParseString(string val)
+        internal static object? ParseString(string? val)
         {
             if (val == "none")
                 return string.Empty;
@@ -144,7 +152,7 @@ namespace AsterNET.Helpers
         ///     true if s represents true,
         ///     false otherwise.
         /// </returns>
-        internal static bool IsTrue(string s)
+        internal static bool IsTrue(string? s)
         {
             if (s == null || s.Length == 0)
                 return false;
@@ -156,20 +164,8 @@ namespace AsterNET.Helpers
 
         #endregion
 
-        #region CultureInfo 
 
-        internal static CultureInfo CultureInfo
-        {
-            get
-            {
-                if (defaultCulture == null)
-                    defaultCulture = CultureInfo.GetCultureInfo("en");
-                return defaultCulture;
-            }
-        }
-
-        #endregion
-
-        private static CultureInfo defaultCulture;
+        internal static CultureInfo CultureInfo { get; }
+            = CultureInfo.GetCultureInfo("en");
     }
 }
