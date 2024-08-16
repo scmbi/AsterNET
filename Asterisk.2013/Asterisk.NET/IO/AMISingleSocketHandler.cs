@@ -441,13 +441,8 @@ namespace AsterNET.IO
 
         #region LocalAddress 
 
-        public IPAddress LocalAddress
-		{
-			get
-			{
-				return ((IPEndPoint)(_socket.LocalEndPoint)).Address;
-			}
-		}
+        public IPAddress? LocalAddress
+            => _socket.LocalEndPoint is IPEndPoint ip ? ip.Address : null;
 
 		#endregion
 		#region LocalPort 

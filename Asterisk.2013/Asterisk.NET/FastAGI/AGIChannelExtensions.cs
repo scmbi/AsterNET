@@ -469,7 +469,7 @@ namespace AsterNET.FastAGI
 
             var converter = TypeDescriptor.GetConverter(type);
             if (converter.CanConvertFrom(typeof(string)))            
-                return (T)converter.ConvertFromString(asteriskvar);
+                return (T)(converter.ConvertFromString(asteriskvar) ?? default);
             //else if(type is IConvertible)
             //    return (T)Convert.ChangeType(asteriskvar, type, provider);
             else if (type == typeof(Guid))

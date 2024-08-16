@@ -277,14 +277,14 @@ namespace AsterNET.FastAGI
         #region Dnid 
 
         public string? Dnid
-            => request.TryGetValue("dnid", out string value) && value.ToLower(Helper.CultureInfo) != "unknown" ? value : null;
+            => request.TryGetValue("dnid", out string? value) && value!.ToLower(Helper.CultureInfo) != "unknown" ? value : null;
 
         #endregion
 
         #region Rdnis 
 
         public string? Rdnis
-            => request.TryGetValue("rdnis", out string value) && value.ToLower(Helper.CultureInfo) != "unknown" ? value : null;
+            => request.TryGetValue("rdnis", out string? value) && value!.ToLower(Helper.CultureInfo) != "unknown" ? value : null;
         
         #endregion
 

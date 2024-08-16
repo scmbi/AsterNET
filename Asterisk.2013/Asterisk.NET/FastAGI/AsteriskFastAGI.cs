@@ -66,7 +66,7 @@ namespace AsterNET.FastAGI
 
         private ValueTask OnRequest(AMISingleSocketHandler e, CancellationToken cancellationToken)
         {
-            _logger.LogDebug("Received connection.");
+            _logger.LogDebug("received connection");
             var connectionHandler = new AGIConnectionHandler(_loggerFactory, e, Strategy, _options.SC511_CAUSES_EXCEPTION, _options.SCHANGUP_CAUSES_EXCEPTION);
             return connectionHandler.Run(cancellationToken);
         }
@@ -81,14 +81,14 @@ namespace AsterNET.FastAGI
 
             try
             {
-                _logger.LogInformation("Listening on " + _options.Address + ":" + _options.Port + " ...");
+                _logger.LogInformation("listening on " + _options.Address + ":" + _options.Port + " ...");
                 await _socketHandler.ExecuteAsync(cancellationToken);
             }
             catch (Exception ex)
             {
                 if (ex is IOException)
                 {
-                    _logger.LogError(ex, "Unable start AGI Server: cannot to bind to " + _options.Address + ":" + _options.Port + ".");
+                    _logger.LogError(ex, "unable start AGI Server: cannot to bind to " + _options.Address + ":" + _options.Port + ".");
                 }
                                
                 _socketHandler.Stop();

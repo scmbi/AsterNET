@@ -83,14 +83,6 @@ namespace AsterNET.FastAGI
 
         #endregion
 
-        #region Constructor - AGIReply()
-
-        public AGIReply()
-        {
-        }
-
-        #endregion
-
         #region Constructor - AGIReply(lines)
 
         /// <param name="lines">If empty array, means no problems, success</param>

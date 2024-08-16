@@ -70,7 +70,7 @@ namespace AsterNET.FastAGI.MappingStrategies
 	    public void Load()
 		{
 			string scriptName;
-			string className;
+			string? className;
 			AGIScript agiScript;
 
 			if (mapping == null)
@@ -84,22 +84,25 @@ namespace AsterNET.FastAGI.MappingStrategies
 					foreach (DictionaryEntry de in rr)
 					{
 						scriptName = (string)de.Key;
-						className = (string)de.Value;
-						agiScript = CreateAGIScriptInstance(className);
-						if(mapping.Contains(scriptName))
-							throw new AGIException(String.Format("Duplicate mapping name '{0}' in file {1}", scriptName, resourceName));
-						mapping.Add(scriptName, agiScript);
+						className = (string?)de.Value;
+						if (!string.IsNullOrWhiteSpace(className))
+						{
+							agiScript = CreateAGIScriptInstance(className);
+							if (mapping.Contains(scriptName))
+								throw new AGIException(String.Format("Duplicate mapping name '{0}' in file {1}", scriptName, resourceName));
+							mapping.Add(scriptName, agiScript);
 #if LOGGER
 						logger.Info("Added mapping for '" + scriptName + "' to class " + agiScript.GetType().FullName);
 #endif
+						}
 					}
 				}
-				catch (Exception ex)
+				catch (Exception)
 				{
 #if LOGGER
 					logger.Error("Resource bundle '" + resourceName + "' is missing.");
 #endif
-					throw ex;
+					throw;
 				}
 			}
 		}

@@ -90,10 +90,11 @@ namespace AsterNET.Util
 		#endregion
 
 		#region Name
+
 		/// <summary>
 		/// Gets or sets the name of the thread
 		/// </summary>
-		public string Name
+		public string? Name
 		{
 			get { return thread.Name; }
 			set
