@@ -11,26 +11,30 @@ namespace AsterNET.FastAGI
 	/// Just extend it by your own AGIScripts.
 	/// </summary>
 	public abstract class AGIScript : IDisposable
-	{
-        /// <summary>
-        /// Default sincronous executing starting point
-        /// </summary>
-        protected virtual void Execute(AGIRequest request, AGIChannel channel)
-        {
-			throw new NotImplementedException();
-		}
-
-		/// <summary>
-		/// Default asyncronous executing starting point
-		/// </summary>
-		public virtual async ValueTask ExecuteAsync(AGIRequest request, AGIChannel channel, CancellationToken cancellationToken)
-            => await Task.Run(() => Execute(request, channel));
-
+	{               
         /// <summary>
         ///     Invokes dispose for ensure the closure at inheritances classes
         /// </summary>
         ~AGIScript() => Dispose();
+                
+        /// <summary>
+		///     Default asyncronous executing starting point
+		/// </summary>
+        public virtual ValueTask ExecuteAsync(AGIScriptParameters parameters, CancellationToken cancellationToken)
+            => ExecuteAsync(parameters.Request, parameters.Channel, cancellationToken);
 
+        /// <summary>
+        ///     You should prefer to override <see cref="AGIScript.ExecuteAsync(AGIScriptParameters, CancellationToken)"/>
+        /// </summary>
+        public virtual async ValueTask ExecuteAsync(AGIRequest request, AGIChannel channel, CancellationToken cancellationToken)
+            => await Task.Run(() => Execute(request, channel));
+
+        /// <summary>
+        ///     Default sincronous executing starting point
+        /// </summary>
+        protected virtual void Execute(AGIRequest request, AGIChannel channel)
+            => throw new NotImplementedException();
+        
         #region IMPLEMENT IDISPOSABLE
 
         protected bool disposed = false;

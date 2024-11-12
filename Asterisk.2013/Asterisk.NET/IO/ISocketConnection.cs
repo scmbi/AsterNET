@@ -32,7 +32,7 @@ namespace AsterNET.IO
 
         void Close(string? reason = null);
 
-        [Obsolete("prefer dispose")]
+        [Obsolete("prefer dispose, if you want to close that, you cant re-open, so save info that you need and than dispose.")]
         void Close(AGISocketReason reason);
 
         void Write(string s);

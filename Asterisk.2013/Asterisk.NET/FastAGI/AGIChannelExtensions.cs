@@ -25,7 +25,6 @@ namespace AsterNET.FastAGI
 		}
 
 		#endregion
-
 		#region Hangup()
 
 		/// <summary>
@@ -37,7 +36,6 @@ namespace AsterNET.FastAGI
 		}
 
 		#endregion
-
 		#region SetAutoHangup
 
 		/// <summary>
@@ -50,7 +48,6 @@ namespace AsterNET.FastAGI
 		}
 
 		#endregion
-
 		#region SetCallerId
 
 		/// <summary>
@@ -63,7 +60,6 @@ namespace AsterNET.FastAGI
 		}
 
 		#endregion
-
 		#region PlayMusicOnHold()
 
 		/// <summary>
@@ -75,7 +71,6 @@ namespace AsterNET.FastAGI
 		}
 
         #endregion
-
         #region PlayMusicOnHold(string musicOnHoldClass)
 
         /// <summary>
@@ -89,7 +84,6 @@ namespace AsterNET.FastAGI
 		}
 
 		#endregion
-
 		#region StopMusicOnHold()
 
 		/// <summary>
@@ -101,7 +95,6 @@ namespace AsterNET.FastAGI
 		}
 
 		#endregion
-
 		#region GetChannelStatus
 
 		/// <summary>
@@ -127,7 +120,6 @@ namespace AsterNET.FastAGI
 		}
 
         #endregion
-
         #region GetData(string file, int timeout, int maxDigits)
 
         /// <summary>
@@ -150,7 +142,6 @@ namespace AsterNET.FastAGI
 		}
 
         #endregion
-
         #region GetOption(string file, string escapeDigits)
 
         /// <summary>
@@ -169,7 +160,6 @@ namespace AsterNET.FastAGI
 			return lastReply.ResultCodeAsChar;
 		}
         #endregion
-
         #region GetOption(string file, string escapeDigits, int timeout)
 
         /// <summary>
@@ -190,7 +180,6 @@ namespace AsterNET.FastAGI
 		}
 
         #endregion
-
         #region Exec(string application)
 
         /// <summary>
@@ -206,7 +195,6 @@ namespace AsterNET.FastAGI
 		}
 
         #endregion
-
         #region Exec(string application, string options)
 
         /// <summary>
@@ -223,7 +211,6 @@ namespace AsterNET.FastAGI
 		}
 
 		#endregion
-
 		#region SetContext
 
 		/// <summary>
@@ -235,7 +222,6 @@ namespace AsterNET.FastAGI
 		}
 
 		#endregion
-
 		#region SetExtension
 
 		/// <summary>
@@ -247,7 +233,6 @@ namespace AsterNET.FastAGI
 		}
 
 		#endregion
-
 		#region  SetPriority(int priority)
 
 		/// <summary>
@@ -259,7 +244,6 @@ namespace AsterNET.FastAGI
 		}
 
         #endregion
-
         #region  SetPriority(string label priority)
 
         /// <summary>
@@ -271,7 +255,6 @@ namespace AsterNET.FastAGI
 		}
 
         #endregion
-
         #region StreamFile(string file)
 
         /// <summary>
@@ -291,7 +274,6 @@ namespace AsterNET.FastAGI
 		}
 
         #endregion
-
         #region SayDigits(string digits)
 
         /// <summary>
@@ -305,7 +287,6 @@ namespace AsterNET.FastAGI
 		}
 
         #endregion
-
         #region SayDigits(string digits, string escapeDigits)
 
         /// <summary>
@@ -322,7 +303,6 @@ namespace AsterNET.FastAGI
 			return lastReply.ResultCodeAsChar;
 		}
         #endregion
-
         #region SayNumber(string number)
 
         /// <summary>
@@ -335,7 +315,6 @@ namespace AsterNET.FastAGI
 			source.SendCommand(new SayNumberCommand(number));
 		}
         #endregion
-
         #region SayNumber(string number, string escapeDigits)
 
         /// <summary>
@@ -353,7 +332,6 @@ namespace AsterNET.FastAGI
 		}
 
         #endregion
-
         #region SayPhonetic(string text)
 
         /// <summary>

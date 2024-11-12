@@ -99,7 +99,9 @@ namespace AsterNET.FastAGI
                                 var channel = new AGIChannel(loggerChannel, _socket, _SC511_CAUSES_EXCEPTION, _SCHANGUP_CAUSES_EXCEPTION);
 
                                 _logger.LogTrace("Begin AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
-                                await script.ExecuteAsync(request, channel, cancellationToken);
+
+                                var parameters = new AGIScriptParameters(request, channel);
+                                await script.ExecuteAsync(parameters, cancellationToken);
                                 statusMessage = "SUCCESS";
 
                                 _logger.LogTrace("End AGIScript " + script.GetType().FullName + " on " + Thread.CurrentThread.Name);
@@ -161,15 +163,16 @@ namespace AsterNET.FastAGI
                 {
                     try
                     {
-                        if (_socket.IsConnected())
+                        using (_socket)
                         {
-                            if (!string.IsNullOrWhiteSpace(statusMessage))
+                            if (_socket.IsConnected())
                             {
-                                var command = new SetVariableCommand(Common.AGI_DEFAULT_RETURN_STATUS, statusMessage);
-                                _socket.SendCommand(command);
+                                if (!string.IsNullOrWhiteSpace(statusMessage))
+                                {
+                                    var command = new SetVariableCommand(Common.AGI_DEFAULT_RETURN_STATUS, statusMessage);
+                                    _socket.SendCommand(command);
+                                }
                             }
-
-                            _socket.Close(AGISocketReason.SCRIPTEND);
                         }
                     }
                     catch (IOException ex)
