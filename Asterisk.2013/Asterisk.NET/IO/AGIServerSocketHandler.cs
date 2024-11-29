@@ -1,8 +1,5 @@
-using AsterNET.FastAGI.Command;
-using AsterNET.FastAGI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Sufficit.Asterisk;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,7 +9,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace AsterNET.IO
 {

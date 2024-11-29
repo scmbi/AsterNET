@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.Linq;
 using Sufficit.Asterisk;
 using AsterNET.Helpers;
+using static Sufficit.Asterisk.Common;
 
 namespace AsterNET.FastAGI
 {
@@ -569,7 +570,7 @@ namespace AsterNET.FastAGI
             if (string.IsNullOrEmpty(parameters))
                 return result;
 
-            string[] pars = parameters.Split('&');
+            string[] pars = parameters.Split(new[] { AGI_PARAMETER_SEPARATOR }, StringSplitOptions.RemoveEmptyEntries);
             if (pars.Length == 0)
                 return result;
 

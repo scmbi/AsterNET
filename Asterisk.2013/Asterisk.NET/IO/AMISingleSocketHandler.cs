@@ -80,7 +80,7 @@ namespace AsterNET.IO
                 InMemory--;
 
                 _logger.LogTrace("disposing requested, with managed resources: {managed}", disposing);
-
+                
                 if (disposing)
                 {
                     // checking object was not disposed yet
@@ -95,7 +95,9 @@ namespace AsterNET.IO
                             }
                             _socket.Dispose();
                         }
-                        finally { }
+                        catch (Exception ex) {
+                            _logger.LogWarning(ex, "error on socket close and disposing (not important, only for debug)");
+                        }
                     }
 
                     Cancel();
@@ -104,7 +106,12 @@ namespace AsterNET.IO
                         BackgroundReadingTask.Dispose();
                 }
 
-                CTSBackgroundReading = null;
+                if (CTSBackgroundReading != null)
+                {
+                    CTSBackgroundReading.Dispose();
+                    CTSBackgroundReading = null;
+                }
+
                 OnDisposing = null;
                 OnDisconnected = null;
                 OnHangUp = null;
@@ -174,7 +181,12 @@ namespace AsterNET.IO
             AGISocketReason cause;
             if (ex.ErrorCode == 103)
             {
-                _logger.LogDebug("({hash}) receiving raw data from socket aborted: {code}", GetHashCode(), ex.SocketErrorCode);
+                if (IsDisposeRequested)
+                    // expected behavior
+                    _logger.LogTrace("({hash}) receiving raw data from socket aborted: {code}", GetHashCode(), ex.SocketErrorCode);
+                else
+                    _logger.LogDebug("({hash}) receiving raw data from socket aborted: {code}", GetHashCode(), ex.SocketErrorCode);
+
                 cause = AGISocketReason.ABORTED;
             }
             else if (ex.Message.Contains("WSACancelBlockingCall"))
@@ -186,6 +198,11 @@ namespace AsterNET.IO
             {
                 _logger.LogDebug("({hash}) socket reseted by peer: {code}", GetHashCode(), ex.SocketErrorCode);
                 cause = AGISocketReason.RESETED;
+            }
+            else if (ex.ErrorCode == 10053)
+            {
+                _logger.LogDebug("({hash}) receiving raw data from socket aborted from source: {code}", GetHashCode(), ex.SocketErrorCode);
+                cause = AGISocketReason.ABORTED;
             }
             else
             {
@@ -275,10 +292,8 @@ namespace AsterNET.IO
                 // setting the cancellation source
                 var token = CTSBackgroundReading?.Token ?? CancellationToken.None;
 
-                while (IsReceiving(_socket))
+                while (IsReceiving(_socket, token))
                 {
-                    token.ThrowIfCancellationRequested();
-
                     var buffer = new byte[Options.BufferSize];
                     var bytesRead = _socket.Receive(buffer);
 
@@ -413,10 +428,12 @@ namespace AsterNET.IO
         /// <summary>
         ///		Check if the socket still connected and receiving
         /// </summary>
-        private static bool IsReceiving(Socket? socket)
+        private static bool IsReceiving(Socket? socket, CancellationToken cancellationToken)
         {
             if (socket == null)
                 return false;
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             return !(socket.Poll(1000, SelectMode.SelectRead) && socket.Available == 0);
         }
