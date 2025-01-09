@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk" ToolsVersion="Current">
 
 	<PropertyGroup Label="Sufficit Targeting">
-		<TargetFrameworks>netstandard2.0;net6.0;net7.0;net8.0</TargetFrameworks>
+		<TargetFrameworks>netstandard2.0;net7.0;net8.0;net9.0</TargetFrameworks>
 		<RootNamespace>AsterNET</RootNamespace>
 		<LangVersion>8.0</LangVersion>
 		
@@ -46,6 +46,21 @@
 		<PackageReadmeFile>readme.md</PackageReadmeFile>
 		<PackageIcon>icon.png</PackageIcon>
 	</PropertyGroup>
+	
+	<ItemGroup Label="Sufficit Pacote NUGET Itens">
+		<None Include="../../icon.png">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
+		<None Include="../../license">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
+		<None Include="../../readme.md">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
+	</ItemGroup>
 	
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -113,8 +128,12 @@
     <Content Include="Manager\Documentation\Asterisk-1.6.2.24\AMI Commands.txt" />
     <Content Include="Manager\Documentation\Asterisk-1.6.2.24\AMI Events.txt" />
   </ItemGroup>
-	<ItemGroup>
-		<PackageReference Include="System.Linq.Async" Version="6.*" />
+
+	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+		<NoWarn>$(NoWarn);nullable</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net7.0' ">
 		<PackageReference Include="Microsoft.AspNetCore.Http.Connections.Common" Version="[*,9.0.0)" />
 		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="[*,9.0.0)" />
 		<PackageReference Include="Microsoft.Extensions.Configuration" Version="[*,9.0.0)" />
@@ -128,22 +147,26 @@
 		<PackageReference Include="System.Net.Http.Json" Version="[*,9.0.0)" />
 		<PackageReference Include="System.Text.Json" Version="[*,9.0.0)" />
 	</ItemGroup>
-	
-	<ItemGroup Label="Sufficit Pacote NUGET Itens">
-		<None Include="../../icon.png">
-			<Pack>True</Pack>
-			<PackagePath></PackagePath>
-		</None>
-		<None Include="../../license">
-			<Pack>True</Pack>
-			<PackagePath></PackagePath>
-		</None>
-		<None Include="../../readme.md">
-			<Pack>True</Pack>
-			<PackagePath></PackagePath>
-		</None>
-	</ItemGroup>
 
+	<ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net9.0' ">
+		<PackageReference Include="Microsoft.AspNetCore.Http.Connections.Common" Version="[*,10.0.0)" />
+		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="[*,10.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="[*,10.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="[*,10.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="[*,10.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="[*,10.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="[*,10.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[*,10.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.Options" Version="[*,10.0.0)" />
+		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="[*,10.0.0)" />
+		<PackageReference Include="System.Net.Http.Json" Version="[*,10.0.0)" />
+		<PackageReference Include="System.Text.Json" Version="[*,10.0.0)" />
+	</ItemGroup>
+	
+	<ItemGroup>
+		<PackageReference Include="System.Linq.Async" Version="6.*" />
+	</ItemGroup>
+	
 	<ItemGroup Label="Sufficit Dependencies on Packing" Condition=" '$(Configuration)' != 'Debug' And '$(Configuration)' != 'Release' ">
 		<PackageReference Include="Sufficit.Asterisk.Core" Version="1.*" />
 		<PackageReference Include="Sufficit.Utils" Version="1.*" />
